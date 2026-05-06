@@ -1,0 +1,15 @@
+node_modules/
+.expo/
+.firebase/
+dist/
+.env
+.env.*
+!.env.example
+*.orig.*
+web-build/
+functions/lib/
+firebase-debug.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store

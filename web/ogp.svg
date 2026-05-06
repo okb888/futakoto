@@ -1,0 +1,17 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="ogpLeft">
+      <circle cx="880" cy="315" r="120"/>
+    </clipPath>
+  </defs>
+  <rect width="1200" height="630" fill="#FAFAF8"/>
+  <text x="80" y="160" font-family="-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif" font-size="22" font-weight="700" letter-spacing="6" fill="#7B9E87">FUTAKOTO</text>
+  <text x="80" y="280" font-family="-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif" font-size="96" font-weight="700" letter-spacing="8" fill="#2D2D2D">ふたこと</text>
+  <text x="80" y="350" font-family="-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif" font-size="32" font-weight="400" letter-spacing="4" fill="#444">一言を、ふたりで。</text>
+  <text x="80" y="450" font-family="-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif" font-size="18" letter-spacing="2" fill="#888">忙しい毎日の中で、お互いの「頭の中」を5分だけ共有する</text>
+  <circle cx="820" cy="315" r="120" fill="#7B9E87"/>
+  <circle cx="940" cy="315" r="120" fill="#C8D8CC"/>
+  <g clip-path="url(#ogpLeft)">
+    <circle cx="940" cy="315" r="120" fill="#5A7E68"/>
+  </g>
+</svg>

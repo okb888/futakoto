@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "ふたこと",
+    "slug": "futakoto",
+    "version": "1.0.0",
+    "scheme": "futakoto",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFAF8"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.futakoto.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FAFAF8"
+      },
+      "package": "com.futakoto.app"
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}

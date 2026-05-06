@@ -1,0 +1,12 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="adaptiveLeft">
+      <circle cx="471" cy="512" r="150"/>
+    </clipPath>
+  </defs>
+  <circle cx="471" cy="512" r="150" fill="#7B9E87"/>
+  <circle cx="589" cy="512" r="150" fill="#C8D8CC"/>
+  <g clip-path="url(#adaptiveLeft)">
+    <circle cx="589" cy="512" r="150" fill="#5A7E68"/>
+  </g>
+</svg>
