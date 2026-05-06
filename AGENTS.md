@@ -40,6 +40,7 @@ UI実装・スタイル決定・新規画面作成・色やサイズの判断を
 | W4 | タブナビ・6桁コード・displayName・投稿削除/公開切替・カレンダー | ✅ 完了 |
 | W6 | Cloud Functions + Gemini AIリライト/AI相談/意図汲み取り/月次要約 | ✅ 基盤完了・動作確認済み |
 | W6.5 | 相談タブ・相談履歴・投稿転記・お気に入り・振り返りフィルタ | ✅ 実装済み |
+| LP | ランディングページ（futakoto.jp）・Firebase Hosting | ✅ 公開済み |
 | W5 | 課金導線（RevenueCat）・広告（AdMob） | 未着手 |
 | W7 | プライバシーポリシー・利用規約・アカウント削除 | 未着手 |
 | W8 | TestFlight → App Store審査提出 | 未着手 |
@@ -47,6 +48,71 @@ UI実装・スタイル決定・新規画面作成・色やサイズの判断を
 ---
 
 ## 直近で実施したこと（2026-05-06）
+
+### 振り返り画面のカレンダーデザイン刷新
+
+Webサイトの「色で振り返る」グリッドとアプリの表示を近づけるためリデザイン。
+
+**変更内容（`app/(app)/calendar.tsx`）**:
+- 各日付セルの背景 = 自分の最新気分色（`MOOD_COLORS[mood] + '44'`、27%透明度）
+- パートナーの気分色 = セル下部4px全幅ストリップ
+- ストリップ上部に `rgba(255,255,255,0.7)` の1pxセパレーター追加（自分と相手が同色の日も判別可能）
+- 選択状態: 背景塗りつぶし → sage色2pxボーダーリングに変更（気分色を消さずに選択位置が明確）
+- 選択日の数字を太字（`fontWeight: '700'`）に変更
+- `dayCell` 高さ: 42px → 36px（カレンダー全体をコンパクト化）
+- `overflow: 'hidden'` 追加（ストリップがセルの角丸に沿う）
+- 相談ドット（紫）は右上に維持
+
+**レジェンド更新**:
+- 「上: 自分の最新 / 下: 相手の最新」→「背景: 自分 / 下線: 相手 / 相談」に整理
+
+### 投稿画面の日付選択ピッカー改善
+
+**変更内容（`app/(app)/post.tsx`）**:
+- `@react-native-community/datetimepicker` を削除（OS依存で見た目が統一されない問題）
+- `react-native-calendars` の `<Calendar>` コンポーネントに置き換え
+- `package.json` から `@react-native-community/datetimepicker` 依存を除去
+
+### ランディングページ公開
+
+`web/index.html` をフルスクラッチで作成し、Firebase Hosting に公開した。
+
+**URL**: https://futakoto.web.app（futakoto.jp ドメインも取得済み・DNS設定未完）
+
+**構成**:
+- `web/index.html` — スタンドアロン HTML ファイル（JS フレームワーク不使用）
+- `firebase.json` の `hosting.public` を `"web"` に設定
+- CSS 変数でデザインシステムを実装（`--sage: #7B9E87` etc.）
+
+**主な内容**:
+- COMING SOON バナー
+- ヒーローセクション（電話モックアップ ×2、blob 背景）
+- 特徴セクション（3カラムカード）
+- 使い方セクション（3ステップ）
+- CTA セクション（App Store / Google Play ボタン・未公開のため無効化）
+- フッター
+
+**対応したコピー**:
+- ヒーローノートのコピーは `"夜寝る前の30秒を、ふたりのために。"` に統一
+- 旧：`"無料 · 広告なし · ペアリングは招待コード一つだけ"` は廃止（安っぽい印象）
+
+**モバイル最適化（最終状態）**:
+- `body` に `overflow-x: hidden; max-width: 100vw` を設定（横スクロール防止）
+- `.hero-visual` には `overflow: hidden` を設定しない（回転した電話が clipされるため）
+- モバイル（max-width: 880px）では `.hero-visual { display: none }` で電話モックアップを非表示
+- PC（880px超）では電話 ×2 が `-6deg / +6deg` で回転したまま表示される
+
+**デプロイコマンド**:
+```bash
+cd ~/futakoto && firebase deploy --only hosting
+```
+
+**アイコン**:
+- `assets/icon.png` は Claude Design で生成した SVG を `rsvg-convert` で 1024×1024 PNG に変換したもの
+- 2つの円が重なるデザイン（左: sage #7B9E87 / 右: dim #C8D8CC / 重なり: #5A7E68）
+- 変換コマンド: `rsvg-convert -w 1024 -h 1024 icon.svg -o assets/icon.png`
+
+---
 
 ### AI認証エラー解決
 
@@ -185,9 +251,15 @@ Module '"firebase/auth"' has no exported member 'getReactNativePersistence'.
 │   ├── tsconfig.json
 │   └── src/
 │       └── index.ts              # 4つのCloud Functions
+├── web/
+│   └── index.html                # ランディングページ（Firebase Hosting で公開中）
+├── .design/
+│   └── system.md                 # デザインシステム（色・タイポ・トーン）
+├── assets/
+│   └── icon.png                  # 1024×1024 アイコン（rsvg-convert で生成）
 ├── .env                          # Firebase設定（Git管理外）
 ├── app.json                      # Expo設定
-├── firebase.json                 # Firebase CLI設定
+├── firebase.json                 # Firebase CLI設定（hosting.public = "web"）
 ├── .firebaserc                   # default project = futakoto
 └── package.json
 ```
@@ -379,7 +451,41 @@ AI相談の自分専用記録。相手には見せない。
 
 ## 次にやるべき具体タスク
 
-### 1. `lib/firebase.ts` の TypeScript エラー修正（最優先）
+### 1. AI機能のUI統合と精度向上（最優先）
+
+#### 1-1. 振り返り画面のAI月次要約（`calendar.tsx`）
+
+カレンダー上部またはフィルター行の近くに「今月をAI要約」ボタンを追加。
+- 対象月の自分の投稿（`myEntries` をフィルタ）を `aiSummary` に渡す
+- 結果を展開可能なカードで表示（デフォルト折りたたみ）
+- Phosphor `Sparkle` アイコンを使う（絵文字禁止）
+- 月をまたいだときにリセット
+
+`aiSummary` の入力形式: `{ entries: { mood: number, memo: string }[] }`
+
+#### 1-2. 相談（壁打ち）機能の精度向上（`aiConsult` + `consult.tsx`）
+
+現在の `aiConsult` プロンプトの課題：
+- 入力が短い（「疲れた」だけ等）でも応答してしまう → 最低限の入力量ガード（50文字以下はヒントを表示してUX誘導）
+- パートナー名が渡せていない可能性 → `partnerName` を必ず渡す
+- AIの整理メモが長すぎる場合がある → `reflection` は200文字以内の制約をプロンプトに追加
+- 「相談」という言葉が重く感じる → UIコピーを「気持ちを整理する」「壁打ち」方向に変える
+
+`aiConsult` 出力:
+```typescript
+{ reflection: string; messageDraft: string; }
+```
+- `reflection`: AIの整理メモ（自分だけ見る）→ 200文字以内を目標
+- `messageDraft`: 相手への一言案（投稿に使える）
+
+#### 1-3. ホーム画面の「意図を読み解く」（`index.tsx`）
+
+パートナーの投稿カードに `aiInterpret` の導線を追加。
+- カードをタップで展開→「この気持ちを読み解く（Sparkle）」ボタン
+- 3つの解釈を箇条書きで表示
+- 一度呼んだ結果はそのカードが再描画されるまでキャッシュ（`useState<Record<string,string[]>>`）
+
+### 2. `lib/firebase.ts` の TypeScript エラー修正
 
 `npm exec tsc -- --noEmit` が通る状態にする。
 
@@ -389,15 +495,6 @@ AI相談の自分専用記録。相手には見せない。
 lib/firebase.ts(2,26): error TS2305:
 Module '"firebase/auth"' has no exported member 'getReactNativePersistence'.
 ```
-
-### 2. AI機能の残りUI統合
-
-- **ホーム画面（index.tsx）**: パートナーの投稿カードに「意図を読み解く」導線を追加。タップで `aiInterpret` を呼び、3つの解釈を表示
-- **振り返り画面（calendar.tsx）**: 月の上部に「今月をAI要約」導線を追加。対象月の投稿を `aiSummary` に渡し、結果をカード表示
-
-注意:
-- 装飾絵文字は使わず、Phosphor `Sparkle` などを使う
-- AI要約は自己認識・葛藤を削らない方針を維持する
 
 ### 3. AI使用量管理・課金前のガード
 
@@ -486,6 +583,9 @@ cd ~/futakoto && firebase deploy --only functions
 cd ~/futakoto && firebase deploy --only functions:aiRewrite,functions:aiSummary
 cd ~/futakoto && firebase deploy --only functions:aiConsult
 
+# ランディングページ デプロイ
+cd ~/futakoto && firebase deploy --only hosting
+
 # Cloud Functions ログ
 cd ~/futakoto && firebase functions:log
 
@@ -502,7 +602,9 @@ firebase logout && firebase login
 
 - Firebase Console: https://console.firebase.google.com/project/futakoto
 - Google AI Studio (APIキー): https://aistudio.google.com/app/apikey
+- ランディングページ（本番）: https://futakoto.web.app（futakoto.jp にも同じ内容を予定）
 - SNS: X / Instagram `@futakoto_app`
+- ドメイン: futakoto.jp 取得済み（DNS接続は未設定）
 - 招待コードのテスト: 設定画面に表示される6桁コードでアカウント間ペアリング可能
 
 ---

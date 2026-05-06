@@ -257,16 +257,12 @@ export default function CalendarScreen() {
     const partnerMood = latestPartnerByDate[key]?.mood;
     const hasConsultation = !!consultationsByDate[key];
 
-    const cellBg = selectedDay
-      ? '#EDF4F0'
-      : myMood
-      ? MOOD_COLORS[myMood] + '44'
-      : 'transparent';
+    const cellBg = myMood ? MOOD_COLORS[myMood] + '44' : 'transparent';
 
     return (
       <TouchableOpacity
         activeOpacity={0.7}
-        style={[styles.dayCell, { backgroundColor: cellBg }]}
+        style={[styles.dayCell, { backgroundColor: cellBg }, selectedDay && styles.dayCellSelected]}
         onPress={() => setSelected(key)}
       >
         <Text
@@ -453,21 +449,27 @@ const styles = StyleSheet.create({
   legendEmoji: { fontSize: 14 },
   dayCell: {
     width: 38,
-    height: 42,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
     overflow: 'hidden',
   },
+  dayCellSelected: {
+    borderWidth: 2,
+    borderColor: '#7B9E87',
+  },
   dayText: { fontSize: 13, color: '#2D2D2D', fontWeight: '600' },
   dayTextDisabled: { color: '#CCC' },
-  dayTextSelected: { color: '#5F856B' },
+  dayTextSelected: { color: '#5F856B', fontWeight: '700' },
   partnerStrip: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     height: 4,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.7)',
   },
   consultationDot: {
     position: 'absolute',

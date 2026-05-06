@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { Calendar } from 'react-native-calendars';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowCounterClockwise, CalendarBlank, Clock, Users, Lock, Sparkle } from 'phosphor-react-native';
 import { useAuth } from '../../lib/auth';
@@ -32,6 +32,10 @@ function formatDateInput(date: Date): string {
 
 function formatTimeInput(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function dateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 type PickerMode = 'date' | 'time';
@@ -129,12 +133,18 @@ export default function PostScreen() {
     applyRecordDate(next);
   }
 
-  function handlePickerChange(event: DateTimePickerEvent, selectedDate?: Date) {
-    if (Platform.OS !== 'ios') {
-      setActivePicker(null);
-    }
-    if (event.type === 'dismissed' || !selectedDate) return;
-    applyRecordDate(selectedDate);
+  function handleDaySelect(dateString: string) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const next = new Date(recordDate);
+    next.setFullYear(year, month - 1, day);
+    applyRecordDate(next);
+  }
+
+  function shiftTime(hours: number, minutes: number) {
+    const next = new Date(recordDate);
+    next.setHours(next.getHours() + hours);
+    next.setMinutes(next.getMinutes() + minutes);
+    applyRecordDate(next);
   }
 
   return (
@@ -197,15 +207,43 @@ export default function PostScreen() {
         </View>
         {activePicker ? (
           <View style={styles.pickerPanel}>
-            <DateTimePicker
-              value={recordDate}
-              mode={activePicker}
-              display={Platform.OS === 'ios' ? (activePicker === 'date' ? 'inline' : 'spinner') : 'default'}
-              maximumDate={new Date()}
-              locale="ja-JP"
-              onChange={handlePickerChange}
-              accentColor="#7B9E87"
-            />
+            {activePicker === 'date' ? (
+              <Calendar
+                current={dateKey(recordDate)}
+                maxDate={dateKey(new Date())}
+                markedDates={{
+                  [dateKey(recordDate)]: { selected: true, selectedColor: '#7B9E87' },
+                }}
+                onDayPress={(day) => handleDaySelect(day.dateString)}
+                theme={{
+                  calendarBackground: '#fff',
+                  todayTextColor: '#7B9E87',
+                  arrowColor: '#7B9E87',
+                  monthTextColor: '#2D2D2D',
+                  textDayFontSize: 14,
+                  textMonthFontSize: 15,
+                  textDayHeaderFontSize: 12,
+                }}
+              />
+            ) : (
+              <View style={styles.timePanel}>
+                <Text style={styles.timeDisplay}>{formatTimeInput(recordDate)}</Text>
+                <View style={styles.timeAdjustGrid}>
+                  <TouchableOpacity style={styles.timeAdjustButton} onPress={() => shiftTime(-1, 0)}>
+                    <Text style={styles.timeAdjustText}>-1時間</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.timeAdjustButton} onPress={() => shiftTime(1, 0)}>
+                    <Text style={styles.timeAdjustText}>+1時間</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.timeAdjustButton} onPress={() => shiftTime(0, -10)}>
+                    <Text style={styles.timeAdjustText}>-10分</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.timeAdjustButton} onPress={() => shiftTime(0, 10)}>
+                    <Text style={styles.timeAdjustText}>+10分</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
         ) : null}
 
@@ -401,6 +439,19 @@ const styles = StyleSheet.create({
     marginTop: 10,
     overflow: 'hidden',
   },
+  timePanel: { padding: 16, alignItems: 'center', gap: 14 },
+  timeDisplay: { fontSize: 32, color: '#2D2D2D', fontWeight: '700' },
+  timeAdjustGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  timeAdjustButton: {
+    width: '48%',
+    backgroundColor: '#FAFAF8',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  timeAdjustText: { fontSize: 13, color: '#555', fontWeight: '700' },
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
