@@ -1,14 +1,20 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { defineSecret } from 'firebase-functions/params';
+import * as admin from 'firebase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+admin.initializeApp();
 
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
 const MODEL = 'gemini-2.5-flash';
+const REGION = 'asia-northeast1';
 const AI_FUNCTION_OPTIONS = {
   secrets: [GEMINI_API_KEY],
-  region: 'asia-northeast1',
+  region: REGION,
   invoker: 'public',
 };
+const db = admin.firestore();
 
 function getModel() {
   const apiKey = GEMINI_API_KEY.value()
@@ -21,6 +27,80 @@ function getModel() {
     generationConfig: { responseMimeType: 'application/json' },
   });
 }
+
+type ExpoPushMessage = {
+  to: string;
+  title: string;
+  body: string;
+  sound?: 'default' | null;
+  data?: Record<string, string>;
+};
+
+async function sendExpoPush(messages: ExpoPushMessage[]) {
+  if (messages.length === 0) return;
+  const response = await fetch('https://exp.host/--/api/v2/push/send', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Accept-Encoding': 'gzip, deflate',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(messages),
+  });
+  if (!response.ok) {
+    throw new Error(`Expo Push API error: ${response.status}`);
+  }
+}
+
+export const notifyPartnerOnSharedEntry = onDocumentCreated(
+  {
+    region: REGION,
+    document: 'users/{authorUid}/entries/{entryId}',
+  },
+  async (event) => {
+    const entry = event.data?.data();
+    const authorUid = event.params.authorUid;
+    const entryId = event.params.entryId;
+    if (!entry || entry.visibility !== 'shared') return;
+
+    const authorSnap = await db.doc(`users/${authorUid}`).get();
+    const author = authorSnap.data();
+    const partnerUid = author?.partnerUid;
+    if (!partnerUid) return;
+
+    const partnerRef = db.doc(`users/${partnerUid}`);
+    const partnerSnap = await partnerRef.get();
+    const partner = partnerSnap.data();
+    if (!partner?.notificationSettings?.sharedPostNotificationsEnabled) return;
+
+    const lastNotifiedAt = partner.notificationMeta?.lastSharedPostNotificationAt;
+    if (lastNotifiedAt?.toMillis && Date.now() - lastNotifiedAt.toMillis() < 60 * 60 * 1000) {
+      return;
+    }
+
+    const tokenSnap = await partnerRef.collection('pushTokens').get();
+    const tokens = tokenSnap.docs
+      .map((doc) => doc.data().token)
+      .filter((token): token is string => (
+        typeof token === 'string' &&
+        (token.startsWith('ExponentPushToken') || token.startsWith('ExpoPushToken'))
+      ));
+
+    await sendExpoPush(tokens.map((token) => ({
+      to: token,
+      title: 'ふたこと',
+      body: 'ふたりの記録に新しい投稿があります',
+      sound: null,
+      data: { kind: 'sharedEntry', entryId, authorUid },
+    })));
+
+    await partnerRef.set({
+      notificationMeta: {
+        lastSharedPostNotificationAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+    }, { merge: true });
+  }
+);
 
 // ---- AI リライト: 気持ち → 伝わる文章 ----
 export const aiRewrite = onCall(
@@ -86,7 +166,11 @@ export const aiConsult = onCall(
   AI_FUNCTION_OPTIONS,
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
-    const { text, partnerName } = request.data as { text?: string; partnerName?: string };
+    const { text, partnerName, conversationHistory } = request.data as {
+      text?: string;
+      partnerName?: string;
+      conversationHistory?: { role: 'user' | 'ai'; content: string }[];
+    };
     if (!text || text.trim().length === 0) {
       throw new HttpsError('invalid-argument', '相談内容が必要です');
     }
@@ -95,16 +179,24 @@ export const aiConsult = onCall(
     }
 
     const partner = partnerName || 'パートナー';
+
+    let historySection = '';
+    if (conversationHistory && conversationHistory.length > 0) {
+      historySection = '\n\n## これまでの会話\n' + conversationHistory
+        .map((h) => `${h.role === 'user' ? 'ユーザー' : 'AI'}: ${h.content}`)
+        .join('\n');
+    }
+
     const prompt = `あなたは夫婦のコミュニケーション支援AIです。
 ユーザーは、${partner}との関係の中で今困っていること・思っていること・伝えたいことを整理しようとしています。
-決めつけず、ユーザーの本音を薄めすぎず、相手を責める表現にも寄せすぎないでください。
+決めつけず、ユーザーの本音を薄めすぎず、相手を責める表現にも寄せすぎないでください。${historySection}
 
-以下の相談内容をもとに、次の2つを出力してください。
-1. reflection: ユーザーが自分の気持ちを整理できる短いメモ。120文字以内。
-2. messageDraft: ${partner}に伝えるなら使えそうな文章。120文字以内。自然で、押し付けがましくない表現。
-
-相談内容:
+## 今回のメッセージ
 ${text}
+
+上記をもとに、次の2つを出力してください。${historySection ? '前の会話の流れを踏まえて深掘りしてください。' : ''}
+1. reflection: ユーザーが自分の気持ちを整理できる短いメモ。200文字以内で、箇条書きではなく自然な文章で。
+2. messageDraft: ${partner}に伝えるなら使えそうな文章。120文字以内。自然で、押し付けがましくない表現。
 
 出力形式（JSON）:
 {
@@ -172,13 +264,41 @@ export const aiSummary = onCall(
   AI_FUNCTION_OPTIONS,
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
-    const { entries } = request.data as { entries?: { mood: number; memo: string }[] };
+    const { entries, target, partnerName } = request.data as {
+      entries?: { mood: number; memo: string }[];
+      target?: 'me' | 'partner';
+      partnerName?: string;
+    };
     if (!entries || entries.length === 0) {
       throw new HttpsError('invalid-argument', '投稿データが必要です');
     }
 
+    const partner = partnerName || 'パートナー';
     const summary = entries.map((e) => `[気分${e.mood}] ${e.memo}`).join('\n');
-    const prompt = `あなたは夫婦のコミュニケーション支援AIです。
+
+    const prompt = target === 'partner'
+      ? `あなたは夫婦のコミュニケーション支援AIです。
+以下は、${partner}がこの期間に書いた気持ちの記録です。
+あなたはその「パートナー（ユーザー）」として、相手の記録を読んでいます。
+
+このデータから、以下を300文字以内で出力してください:
+- ${partner}がどんな気分の波の中にいたか
+- ${partner}が嬉しかったこと・困っていたこと・気にしていること
+- ユーザー（あなた）が気づいておきたいこと、接し方のヒント（やさしいトーンで）
+
+重要:
+- 記録に含まれる本音・葛藤を単なるノイズとして削らない
+- 一方的な判断を下さず、「〜かもしれません」のトーンで
+- ${partner}を批判・評価するまとめにしない
+
+記録:
+${summary}
+
+出力形式（JSON）:
+{
+  "summary": "..."
+}`
+      : `あなたは夫婦のコミュニケーション支援AIです。
 以下は、ユーザーがこの期間に書いた気持ちの記録です。
 
 このデータから、以下を300文字以内で出力してください:

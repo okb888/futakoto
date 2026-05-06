@@ -39,8 +39,12 @@ export async function aiRewrite(text: string, partnerName?: string): Promise<Rew
   return call<RewriteResult>('aiRewrite', { text, partnerName });
 }
 
-export async function aiConsult(text: string, partnerName?: string): Promise<ConsultResult> {
-  return call<ConsultResult>('aiConsult', { text, partnerName });
+export async function aiConsult(
+  text: string,
+  partnerName?: string,
+  conversationHistory?: { role: 'user' | 'ai'; content: string }[]
+): Promise<ConsultResult> {
+  return call<ConsultResult>('aiConsult', { text, partnerName, conversationHistory });
 }
 
 export async function aiInterpret(
@@ -52,7 +56,9 @@ export async function aiInterpret(
 }
 
 export async function aiSummary(
-  entries: { mood: number; memo: string }[]
+  entries: { mood: number; memo: string }[],
+  target?: 'me' | 'partner',
+  partnerName?: string
 ): Promise<SummaryResult> {
-  return call<SummaryResult>('aiSummary', { entries });
+  return call<SummaryResult>('aiSummary', { entries, target, partnerName });
 }

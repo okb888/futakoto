@@ -9,9 +9,11 @@ import {
   Alert,
   ActionSheetIOS,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Plus, Heart } from 'phosphor-react-native';
+import { Plus, Heart, Sparkle } from 'phosphor-react-native';
+import { aiInterpret } from '../../lib/ai';
 import { EntryCard } from '../../components/EntryCard';
 import { useAuth } from '../../lib/auth';
 import {
@@ -45,6 +47,8 @@ export default function HomeScreen() {
   const [partnerProfile, setPartnerProfile] = useState<UserProfile | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
+  const [interpretationsCache, setInterpretationsCache] = useState<Record<string, string[]>>({});
+  const [interpretLoadingIds, setInterpretLoadingIds] = useState<Set<string>>(new Set());
 
   async function load() {
     if (!user) return;
@@ -138,6 +142,24 @@ export default function HomeScreen() {
     });
   }
 
+  async function handleInterpret(entry: Entry) {
+    if (!entry.id || !entry.memo) return;
+    const entryId = entry.id;
+    setInterpretLoadingIds((prev) => new Set([...prev, entryId]));
+    try {
+      const res = await aiInterpret(entry.memo, entry.mood, partnerName);
+      setInterpretationsCache((prev) => ({ ...prev, [entryId]: res.interpretations }));
+    } catch (e: any) {
+      Alert.alert('エラー', e.message);
+    } finally {
+      setInterpretLoadingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(entryId);
+        return next;
+      });
+    }
+  }
+
   const isPaired = !!profile?.partnerUid;
   const partnerName = partnerProfile?.displayName ?? partnerProfile?.email?.split('@')[0] ?? 'パートナー';
 
@@ -171,16 +193,50 @@ export default function HomeScreen() {
           const isOwn = item.uid === user?.uid;
           const authorName = isOwn ? '自分' : partnerName;
           const isFavorite = item.id ? favoriteIds.has(favoriteKey(item.uid, item.id)) : false;
+          const entryId = item.id ?? '';
+          const cachedInterps = !isOwn ? interpretationsCache[entryId] : undefined;
+          const isInterpreting = !isOwn && interpretLoadingIds.has(entryId);
           return (
-            <EntryCard
-              entry={item}
-              authorName={authorName}
-              isOwn={isOwn}
-              isFavorite={isFavorite}
-              timeLabel={formatDate(item.createdAt)}
-              onPressActions={isOwn ? () => showActions(item) : undefined}
-              onToggleFavorite={() => handleToggleFavorite(item)}
-            />
+            <View>
+              <EntryCard
+                entry={item}
+                authorName={authorName}
+                isOwn={isOwn}
+                isFavorite={isFavorite}
+                timeLabel={formatDate(item.createdAt)}
+                onPressActions={isOwn ? () => showActions(item) : undefined}
+                onToggleFavorite={() => handleToggleFavorite(item)}
+              />
+              {!isOwn && item.memo ? (
+                <View style={styles.interpretArea}>
+                  {cachedInterps ? (
+                    <View style={styles.interpretResult}>
+                      {cachedInterps.map((interp, i) => (
+                        <View key={i} style={styles.interpretItem}>
+                          <Text style={styles.interpretBullet}>·</Text>
+                          <Text style={styles.interpretText}>{interp}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.interpretButton}
+                      onPress={() => handleInterpret(item)}
+                      disabled={isInterpreting}
+                    >
+                      {isInterpreting ? (
+                        <ActivityIndicator color="#7C5BB7" size="small" />
+                      ) : (
+                        <>
+                          <Sparkle size={13} color="#7C5BB7" weight="fill" />
+                          <Text style={styles.interpretButtonText}>気持ちを読み解く</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : null}
+            </View>
           );
         }}
       />
@@ -222,4 +278,23 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   fabText: { fontSize: 28, color: '#fff', lineHeight: 32 },
+  interpretArea: {
+    marginHorizontal: 16,
+    marginTop: -6,
+    marginBottom: 10,
+    backgroundColor: '#F9F7FC',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: '#EBE4F5',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  interpretButton: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  interpretButtonText: { fontSize: 12, color: '#7C5BB7', fontWeight: '700' },
+  interpretResult: { gap: 6 },
+  interpretItem: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
+  interpretBullet: { fontSize: 13, color: '#7C5BB7', lineHeight: 20, fontWeight: '700' },
+  interpretText: { flex: 1, fontSize: 13, color: '#444', lineHeight: 20 },
 });

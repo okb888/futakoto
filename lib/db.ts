@@ -51,10 +51,18 @@ export interface UserProfile {
   displayName?: string;
   inviteCode?: string;
   partnerUid?: string;
+  notificationSettings?: NotificationSettings;
   createdAt: any;
   // 将来用（任意）
   isPremium?: boolean;
   aiCreditsUsed?: number;
+}
+
+export interface NotificationSettings {
+  dailyReminderEnabled?: boolean;
+  dailyReminderHour?: number;
+  dailyReminderMinute?: number;
+  sharedPostNotificationsEnabled?: boolean;
 }
 
 export function favoriteKey(entryUid: string, entryId: string): string {
@@ -121,6 +129,28 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
 export async function updateDisplayName(uid: string, displayName: string): Promise<void> {
   await updateDoc(doc(db, 'users', uid), { displayName });
+}
+
+export async function updateNotificationSettings(
+  uid: string,
+  settings: NotificationSettings
+): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), {
+    notificationSettings: settings,
+  });
+}
+
+export async function savePushToken(
+  uid: string,
+  token: string,
+  platform: string
+): Promise<void> {
+  const tokenId = token.replace(/[^\w-]/g, '_');
+  await setDoc(doc(db, 'users', uid, 'pushTokens', tokenId), {
+    token,
+    platform,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function findUidByCode(code: string): Promise<string | null> {

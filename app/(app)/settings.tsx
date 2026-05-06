@@ -9,9 +9,11 @@ import {
   ScrollView,
   ActivityIndicator,
   Share,
+  Switch,
+  Modal,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { Heart } from 'phosphor-react-native';
+import { Bell, Clock, Heart } from 'phosphor-react-native';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { useAuth } from '../../lib/auth';
@@ -21,8 +23,35 @@ import {
   pairWithCode,
   unpairPartner,
   updateDisplayName,
+  updateNotificationSettings,
+  NotificationSettings,
   UserProfile,
 } from '../../lib/db';
+import {
+  cancelDailyReminder,
+  DEFAULT_REMINDER_HOUR,
+  DEFAULT_REMINDER_MINUTE,
+  getExpoProjectId,
+  registerPushToken,
+  scheduleDailyReminder,
+} from '../../lib/notifications';
+
+function withDefaults(settings?: NotificationSettings): Required<NotificationSettings> {
+  return {
+    dailyReminderEnabled: settings?.dailyReminderEnabled ?? false,
+    dailyReminderHour: settings?.dailyReminderHour ?? DEFAULT_REMINDER_HOUR,
+    dailyReminderMinute: settings?.dailyReminderMinute ?? DEFAULT_REMINDER_MINUTE,
+    sharedPostNotificationsEnabled: settings?.sharedPostNotificationsEnabled ?? false,
+  };
+}
+
+function formatReminderTime(hour: number, minute: number): string {
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+const HOURS = Array.from({ length: 24 }, (_, index) => index);
+const MINUTES = Array.from({ length: 60 }, (_, index) => index);
+const TIME_PICKER_ITEM_HEIGHT = 50;
 
 export default function SettingsScreen() {
   const { user } = useAuth();
@@ -31,13 +60,19 @@ export default function SettingsScreen() {
   const [inputCode, setInputCode] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
+  const [notificationSettings, setNotificationSettings] = useState(withDefaults());
   const [loading, setLoading] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [timePickerOpen, setTimePickerOpen] = useState(false);
+  const [pickerHour, setPickerHour] = useState(DEFAULT_REMINDER_HOUR);
+  const [pickerMinute, setPickerMinute] = useState(DEFAULT_REMINDER_MINUTE);
   const [copied, setCopied] = useState(false);
 
   async function load() {
     if (!user) return;
     const p = await createUserProfile(user.uid, user.email ?? '');
     setProfile(p);
+    setNotificationSettings(withDefaults(p.notificationSettings));
     setNameInput(p.displayName ?? '');
     if (p?.partnerUid) {
       const pp = await getUserProfile(p.partnerUid);
@@ -102,6 +137,92 @@ export default function SettingsScreen() {
     await updateDisplayName(user.uid, nameInput.trim());
     setEditingName(false);
     await load();
+  }
+
+  async function saveNotificationSettings(next: Required<NotificationSettings>) {
+    if (!user) return;
+    setNotificationSettings(next);
+    await updateNotificationSettings(user.uid, next);
+    setProfile((current) => current ? { ...current, notificationSettings: next } : current);
+  }
+
+  async function toggleDailyReminder(enabled: boolean) {
+    if (!user) return;
+    setNotificationLoading(true);
+    try {
+      const next = { ...notificationSettings, dailyReminderEnabled: enabled };
+      if (enabled) {
+        const ok = await scheduleDailyReminder(
+          notificationSettings.dailyReminderHour,
+          notificationSettings.dailyReminderMinute
+        );
+        if (!ok) {
+          Alert.alert('通知を有効にできませんでした', '端末の通知許可を確認してください');
+          return;
+        }
+      } else {
+        await cancelDailyReminder();
+      }
+      await saveNotificationSettings(next);
+    } catch (e: any) {
+      Alert.alert('エラー', e.message);
+    } finally {
+      setNotificationLoading(false);
+    }
+  }
+
+  function openReminderTimePicker() {
+    setPickerHour(notificationSettings.dailyReminderHour);
+    setPickerMinute(notificationSettings.dailyReminderMinute);
+    setTimePickerOpen(true);
+  }
+
+  async function saveReminderTime() {
+    if (!user || notificationLoading) return;
+    setNotificationLoading(true);
+    const next = {
+      ...notificationSettings,
+      dailyReminderHour: pickerHour,
+      dailyReminderMinute: pickerMinute,
+    };
+    try {
+      if (next.dailyReminderEnabled) {
+        const ok = await scheduleDailyReminder(next.dailyReminderHour, next.dailyReminderMinute);
+        if (!ok) {
+          Alert.alert('通知を更新できませんでした', '端末の通知許可を確認してください');
+          return;
+        }
+      }
+      await saveNotificationSettings(next);
+      setTimePickerOpen(false);
+    } catch (e: any) {
+      Alert.alert('エラー', e.message);
+    } finally {
+      setNotificationLoading(false);
+    }
+  }
+
+  async function toggleSharedPostNotifications(enabled: boolean) {
+    if (!user) return;
+    setNotificationLoading(true);
+    try {
+      const next = { ...notificationSettings, sharedPostNotificationsEnabled: enabled };
+      if (enabled) {
+        const token = await registerPushToken(user.uid);
+        if (!token) {
+          const message = getExpoProjectId()
+            ? '実機の通知許可を確認してください'
+            : 'EAS projectId が設定された開発ビルド、または本番ビルドで有効にできます';
+          Alert.alert('通知を有効にできませんでした', message);
+          return;
+        }
+      }
+      await saveNotificationSettings(next);
+    } catch (e: any) {
+      Alert.alert('エラー', e.message);
+    } finally {
+      setNotificationLoading(false);
+    }
   }
 
   return (
@@ -189,6 +310,65 @@ export default function SettingsScreen() {
         </View>
       )}
 
+      <Text style={styles.sectionTitle}>通知</Text>
+      <View style={[styles.notificationBox, styles.notificationBoxStack]}>
+        <View style={styles.notificationHeaderRow}>
+          <View style={styles.notificationIconBox}>
+            <Bell size={22} color="#7B9E87" weight="fill" />
+          </View>
+          <View style={styles.notificationContent}>
+            <Text style={styles.notificationTitle}>毎日の記録リマインダー</Text>
+            <Text style={styles.notificationSub}>毎日、そっと記録を促します</Text>
+          </View>
+          <Switch
+            value={notificationSettings.dailyReminderEnabled}
+            onValueChange={toggleDailyReminder}
+            disabled={notificationLoading}
+            trackColor={{ false: '#E0E0E0', true: '#C8D8CC' }}
+            thumbColor={notificationSettings.dailyReminderEnabled ? '#7B9E87' : '#fff'}
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.reminderTimeArea}
+          onPress={openReminderTimePicker}
+          activeOpacity={0.7}
+        >
+          <View style={styles.reminderTimeLabelRow}>
+            <View style={styles.reminderTimeIcon}>
+              <Clock size={14} color="#7B9E87" weight="bold" />
+            </View>
+            <View>
+              <Text style={styles.reminderTimeLabel}>リマインダー時刻</Text>
+              <Text style={styles.reminderTimeHint}>好きな時間に変更できます</Text>
+            </View>
+          </View>
+          <View style={styles.reminderTimeChip}>
+            <Text style={styles.reminderTimeText}>
+              {formatReminderTime(
+                notificationSettings.dailyReminderHour,
+                notificationSettings.dailyReminderMinute
+              )}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.notificationBox}>
+        <View style={styles.notificationIconBox}>
+          <Heart size={22} color="#E58B8B" weight="fill" />
+        </View>
+        <View style={styles.notificationContent}>
+          <Text style={styles.notificationTitle}>相手の共有投稿</Text>
+          <Text style={styles.notificationSub}>本文は出さず、届いたことだけ知らせます</Text>
+        </View>
+        <Switch
+          value={notificationSettings.sharedPostNotificationsEnabled}
+          onValueChange={toggleSharedPostNotifications}
+          disabled={notificationLoading}
+          trackColor={{ false: '#E0E0E0', true: '#E8D5D5' }}
+          thumbColor={notificationSettings.sharedPostNotificationsEnabled ? '#E58B8B' : '#fff'}
+        />
+      </View>
+
       <View style={styles.divider} />
 
       <TouchableOpacity
@@ -197,6 +377,112 @@ export default function SettingsScreen() {
       >
         <Text style={styles.logoutText}>ログアウト</Text>
       </TouchableOpacity>
+
+      <Modal
+        visible={timePickerOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTimePickerOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setTimePickerOpen(false)}
+          />
+          <View style={styles.timePickerSheet}>
+            <View style={styles.timePickerHeader}>
+              <TouchableOpacity onPress={() => setTimePickerOpen(false)} hitSlop={10}>
+                <Text style={styles.timePickerCancel}>キャンセル</Text>
+              </TouchableOpacity>
+              <Text style={styles.timePickerTitle}>リマインダー時刻</Text>
+              <TouchableOpacity
+                onPress={saveReminderTime}
+                disabled={notificationLoading}
+                hitSlop={10}
+              >
+                <Text
+                  style={[
+                    styles.timePickerSave,
+                    notificationLoading && styles.timePickerSaveDisabled,
+                  ]}
+                >
+                  保存
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.timePickerPreviewCard}>
+              <Text style={styles.timePickerPreviewLabel}>この時間に通知します</Text>
+              <Text style={styles.timePickerPreview}>
+                {formatReminderTime(pickerHour, pickerMinute)}
+              </Text>
+            </View>
+            <View style={styles.timePickerPanel}>
+            <View style={styles.timePickerColumns}>
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerColumnLabel}>時</Text>
+                <ScrollView
+                  style={styles.timePickerList}
+                  showsVerticalScrollIndicator={false}
+                  contentOffset={{ x: 0, y: Math.max(0, pickerHour * TIME_PICKER_ITEM_HEIGHT - 100) }}
+                >
+                  {HOURS.map((hour) => {
+                    const selected = hour === pickerHour;
+                    return (
+                      <TouchableOpacity
+                        key={hour}
+                        style={[styles.timePickerItem, selected && styles.timePickerItemSelected]}
+                        onPress={() => setPickerHour(hour)}
+                      >
+                        <Text
+                          style={[
+                            styles.timePickerItemText,
+                            selected && styles.timePickerItemTextSelected,
+                          ]}
+                        >
+                          {String(hour).padStart(2, '0')}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+              <View style={styles.timePickerColon}>
+                <Text style={styles.timePickerColonText}>:</Text>
+              </View>
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerColumnLabel}>分</Text>
+                <ScrollView
+                  style={styles.timePickerList}
+                  showsVerticalScrollIndicator={false}
+                  contentOffset={{ x: 0, y: Math.max(0, pickerMinute * TIME_PICKER_ITEM_HEIGHT - 100) }}
+                >
+                  {MINUTES.map((minute) => {
+                    const selected = minute === pickerMinute;
+                    return (
+                      <TouchableOpacity
+                        key={minute}
+                        style={[styles.timePickerItem, selected && styles.timePickerItemSelected]}
+                        onPress={() => setPickerMinute(minute)}
+                      >
+                        <Text
+                          style={[
+                            styles.timePickerItemText,
+                            selected && styles.timePickerItemTextSelected,
+                          ]}
+                        >
+                          {String(minute).padStart(2, '0')}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
     </ScrollView>
   );
@@ -264,6 +550,173 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E8D5D5',
     gap: 12,
+  },
+  notificationBox: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    gap: 12,
+    marginBottom: 10,
+  },
+  notificationBoxStack: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+  notificationHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  notificationIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EDF4F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationContent: { flex: 1 },
+  notificationTitle: { fontSize: 14, fontWeight: '700', color: '#2D2D2D' },
+  notificationSub: { fontSize: 11, color: '#888', marginTop: 3, lineHeight: 16 },
+  reminderTimeArea: {
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    paddingTop: 12,
+    marginTop: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  reminderTimeLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  reminderTimeIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EDF4F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reminderTimeLabel: { color: '#555', fontSize: 13, fontWeight: '700' },
+  reminderTimeHint: { color: '#AAA', fontSize: 11, marginTop: 2 },
+  reminderTimeChip: {
+    backgroundColor: '#EDF4F0',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  reminderTimeText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#5A7E68',
+    letterSpacing: 0,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(45,45,45,0.24)',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  timePickerSheet: {
+    backgroundColor: '#FAFAF8',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 32,
+  },
+  timePickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  timePickerCancel: { color: '#888', fontSize: 13, fontWeight: '600' },
+  timePickerTitle: { color: '#2D2D2D', fontSize: 15, fontWeight: '700' },
+  timePickerSave: { color: '#7B9E87', fontSize: 13, fontWeight: '700' },
+  timePickerSaveDisabled: { color: '#C8D8CC' },
+  timePickerPreviewCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    alignItems: 'center',
+    paddingVertical: 14,
+    marginTop: 18,
+    marginBottom: 12,
+  },
+  timePickerPreviewLabel: {
+    color: '#888',
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  timePickerPreview: {
+    color: '#5A7E68',
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 0,
+  },
+  timePickerPanel: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    padding: 12,
+  },
+  timePickerColumns: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  timePickerColumn: {
+    flex: 1,
+  },
+  timePickerColumnLabel: {
+    color: '#888',
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  timePickerList: {
+    height: 224,
+  },
+  timePickerItem: {
+    height: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  timePickerItemSelected: {
+    backgroundColor: '#EDF4F0',
+    borderWidth: 1,
+    borderColor: '#C8D8CC',
+  },
+  timePickerItemText: {
+    color: '#555',
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 0,
+  },
+  timePickerItemTextSelected: {
+    color: '#7B9E87',
+    fontWeight: '700',
+  },
+  timePickerColon: {
+    paddingTop: 22,
+  },
+  timePickerColonText: {
+    color: '#AAA',
+    fontSize: 28,
+    fontWeight: '700',
   },
   pairedInfo: { flex: 1 },
   pairedLabel: { fontSize: 13, fontWeight: '600', color: '#7B9E87' },

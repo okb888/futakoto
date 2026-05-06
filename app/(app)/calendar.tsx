@@ -15,6 +15,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Sparkle } from 'phosphor-react-native';
 import { EntryCard } from '../../components/EntryCard';
 import { useAuth } from '../../lib/auth';
+import { aiSummary } from '../../lib/ai';
 import {
   createUserProfile,
   getUserProfile,
@@ -95,6 +96,15 @@ export default function CalendarScreen() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [summaryTarget, setSummaryTarget] = useState<'me' | 'partner'>('me');
+  const [aiSummaryCache, setAiSummaryCache] = useState<Record<string, string>>({});
+  const [aiSummaryText, setAiSummaryText] = useState<string | null>(null);
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
 
   async function load() {
     if (!user) return;
@@ -119,6 +129,60 @@ export default function CalendarScreen() {
   }
 
   useFocusEffect(useCallback(() => { load(); }, [user]));
+
+  function switchSummaryTarget(target: 'me' | 'partner') {
+    setSummaryTarget(target);
+    const key = `${currentMonth}-${target}`;
+    setAiSummaryText(aiSummaryCache[key] ?? null);
+    setSummaryExpanded(false);
+  }
+
+  function handleMonthChange(date: { year: number; month: number }) {
+    const newMonth = `${date.year}-${String(date.month).padStart(2, '0')}`;
+    if (newMonth !== currentMonth) {
+      setCurrentMonth(newMonth);
+      const key = `${newMonth}-${summaryTarget}`;
+      setAiSummaryText(aiSummaryCache[key] ?? null);
+      setSummaryExpanded(false);
+    }
+  }
+
+  async function handleAiSummary() {
+    const cacheKey = `${currentMonth}-${summaryTarget}`;
+    if (aiSummaryCache[cacheKey]) {
+      setAiSummaryText(aiSummaryCache[cacheKey]);
+      setSummaryExpanded(true);
+      return;
+    }
+
+    const targetEntries = summaryTarget === 'me'
+      ? myEntries.filter((e) => dateKey(e.createdAt).startsWith(currentMonth))
+      : partnerEntries.filter((e) => dateKey(e.createdAt).startsWith(currentMonth));
+
+    if (targetEntries.length === 0) {
+      Alert.alert(
+        '投稿がありません',
+        summaryTarget === 'me' ? 'この月に自分の投稿がありません' : 'この月にパートナーの共有投稿がありません'
+      );
+      return;
+    }
+
+    setAiSummaryLoading(true);
+    try {
+      const res = await aiSummary(
+        targetEntries.map((e) => ({ mood: e.mood, memo: e.memo })),
+        summaryTarget,
+        partnerName
+      );
+      setAiSummaryText(res.summary);
+      setAiSummaryCache((prev) => ({ ...prev, [cacheKey]: res.summary }));
+      setSummaryExpanded(true);
+    } catch (e: any) {
+      Alert.alert('エラー', e.message);
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  }
 
   const groupByDate = (entries: Entry[]) => {
     const map: Record<string, Entry[]> = {};
@@ -303,6 +367,7 @@ export default function CalendarScreen() {
       <Calendar
         markedDates={markedDates}
         onDayPress={(d) => setSelected(d.dateString)}
+        onMonthChange={handleMonthChange}
         dayComponent={({ date, state }) => renderDay(date, state)}
         theme={{
           backgroundColor: '#FAFAF8',
@@ -340,6 +405,71 @@ export default function CalendarScreen() {
           ))}
         </View>
       </View>
+
+      <View style={styles.summaryButtonArea}>
+        <View style={styles.summaryTargetRow}>
+          <TouchableOpacity
+            style={[styles.summaryTargetBtn, summaryTarget === 'me' && styles.summaryTargetBtnActive]}
+            onPress={() => switchSummaryTarget('me')}
+          >
+            <Text style={[styles.summaryTargetText, summaryTarget === 'me' && styles.summaryTargetTextActive]}>
+              自分
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.summaryTargetBtn,
+              summaryTarget === 'partner' && styles.summaryTargetBtnActive,
+              !partnerProfile && styles.summaryTargetBtnDisabled,
+            ]}
+            onPress={() => partnerProfile && switchSummaryTarget('partner')}
+            disabled={!partnerProfile}
+          >
+            <Text style={[
+              styles.summaryTargetText,
+              summaryTarget === 'partner' && styles.summaryTargetTextActive,
+              !partnerProfile && styles.summaryTargetTextDisabled,
+            ]}>
+              {partnerName}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          style={[styles.summaryButton, aiSummaryLoading && { opacity: 0.6 }]}
+          onPress={handleAiSummary}
+          disabled={aiSummaryLoading}
+        >
+          {aiSummaryLoading ? (
+            <ActivityIndicator color="#7C5BB7" size="small" />
+          ) : (
+            <>
+              <Sparkle size={14} color="#7C5BB7" weight="fill" />
+              <Text style={styles.summaryButtonText}>
+                {aiSummaryCache[`${currentMonth}-${summaryTarget}`] ? 'もう一度見る' : '今月をAI要約'}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {aiSummaryText ? (
+        <View style={styles.summaryCard}>
+          <TouchableOpacity
+            style={styles.summaryCardHeader}
+            onPress={() => setSummaryExpanded(!summaryExpanded)}
+            activeOpacity={0.7}
+          >
+            <Sparkle size={13} color="#7C5BB7" weight="fill" />
+            <Text style={styles.summaryCardTitle}>
+              {currentMonth.replace(/^(\d{4})-(\d{2})$/, '$1年$2月')}の記録
+            </Text>
+            <Text style={styles.summaryToggle}>{summaryExpanded ? '閉じる' : '開く'}</Text>
+          </TouchableOpacity>
+          {summaryExpanded ? (
+            <Text style={styles.summaryText}>{aiSummaryText}</Text>
+          ) : null}
+        </View>
+      ) : null}
 
       <ScrollView
         horizontal
@@ -529,4 +659,48 @@ const styles = StyleSheet.create({
   cardMemo: { fontSize: 13, color: '#444', marginTop: 10, lineHeight: 19 },
   usePostButton: { alignSelf: 'flex-start', marginTop: 10, paddingVertical: 4 },
   usePostButtonText: { fontSize: 12, color: '#7B9E87', fontWeight: '700' },
+  summaryButtonArea: { paddingHorizontal: 24, paddingTop: 4, paddingBottom: 8, gap: 10 },
+  summaryTargetRow: { flexDirection: 'row', gap: 8 },
+  summaryTargetBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  summaryTargetBtnActive: { backgroundColor: '#F3EDFA', borderColor: '#E8E0F2' },
+  summaryTargetBtnDisabled: { opacity: 0.4 },
+  summaryTargetText: { fontSize: 12, color: '#888', fontWeight: '600' },
+  summaryTargetTextActive: { color: '#7C5BB7' },
+  summaryTargetTextDisabled: { color: '#CCC' },
+  summaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F3EDFA',
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  summaryButtonText: { fontSize: 13, color: '#7C5BB7', fontWeight: '700' },
+  summaryCard: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: '#F3EDFA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E8E0F2',
+    overflow: 'hidden',
+  },
+  summaryCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  summaryCardTitle: { flex: 1, fontSize: 13, color: '#7C5BB7', fontWeight: '700' },
+  summaryToggle: { fontSize: 11, color: '#7C5BB7' },
+  summaryText: { fontSize: 14, color: '#2D2D2D', lineHeight: 21, paddingHorizontal: 14, paddingBottom: 14 },
 });

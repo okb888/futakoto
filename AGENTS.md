@@ -40,10 +40,120 @@ UI実装・スタイル決定・新規画面作成・色やサイズの判断を
 | W4 | タブナビ・6桁コード・displayName・投稿削除/公開切替・カレンダー | ✅ 完了 |
 | W6 | Cloud Functions + Gemini AIリライト/AI相談/意図汲み取り/月次要約 | ✅ 基盤完了・動作確認済み |
 | W6.5 | 相談タブ・相談履歴・投稿転記・お気に入り・振り返りフィルタ | ✅ 実装済み |
+| W6.6 | AI月次要約UI・壁打ちUX向上・ホーム意図読み解き | ✅ 実装済み |
+| W6.7 | 通知・日時入力UX改善 | ✅ 実装済み |
 | LP | ランディングページ（futakoto.jp）・Firebase Hosting | ✅ 公開済み |
 | W5 | 課金導線（RevenueCat）・広告（AdMob） | 未着手 |
 | W7 | プライバシーポリシー・利用規約・アカウント削除 | 未着手 |
 | W8 | TestFlight → App Store審査提出 | 未着手 |
+
+---
+
+## 直近で実施したこと（W6.7 / 2026-05-06）
+
+### AI月次要約キャッシュ化・パートナー要約・壁打ちマルチターン
+
+#### 振り返り画面（`calendar.tsx`）— 月次要約キャッシュ化・パートナー切替
+
+- 「自分」「パートナー」切替ボタンを追加。パートナー未連携時はグレーアウト
+- `aiSummaryCache[月-target]` でキャッシュ管理。月切替後や再タップで即表示（再APIコールなし）
+- キャッシュヒット時はボタンラベルが「もう一度見る」に変わる
+- `aiSummary` に `target: 'me' | 'partner'` と `partnerName` を渡す
+- パートナー向けプロンプト: 「相手の状態・嬉しかったこと・困っていること → 接し方のヒント」
+
+#### 壁打ちタブ（`consult.tsx`）— マルチターン対応（最大10往復）
+
+- `ConversationTurn[]` で会話履歴を管理。上限 `MAX_TURNS = 10`
+- 過去ターンは番号バッジ付き折りたたみカードとして積み上がる（タップで展開/折りたたみ）
+- 次の入力時は直前まで全ターンをcollapsedにして1画面を保つ
+- 各ターンで「投稿に使う」「保存する」が独立して操作可能
+- 会話履歴（`conversationHistory`）を Cloud Functions に渡してコンテキスト継続
+- 10ターン達成後は「十分に話し合えました」誘導メッセージ表示
+- タブフォーカス時に会話をリセット（タブ離脱 → 再訪問で新鮮な状態）
+
+#### Cloud Functions — aiConsult・aiSummary更新 & デプロイ済み
+
+- `aiConsult`: `conversationHistory` パラメータ追加、プロンプトに会話履歴セクションを動的追加
+- `aiSummary`: `target` / `partnerName` パラメータ追加、パートナー向けプロンプト分岐追加
+
+---
+
+## 直近で実施したこと（W6.7 / 2026-05-06）
+
+### 通知機能・日時入力UX改善
+
+#### 通知基盤
+
+- `expo-notifications` / `expo-device` を導入
+- `app.json` に `expo-notifications` plugin を追加
+- `lib/notifications.ts` を追加
+  - 毎日の記録リマインダーをローカル通知でスケジュール
+  - 共有投稿通知用の Expo Push Token 登録
+  - `projectId` がない環境では落とさず、設定画面で案内を出す
+- `lib/db.ts` に `notificationSettings` と `pushTokens` 保存処理を追加
+- `functions/src/index.ts` に相手の共有投稿通知トリガーを追加
+  - 共有投稿のみ対象
+  - 本文は通知に出さない
+  - 1時間以内の連続通知を抑制
+  - 相手が通知ONの場合だけ送る
+
+#### 設定画面（`settings.tsx`）
+
+- 「通知」セクションを追加
+- 毎日の記録リマインダーのON/OFF
+- 相手の共有投稿通知のON/OFF
+- リマインダー時刻は固定ではなくユーザー設定可能
+- 時刻選択はプラス/マイナスではなく、下から出る時刻選択シートに変更
+- 時刻表示は大きく主張させず、sageの小さなチップ表示に調整
+
+#### 投稿画面（`post.tsx`）
+
+- 過去日時で投稿できるように変更
+- `今日 / 昨日 / 一昨日` のクイック入力を追加
+- 日付選択は `react-native-calendars` のカレンダーUI
+- 時間選択は設定画面と同じ下シートUIに統一
+- 時間選択に「今」チップを追加
+- 未来日時は保存できないよう制御
+
+#### 注意点
+
+- Expo Push 通知は `extra.eas.projectId` が必要。未設定環境では共有投稿通知ONにできないが、アプリはクラッシュしない。
+- 共有投稿通知の Cloud Functions は実装済み。実運用前に必要なら `firebase deploy --only functions:notifyPartnerOnSharedEntry` を確認する。
+
+---
+
+## 直近で実施したこと（W6.6 / 2026-05-06）
+
+### AI機能UI統合（振り返り月次要約・壁打ちUX・ホーム意図読み解き）
+
+#### 振り返り画面（`calendar.tsx`）— AI月次要約UI
+
+- カレンダー legend 直下に「今月をAI要約」ボタンを追加
+- 当月の自分の投稿を `aiSummary` に渡し、結果を展開/折りたたみカードで表示
+- 月切替（`onMonthChange`）時に要約キャッシュをリセット
+- スタイル: AI紫パレット（`#F3EDFA` 背景 / `#7C5BB7` テキスト / `#E8E0F2` ボーダー）
+
+#### 相談タブ（`consult.tsx`）— 壁打ちUX向上
+
+- タイトルを「相談」→「壁打ち」に変更
+- リードコピー「今、整理したいこと」→「今、頭の中にあること」
+- プレースホルダー文も壁打ちトーンに統一
+- 50文字未満入力時にヒントテキストを表示（短文でもAIが動くが誘導）
+- 「最近の相談」→「最近の記録」にリネーム
+
+#### Cloud Functions（`functions/src/index.ts`）— aiConsult プロンプト改善
+
+- `reflection` の制約を 120文字 → 200文字 に拡大
+- 「箇条書きではなく自然な文章で」を明示
+- デプロイ済み（2026-05-06）
+
+#### ホーム画面（`index.tsx`）— 「気持ちを読み解く」機能追加
+
+- パートナーの投稿カード下部に「気持ちを読み解く（Sparkle）」ボタンを追加
+- `aiInterpret` を呼んで3つの解釈を箇条書きで表示
+- 一度呼んだ結果はカード再描画まで `interpretationsCache` でキャッシュ
+- ローディング中は `ActivityIndicator` 表示・二重呼び出し防止済み
+- interpret エリアはカードの下部にくっつくUI（`marginTop: -6`・下角丸のみ・AI紫ボーダー）
 
 ---
 
@@ -188,25 +298,17 @@ curl -i -X POST https://asia-northeast1-futakoto.cloudfunctions.net/aiRewrite \
 
 ---
 
-## ⚠️ 次に解決すべき最優先タスク
+## ⚠️ 次に取り組む最優先テーマ
 
-**アプリ側 TypeScript エラー修正**
+**AI要約・壁打ちの設計と精度向上**
 
-現在 `npm exec tsc -- --noEmit` は以下の既存エラーで失敗する:
+次のスレッドでは、以下を中心に進める。
 
-```text
-lib/firebase.ts(2,26): error TS2305:
-Module '"firebase/auth"' has no exported member 'getReactNativePersistence'.
-```
-
-今回追加した相談タブ・お気に入り・AI読み取り表示による型エラーは出ていない。
-
-次に Claude Code が着手するなら、まず `lib/firebase.ts` の Firebase Auth 初期化を Expo / React Native / firebase v12 に合わせて修正すること。
-
-候補:
-- `getReactNativePersistence` の import 元を見直す
-- Firebase v12 + React Native の推奨初期化を確認する
-- 必要なら `@react-native-async-storage/async-storage` と `initializeAuth` の組み合わせを再確認する
+- `aiSummary` の月次/期間要約が、単なる要約ではなく「気分の流れ・葛藤・自己認識・関係性の変化」を残せているか検証する
+- `aiConsult`（壁打ち）の出力が、説教・一般論・過度な正解提示にならず、ユーザーの内省を支える形になっているか見直す
+- プロンプト、出力JSON、UI表示の役割分担を整理する
+- 必要なら相談履歴・投稿・月次要約をまたいだ体験設計を見直す
+- AI添削/要約は今後も単純要約にしない。意図・葛藤・自己認識を削らないことを最優先にする
 
 ---
 
