@@ -11,8 +11,9 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowCounterClockwise, Users, Lock, Sparkle } from 'phosphor-react-native';
+import { ArrowCounterClockwise, CalendarBlank, Clock, Users, Lock, Sparkle } from 'phosphor-react-native';
 import { useAuth } from '../../lib/auth';
 import { addEntry, getUserProfile, Visibility } from '../../lib/db';
 import { aiRewrite, RewriteResult } from '../../lib/ai';
@@ -25,6 +26,16 @@ const MOODS = [
   { score: 5, emoji: '😊', label: 'いい感じ', color: '#81D4FA' },
 ];
 
+function formatDateInput(date: Date): string {
+  return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function formatTimeInput(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+type PickerMode = 'date' | 'time';
+
 export default function PostScreen() {
   const { user } = useAuth();
   const router = useRouter();
@@ -34,6 +45,8 @@ export default function PostScreen() {
   const [visibility, setVisibility] = useState<Visibility>('shared');
   const [loading, setLoading] = useState(false);
   const [partnerName, setPartnerName] = useState<string>('パートナー');
+  const [recordDate, setRecordDate] = useState(() => new Date());
+  const [activePicker, setActivePicker] = useState<PickerMode | null>(null);
 
   // AI リライト
   const [aiLoading, setAiLoading] = useState(false);
@@ -62,9 +75,13 @@ export default function PostScreen() {
       Alert.alert('気分を選んでください');
       return;
     }
+    if (recordDate.getTime() > Date.now()) {
+      Alert.alert('未来の日時は選べません', '今日より前、または現在時刻までの日時を選んでください');
+      return;
+    }
     setLoading(true);
     try {
-      await addEntry(user.uid, mood, memo, visibility);
+      await addEntry(user.uid, mood, memo, visibility, recordDate);
       router.back();
     } catch (e: any) {
       Alert.alert('エラー', e.message);
@@ -100,6 +117,26 @@ export default function PostScreen() {
     setPreviousMemo(null);
   }
 
+  function applyRecordDate(next: Date) {
+    setRecordDate(next.getTime() > Date.now() ? new Date() : next);
+  }
+
+  function setQuickDate(daysAgo: number) {
+    const next = new Date(recordDate);
+    const base = new Date();
+    base.setDate(base.getDate() - daysAgo);
+    next.setFullYear(base.getFullYear(), base.getMonth(), base.getDate());
+    applyRecordDate(next);
+  }
+
+  function handlePickerChange(event: DateTimePickerEvent, selectedDate?: Date) {
+    if (Platform.OS !== 'ios') {
+      setActivePicker(null);
+    }
+    if (event.type === 'dismissed' || !selectedDate) return;
+    applyRecordDate(selectedDate);
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -107,7 +144,7 @@ export default function PostScreen() {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
-        <Text style={styles.label}>今の気分は？</Text>
+        <Text style={styles.label}>そのときの気分は？</Text>
         <View style={styles.moodRow}>
           {MOODS.map((m) => (
             <TouchableOpacity
@@ -126,9 +163,55 @@ export default function PostScreen() {
           ))}
         </View>
 
+        <Text style={styles.label}>記録日時</Text>
+        <View style={styles.quickDateRow}>
+          {[
+            { label: '今日', daysAgo: 0 },
+            { label: '昨日', daysAgo: 1 },
+            { label: '一昨日', daysAgo: 2 },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={styles.quickDateButton}
+              onPress={() => setQuickDate(item.daysAgo)}
+            >
+              <Text style={styles.quickDateButtonText}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={styles.dateTimeRow}>
+          <TouchableOpacity
+            style={[styles.pickerButton, activePicker === 'date' && styles.pickerButtonActive]}
+            onPress={() => setActivePicker((current) => current === 'date' ? null : 'date')}
+          >
+            <CalendarBlank size={16} color={activePicker === 'date' ? '#7B9E87' : '#888'} />
+            <Text style={styles.pickerButtonText}>{formatDateInput(recordDate)}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.pickerButton, styles.timePickerButton, activePicker === 'time' && styles.pickerButtonActive]}
+            onPress={() => setActivePicker((current) => current === 'time' ? null : 'time')}
+          >
+            <Clock size={16} color={activePicker === 'time' ? '#7B9E87' : '#888'} />
+            <Text style={styles.pickerButtonText}>{formatTimeInput(recordDate)}</Text>
+          </TouchableOpacity>
+        </View>
+        {activePicker ? (
+          <View style={styles.pickerPanel}>
+            <DateTimePicker
+              value={recordDate}
+              mode={activePicker}
+              display={Platform.OS === 'ios' ? (activePicker === 'date' ? 'inline' : 'spinner') : 'default'}
+              maximumDate={new Date()}
+              locale="ja-JP"
+              onChange={handlePickerChange}
+              accentColor="#7B9E87"
+            />
+          </View>
+        ) : null}
+
         <View style={styles.messageHeader}>
           <Text style={[styles.label, styles.messageLabel]}>
-            今の気持ち・{partnerName}に伝えたいこと
+            そのときの気持ち・{partnerName}に伝えたいこと
           </Text>
           <TouchableOpacity
             style={styles.aiButton}
@@ -211,20 +294,20 @@ export default function PostScreen() {
         <Text style={styles.label}>共有範囲</Text>
         <View style={styles.visibilityRow}>
           <TouchableOpacity
-            style={[styles.visBtn, visibility === 'shared' && styles.visBtnActive]}
+            style={[styles.visBtn, visibility === 'shared' && styles.visBtnSharedActive]}
             onPress={() => setVisibility('shared')}
           >
             <Users size={16} color={visibility === 'shared' ? '#7B9E87' : '#AAA'} weight={visibility === 'shared' ? 'fill' : 'regular'} />
-            <Text style={[styles.visBtnText, visibility === 'shared' && styles.visBtnTextActive]}>
+            <Text style={[styles.visBtnText, visibility === 'shared' && styles.visBtnSharedTextActive]}>
               ふたりへ
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.visBtn, visibility === 'private' && styles.visBtnActive]}
+            style={[styles.visBtn, visibility === 'private' && styles.visBtnPrivateActive]}
             onPress={() => setVisibility('private')}
           >
-            <Lock size={16} color={visibility === 'private' ? '#7B9E87' : '#AAA'} weight={visibility === 'private' ? 'fill' : 'regular'} />
-            <Text style={[styles.visBtnText, visibility === 'private' && styles.visBtnTextActive]}>
+            <Lock size={16} color={visibility === 'private' ? '#555' : '#AAA'} weight={visibility === 'private' ? 'fill' : 'regular'} />
+            <Text style={[styles.visBtnText, visibility === 'private' && styles.visBtnPrivateTextActive]}>
               自分のみ
             </Text>
           </TouchableOpacity>
@@ -279,6 +362,45 @@ const styles = StyleSheet.create({
   moodEmoji: { fontSize: 24 },
   moodLabel: { fontSize: 10, color: '#AAA', marginTop: 4 },
   moodLabelSelected: { color: '#555', fontWeight: '600' },
+  quickDateRow: { flexDirection: 'row', gap: 8 },
+  quickDateButton: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  quickDateButtonText: { fontSize: 12, color: '#7B9E87', fontWeight: '700' },
+  dateTimeRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  pickerButton: {
+    flex: 1.4,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  pickerButtonActive: {
+    borderColor: '#7B9E87',
+    backgroundColor: '#EDF4F0',
+  },
+  timePickerButton: { flex: 0.8 },
+  pickerButtonText: { fontSize: 14, color: '#2D2D2D', fontWeight: '600' },
+  pickerPanel: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    marginTop: 10,
+    overflow: 'hidden',
+  },
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
@@ -328,9 +450,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  visBtnActive: { borderColor: '#7B9E87', backgroundColor: '#EDF4F0' },
+  visBtnSharedActive: { borderColor: '#7B9E87', backgroundColor: '#EDF4F0' },
+  visBtnPrivateActive: { borderColor: '#888', backgroundColor: '#F0F0F0' },
   visBtnText: { fontSize: 13, color: '#AAA' },
-  visBtnTextActive: { color: '#7B9E87', fontWeight: '600' },
+  visBtnSharedTextActive: { color: '#7B9E87', fontWeight: '600' },
+  visBtnPrivateTextActive: { color: '#555', fontWeight: '600' },
   saveButton: {
     backgroundColor: '#7B9E87',
     borderRadius: 12,

@@ -1,8 +1,19 @@
 import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import {
+  ActionSheetIOS,
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Lock, Sparkle, Star, Users } from 'phosphor-react-native';
+import { Sparkle } from 'phosphor-react-native';
+import { EntryCard } from '../../components/EntryCard';
 import { useAuth } from '../../lib/auth';
 import {
   createUserProfile,
@@ -11,7 +22,10 @@ import {
   getPartnerSharedEntries,
   getRecentConsultations,
   getFavoriteEntryIds,
+  deleteEntry,
   favoriteKey,
+  toggleFavoriteEntry,
+  updateEntryVisibility,
   Entry,
   Consultation,
   UserProfile,
@@ -46,6 +60,27 @@ function formatTime(ts: any): string {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function sortMillis(ts: any): number {
+  if (!ts) return 0;
+  if (typeof ts.seconds === 'number') {
+    return ts.seconds * 1000 + Math.floor((ts.nanoseconds ?? 0) / 1000000);
+  }
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.getTime();
+}
+
+function latestByDate(entries: Entry[]): Record<string, Entry> {
+  const map: Record<string, Entry> = {};
+  entries.forEach((entry) => {
+    const key = dateKey(entry.createdAt);
+    if (!key) return;
+    if (!map[key] || sortMillis(entry.createdAt) >= sortMillis(map[key].createdAt)) {
+      map[key] = entry;
+    }
+  });
+  return map;
 }
 
 export default function CalendarScreen() {
@@ -110,24 +145,10 @@ export default function CalendarScreen() {
   const myByDate = groupByDate(myEntries);
   const partnerByDate = groupByDate(partnerEntries);
   const consultationsByDate = groupConsultationsByDate(consultations);
+  const latestMyByDate = latestByDate(myEntries);
+  const latestPartnerByDate = latestByDate(partnerEntries);
 
   const markedDates: Record<string, any> = {};
-  Object.keys({ ...myByDate, ...partnerByDate, ...consultationsByDate }).forEach((k) => {
-    const dots = [];
-    if (myByDate[k]) {
-      const avg = Math.round(myByDate[k].reduce((s, e) => s + e.mood, 0) / myByDate[k].length);
-      dots.push({ key: 'me', color: MOOD_COLORS[avg] });
-    }
-    if (partnerByDate[k]) {
-      const avg = Math.round(partnerByDate[k].reduce((s, e) => s + e.mood, 0) / partnerByDate[k].length);
-      dots.push({ key: 'partner', color: MOOD_COLORS[avg] });
-    }
-    if (consultationsByDate[k]) {
-      dots.push({ key: 'consultation', color: '#7C5BB7' });
-    }
-    markedDates[k] = { dots };
-  });
-
   if (selected) {
     markedDates[selected] = { ...(markedDates[selected] ?? {}), selected: true, selectedColor: '#7B9E87' };
   }
@@ -167,6 +188,104 @@ export default function CalendarScreen() {
     })
     .sort((a, b) => sortOrder === 'desc' ? b.sortSeconds - a.sortSeconds : a.sortSeconds - b.sortSeconds);
 
+  async function handleToggleVisibility(entry: Entry) {
+    if (!user || !entry.id) return;
+    const newVisibility = entry.visibility === 'shared' ? 'private' : 'shared';
+    await updateEntryVisibility(user.uid, entry.id, newVisibility);
+    await load();
+  }
+
+  function handleDelete(entry: Entry) {
+    if (!user || !entry.id) return;
+    Alert.alert('削除しますか？', 'この投稿は完全に削除されます', [
+      { text: 'キャンセル', style: 'cancel' },
+      {
+        text: '削除',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteEntry(user.uid, entry.id!);
+          await load();
+        },
+      },
+    ]);
+  }
+
+  function showEntryActions(entry: Entry) {
+    if (entry.uid !== user?.uid) return;
+    const visibilityActionLabel = entry.visibility === 'shared' ? '自分のみにする' : 'ふたりへ共有';
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['キャンセル', visibilityActionLabel, '削除'],
+          destructiveButtonIndex: 2,
+          cancelButtonIndex: 0,
+        },
+        (idx) => {
+          if (idx === 1) handleToggleVisibility(entry);
+          if (idx === 2) handleDelete(entry);
+        }
+      );
+    } else {
+      Alert.alert('この投稿', '', [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: visibilityActionLabel, onPress: () => handleToggleVisibility(entry) },
+        { text: '削除', style: 'destructive', onPress: () => handleDelete(entry) },
+      ]);
+    }
+  }
+
+  async function handleToggleFavorite(entry: Entry) {
+    if (!user || !entry.id) return;
+    const key = favoriteKey(entry.uid, entry.id);
+    const isFavorite = favoriteIds.has(key);
+    await toggleFavoriteEntry(user.uid, entry.uid, entry.id, isFavorite);
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (isFavorite) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function renderDay(day?: { dateString: string; day: number }, state?: string) {
+    if (!day) return null;
+    const key = day.dateString;
+    const selectedDay = key === selected;
+    const disabled = state === 'disabled';
+    const myMood = latestMyByDate[key]?.mood;
+    const partnerMood = latestPartnerByDate[key]?.mood;
+    const hasConsultation = !!consultationsByDate[key];
+
+    const cellBg = selectedDay
+      ? '#EDF4F0'
+      : myMood
+      ? MOOD_COLORS[myMood] + '44'
+      : 'transparent';
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.7}
+        style={[styles.dayCell, { backgroundColor: cellBg }]}
+        onPress={() => setSelected(key)}
+      >
+        <Text
+          style={[
+            styles.dayText,
+            disabled && styles.dayTextDisabled,
+            selectedDay && styles.dayTextSelected,
+          ]}
+        >
+          {day.day}
+        </Text>
+        {partnerMood ? (
+          <View style={[styles.partnerStrip, { backgroundColor: MOOD_COLORS[partnerMood] }]} />
+        ) : null}
+        {hasConsultation ? <View style={styles.consultationDot} /> : null}
+      </TouchableOpacity>
+    );
+  }
+
   const filters: { key: FilterType; label: string }[] = [
     { key: 'all', label: 'すべて' },
     { key: 'me', label: '自分' },
@@ -186,9 +305,9 @@ export default function CalendarScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Calendar
-        markingType="multi-dot"
         markedDates={markedDates}
         onDayPress={(d) => setSelected(d.dateString)}
+        dayComponent={({ date, state }) => renderDay(date, state)}
         theme={{
           backgroundColor: '#FAFAF8',
           calendarBackground: '#FAFAF8',
@@ -202,7 +321,20 @@ export default function CalendarScreen() {
       />
 
       <View style={styles.legend}>
-        <Text style={styles.legendLabel}>気分の色</Text>
+        <View style={styles.ownerLegendRow}>
+          <View style={styles.ownerLegendItem}>
+            <View style={styles.legendCellSample} />
+            <Text style={styles.legendLabel}>背景: 自分</Text>
+          </View>
+          <View style={styles.ownerLegendItem}>
+            <View style={styles.legendStripSample} />
+            <Text style={styles.legendLabel}>下線: 相手</Text>
+          </View>
+          <View style={styles.ownerLegendItem}>
+            <View style={styles.consultationLegendDot} />
+            <Text style={styles.legendLabel}>相談</Text>
+          </View>
+        </View>
         <View style={styles.legendRow}>
           {[1, 2, 3, 4, 5].map((m) => (
             <View key={m} style={styles.legendItem}>
@@ -285,31 +417,18 @@ export default function CalendarScreen() {
           }
 
           const e = record.entry;
-          const authorBorder = record.authorType === 'me' ? '#7B9E87' : '#E8D5D5';
+          const isOwn = record.authorType === 'me';
           return (
-            <View
+            <EntryCard
               key={`entry-${e.id ?? ''}-${e.uid}`}
-              style={[styles.card, { borderLeftColor: authorBorder }]}
-            >
-              <View style={styles.cardTop}>
-                <Text style={styles.cardEmoji}>{MOOD_EMOJI[e.mood]}</Text>
-                <View style={styles.cardMeta}>
-                  <View style={styles.authorRow}>
-                    <Text style={styles.cardAuthor}>{record.authorName}</Text>
-                    {e.visibility === 'private' ? (
-                      <Lock size={11} color="#AAA" weight="regular" />
-                    ) : (
-                      <Users size={11} color="#AAA" weight="regular" />
-                    )}
-                  </View>
-                  <Text style={styles.cardTime}>{formatTime(e.createdAt)}</Text>
-                </View>
-                {record.isFavorite ? (
-                  <Star size={16} color="#7B9E87" weight="fill" />
-                ) : null}
-              </View>
-              {e.memo ? <Text style={styles.cardMemo}>{e.memo}</Text> : null}
-            </View>
+              entry={e}
+              authorName={record.authorName}
+              isOwn={isOwn}
+              isFavorite={record.isFavorite}
+              timeLabel={formatTime(e.createdAt)}
+              onPressActions={isOwn ? () => showEntryActions(e) : undefined}
+              onToggleFavorite={() => handleToggleFavorite(e)}
+            />
           );
         })
       )}
@@ -322,11 +441,43 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 64 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FAFAF8' },
   legend: { paddingHorizontal: 24, paddingVertical: 12 },
-  legendLabel: { fontSize: 11, color: '#999', marginBottom: 8 },
+  ownerLegendRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 10 },
+  ownerLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendCellSample: { width: 18, height: 18, borderRadius: 4, backgroundColor: '#AED58144' },
+  legendStripSample: { width: 18, height: 4, borderRadius: 2, backgroundColor: '#81D4FA' },
+  consultationLegendDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#7C5BB7' },
+  legendLabel: { fontSize: 11, color: '#999' },
   legendRow: { flexDirection: 'row', gap: 16 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendEmoji: { fontSize: 14 },
+  dayCell: {
+    width: 38,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  dayText: { fontSize: 13, color: '#2D2D2D', fontWeight: '600' },
+  dayTextDisabled: { color: '#CCC' },
+  dayTextSelected: { color: '#5F856B' },
+  partnerStrip: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+  },
+  consultationDot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#7C5BB7',
+  },
   filterRow: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 8, gap: 8 },
   filterButton: {
     paddingHorizontal: 12,
@@ -370,9 +521,7 @@ const styles = StyleSheet.create({
   },
   consultationCard: { borderLeftColor: '#7C5BB7', borderWidth: 1, borderColor: '#E8E0F2' },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  cardEmoji: { fontSize: 24 },
   cardMeta: { flex: 1 },
-  authorRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   cardAuthor: { fontSize: 13, fontWeight: '600', color: '#444' },
   cardTime: { fontSize: 11, color: '#AAA', marginTop: 2 },
   cardMemo: { fontSize: 13, color: '#444', marginTop: 10, lineHeight: 19 },

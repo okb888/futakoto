@@ -11,7 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Plus, Heart, Users, Lock, Star } from 'phosphor-react-native';
+import { Plus, Heart } from 'phosphor-react-native';
+import { EntryCard } from '../../components/EntryCard';
 import { useAuth } from '../../lib/auth';
 import {
   createUserProfile,
@@ -26,9 +27,6 @@ import {
   Entry,
   UserProfile,
 } from '../../lib/db';
-
-const MOOD_EMOJI = ['', '😣', '😔', '😐', '🙂', '😊'];
-const MOOD_COLORS = ['', '#E57373', '#FFB74D', '#FFF176', '#AED581', '#81D4FA'];
 
 function formatDate(ts: any): string {
   if (!ts) return '';
@@ -79,29 +77,30 @@ export default function HomeScreen() {
     setRefreshing(false);
   }
 
+  async function handleToggleVisibility(entry: Entry) {
+    if (!user || !entry.id) return;
+    const newVisibility = entry.visibility === 'shared' ? 'private' : 'shared';
+    await updateEntryVisibility(user.uid, entry.id, newVisibility);
+    await load();
+  }
+
+  function handleDelete(entry: Entry) {
+    if (!user || !entry.id) return;
+    Alert.alert('削除しますか？', 'この投稿は完全に削除されます', [
+      { text: 'キャンセル', style: 'cancel' },
+      {
+        text: '削除',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteEntry(user.uid, entry.id!);
+          await load();
+        },
+      },
+    ]);
+  }
+
   function showActions(entry: Entry) {
     if (entry.uid !== user?.uid) return;
-
-    const newVisibility = entry.visibility === 'shared' ? 'private' : 'shared';
-
-    const handleDelete = () => {
-      Alert.alert('削除しますか？', 'この投稿は完全に削除されます', [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: '削除',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteEntry(user!.uid, entry.id!);
-            await load();
-          },
-        },
-      ]);
-    };
-
-    const handleToggleVisibility = async () => {
-      await updateEntryVisibility(user!.uid, entry.id!, newVisibility);
-      await load();
-    };
 
     const visibilityActionLabel = entry.visibility === 'shared' ? '自分のみにする' : 'ふたりへ共有';
 
@@ -113,15 +112,15 @@ export default function HomeScreen() {
           cancelButtonIndex: 0,
         },
         (idx) => {
-          if (idx === 1) handleToggleVisibility();
-          if (idx === 2) handleDelete();
+          if (idx === 1) handleToggleVisibility(entry);
+          if (idx === 2) handleDelete(entry);
         }
       );
     } else {
       Alert.alert('この投稿', '', [
         { text: 'キャンセル', style: 'cancel' },
-        { text: visibilityActionLabel, onPress: handleToggleVisibility },
-        { text: '削除', style: 'destructive', onPress: handleDelete },
+        { text: visibilityActionLabel, onPress: () => handleToggleVisibility(entry) },
+        { text: '削除', style: 'destructive', onPress: () => handleDelete(entry) },
       ]);
     }
   }
@@ -173,42 +172,15 @@ export default function HomeScreen() {
           const authorName = isOwn ? '自分' : partnerName;
           const isFavorite = item.id ? favoriteIds.has(favoriteKey(item.uid, item.id)) : false;
           return (
-            <TouchableOpacity
-              activeOpacity={isOwn ? 0.6 : 1}
-              onLongPress={() => showActions(item)}
-              onPress={() => isOwn && showActions(item)}
-              style={[styles.card, { borderLeftColor: MOOD_COLORS[item.mood] }]}
-            >
-              <View style={styles.cardTop}>
-                <Text style={styles.cardEmoji}>{MOOD_EMOJI[item.mood]}</Text>
-                <View style={styles.cardMeta}>
-                  <Text style={styles.cardAuthor}>{authorName}</Text>
-                  <View style={styles.cardDateRow}>
-                    <Text style={styles.cardDate}>{formatDate(item.createdAt)}</Text>
-                    <Text style={styles.cardDot}>·</Text>
-                    {item.visibility === 'private' ? (
-                      <Lock size={11} color="#AAA" weight="regular" />
-                    ) : (
-                      <Users size={11} color="#AAA" weight="regular" />
-                    )}
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.favoriteButton}
-                  onPress={(event) => {
-                    event.stopPropagation();
-                    handleToggleFavorite(item);
-                  }}
-                >
-                  <Star
-                    size={18}
-                    color={isFavorite ? '#7B9E87' : '#AAA'}
-                    weight={isFavorite ? 'fill' : 'regular'}
-                  />
-                </TouchableOpacity>
-              </View>
-              {item.memo ? <Text style={styles.cardMemo}>{item.memo}</Text> : null}
-            </TouchableOpacity>
+            <EntryCard
+              entry={item}
+              authorName={authorName}
+              isOwn={isOwn}
+              isFavorite={isFavorite}
+              timeLabel={formatDate(item.createdAt)}
+              onPressActions={isOwn ? () => showActions(item) : undefined}
+              onToggleFavorite={() => handleToggleFavorite(item)}
+            />
           );
         }}
       />
@@ -233,23 +205,6 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 64 },
   emptyText: { fontSize: 15, color: '#AAA' },
   emptyHint: { fontSize: 13, color: '#CCC', marginTop: 8 },
-  card: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginBottom: 10,
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-  },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  cardEmoji: { fontSize: 28 },
-  cardMeta: { flex: 1 },
-  cardAuthor: { fontSize: 13, fontWeight: '600', color: '#444' },
-  cardDateRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
-  cardDate: { fontSize: 11, color: '#AAA' },
-  cardDot: { fontSize: 11, color: '#AAA' },
-  favoriteButton: { padding: 6, marginRight: -6 },
-  cardMemo: { fontSize: 14, color: '#444', marginTop: 10, lineHeight: 20 },
   fab: {
     position: 'absolute',
     bottom: 16,

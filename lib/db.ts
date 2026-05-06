@@ -11,6 +11,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -160,14 +161,15 @@ export async function addEntry(
   uid: string,
   mood: number,
   memo: string,
-  visibility: Visibility
+  visibility: Visibility,
+  createdAt?: Date
 ): Promise<void> {
   await addDoc(collection(db, 'users', uid, 'entries'), {
     uid,
     mood,
     memo,
     visibility,
-    createdAt: serverTimestamp(),
+    createdAt: createdAt ? Timestamp.fromDate(createdAt) : serverTimestamp(),
   });
 }
 
