@@ -1,9 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
-  ActionSheetIOS,
   ActivityIndicator,
   Alert,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +12,7 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Sparkle } from 'phosphor-react-native';
 import { EntryCard } from '../../components/EntryCard';
+import { EntryActionPanel } from '../../components/EntryActionPanel';
 import { useAuth } from '../../lib/auth';
 import { aiSummary } from '../../lib/ai';
 import {
@@ -105,6 +104,11 @@ export default function CalendarScreen() {
   const [aiSummaryText, setAiSummaryText] = useState<string | null>(null);
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
+
+  function actionKey(entry: Entry): string {
+    return `${entry.uid}_${entry.id ?? ''}`;
+  }
 
   async function load() {
     if (!user) return;
@@ -256,6 +260,7 @@ export default function CalendarScreen() {
     if (!user || !entry.id) return;
     const newVisibility = entry.visibility === 'shared' ? 'private' : 'shared';
     await updateEntryVisibility(user.uid, entry.id, newVisibility);
+    setActiveActionKey(null);
     await load();
   }
 
@@ -267,6 +272,7 @@ export default function CalendarScreen() {
         text: '削除',
         style: 'destructive',
         onPress: async () => {
+          setActiveActionKey(null);
           await deleteEntry(user.uid, entry.id!);
           await load();
         },
@@ -274,29 +280,16 @@ export default function CalendarScreen() {
     ]);
   }
 
+  function handleEdit(entry: Entry) {
+    if (!entry.id) return;
+    setActiveActionKey(null);
+    router.push({ pathname: '/(app)/post', params: { entryId: entry.id } });
+  }
+
   function showEntryActions(entry: Entry) {
     if (entry.uid !== user?.uid) return;
-    const visibilityActionLabel = entry.visibility === 'shared' ? '自分のみにする' : 'ふたりへ共有';
-
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['キャンセル', visibilityActionLabel, '削除'],
-          destructiveButtonIndex: 2,
-          cancelButtonIndex: 0,
-        },
-        (idx) => {
-          if (idx === 1) handleToggleVisibility(entry);
-          if (idx === 2) handleDelete(entry);
-        }
-      );
-    } else {
-      Alert.alert('この投稿', '', [
-        { text: 'キャンセル', style: 'cancel' },
-        { text: visibilityActionLabel, onPress: () => handleToggleVisibility(entry) },
-        { text: '削除', style: 'destructive', onPress: () => handleDelete(entry) },
-      ]);
-    }
+    const key = actionKey(entry);
+    setActiveActionKey((current) => current === key ? null : key);
   }
 
   async function handleToggleFavorite(entry: Entry) {
@@ -545,16 +538,25 @@ export default function CalendarScreen() {
           const e = record.entry;
           const isOwn = record.authorType === 'me';
           return (
-            <EntryCard
-              key={`entry-${e.id ?? ''}-${e.uid}`}
-              entry={e}
-              authorName={record.authorName}
-              isOwn={isOwn}
-              isFavorite={record.isFavorite}
-              timeLabel={formatTime(e.createdAt)}
-              onPressActions={isOwn ? () => showEntryActions(e) : undefined}
-              onToggleFavorite={() => handleToggleFavorite(e)}
-            />
+            <View key={`entry-${e.id ?? ''}-${e.uid}`}>
+              <EntryCard
+                entry={e}
+                authorName={record.authorName}
+                isOwn={isOwn}
+                isFavorite={record.isFavorite}
+                timeLabel={formatTime(e.createdAt)}
+                onPressActions={isOwn ? () => showEntryActions(e) : undefined}
+                onToggleFavorite={() => handleToggleFavorite(e)}
+              />
+              {isOwn && activeActionKey === actionKey(e) ? (
+                <EntryActionPanel
+                  entry={e}
+                  onEdit={() => handleEdit(e)}
+                  onToggleVisibility={() => handleToggleVisibility(e)}
+                  onDelete={() => handleDelete(e)}
+                />
+              ) : null}
+            </View>
           );
         })
       )}

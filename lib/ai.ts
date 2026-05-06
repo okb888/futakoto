@@ -42,9 +42,10 @@ export async function aiRewrite(text: string, partnerName?: string): Promise<Rew
 export async function aiConsult(
   text: string,
   partnerName?: string,
-  conversationHistory?: { role: 'user' | 'ai'; content: string }[]
+  conversationHistory?: { role: 'user' | 'ai'; content: string }[],
+  communicationStyle?: string
 ): Promise<ConsultResult> {
-  return call<ConsultResult>('aiConsult', { text, partnerName, conversationHistory });
+  return call<ConsultResult>('aiConsult', { text, partnerName, conversationHistory, communicationStyle });
 }
 
 export async function aiInterpret(

@@ -7,14 +7,13 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
-  ActionSheetIOS,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Plus, Heart, Sparkle } from 'phosphor-react-native';
 import { aiInterpret } from '../../lib/ai';
 import { EntryCard } from '../../components/EntryCard';
+import { EntryActionPanel } from '../../components/EntryActionPanel';
 import { useAuth } from '../../lib/auth';
 import {
   createUserProfile,
@@ -49,6 +48,11 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [interpretationsCache, setInterpretationsCache] = useState<Record<string, string[]>>({});
   const [interpretLoadingIds, setInterpretLoadingIds] = useState<Set<string>>(new Set());
+  const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
+
+  function actionKey(entry: Entry): string {
+    return `${entry.uid}_${entry.id ?? ''}`;
+  }
 
   async function load() {
     if (!user) return;
@@ -85,6 +89,7 @@ export default function HomeScreen() {
     if (!user || !entry.id) return;
     const newVisibility = entry.visibility === 'shared' ? 'private' : 'shared';
     await updateEntryVisibility(user.uid, entry.id, newVisibility);
+    setActiveActionKey(null);
     await load();
   }
 
@@ -96,6 +101,7 @@ export default function HomeScreen() {
         text: '削除',
         style: 'destructive',
         onPress: async () => {
+          setActiveActionKey(null);
           await deleteEntry(user.uid, entry.id!);
           await load();
         },
@@ -103,30 +109,16 @@ export default function HomeScreen() {
     ]);
   }
 
+  function handleEdit(entry: Entry) {
+    if (!entry.id) return;
+    setActiveActionKey(null);
+    router.push({ pathname: '/(app)/post', params: { entryId: entry.id } });
+  }
+
   function showActions(entry: Entry) {
     if (entry.uid !== user?.uid) return;
-
-    const visibilityActionLabel = entry.visibility === 'shared' ? '自分のみにする' : 'ふたりへ共有';
-
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['キャンセル', visibilityActionLabel, '削除'],
-          destructiveButtonIndex: 2,
-          cancelButtonIndex: 0,
-        },
-        (idx) => {
-          if (idx === 1) handleToggleVisibility(entry);
-          if (idx === 2) handleDelete(entry);
-        }
-      );
-    } else {
-      Alert.alert('この投稿', '', [
-        { text: 'キャンセル', style: 'cancel' },
-        { text: visibilityActionLabel, onPress: () => handleToggleVisibility(entry) },
-        { text: '削除', style: 'destructive', onPress: () => handleDelete(entry) },
-      ]);
-    }
+    const key = actionKey(entry);
+    setActiveActionKey((current) => current === key ? null : key);
   }
 
   async function handleToggleFavorite(entry: Entry) {
@@ -194,6 +186,7 @@ export default function HomeScreen() {
           const authorName = isOwn ? '自分' : partnerName;
           const isFavorite = item.id ? favoriteIds.has(favoriteKey(item.uid, item.id)) : false;
           const entryId = item.id ?? '';
+          const isActionOpen = activeActionKey === actionKey(item);
           const cachedInterps = !isOwn ? interpretationsCache[entryId] : undefined;
           const isInterpreting = !isOwn && interpretLoadingIds.has(entryId);
           return (
@@ -207,6 +200,14 @@ export default function HomeScreen() {
                 onPressActions={isOwn ? () => showActions(item) : undefined}
                 onToggleFavorite={() => handleToggleFavorite(item)}
               />
+              {isOwn && isActionOpen ? (
+                <EntryActionPanel
+                  entry={item}
+                  onEdit={() => handleEdit(item)}
+                  onToggleVisibility={() => handleToggleVisibility(item)}
+                  onDelete={() => handleDelete(item)}
+                />
+              ) : null}
               {!isOwn && item.memo ? (
                 <View style={styles.interpretArea}>
                   {cachedInterps ? (

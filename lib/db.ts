@@ -12,6 +12,7 @@ import {
   doc,
   serverTimestamp,
   Timestamp,
+  arrayUnion,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -24,6 +25,7 @@ export interface Entry {
   memo: string;
   visibility: Visibility;
   createdAt: any;
+  updatedAt?: any;
   // 将来のAI統合用（任意）
   aiSummary?: string;
   aiTags?: string[];
@@ -35,6 +37,20 @@ export interface Consultation {
   input: string;
   reflection: string;
   messageDraft: string;
+  createdAt: any;
+}
+
+export interface ConsultationSessionTurn {
+  input: string;
+  reflection: string;
+  messageDraft: string;
+}
+
+export interface ConsultationSession {
+  id?: string;
+  uid: string;
+  turns: ConsultationSessionTurn[];
+  favored: boolean;
   createdAt: any;
 }
 
@@ -52,6 +68,7 @@ export interface UserProfile {
   inviteCode?: string;
   partnerUid?: string;
   notificationSettings?: NotificationSettings;
+  communicationStyle?: string;
   createdAt: any;
   // 将来用（任意）
   isPremium?: boolean;
@@ -131,6 +148,10 @@ export async function updateDisplayName(uid: string, displayName: string): Promi
   await updateDoc(doc(db, 'users', uid), { displayName });
 }
 
+export async function updateCommunicationStyle(uid: string, style: string): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), { communicationStyle: style });
+}
+
 export async function updateNotificationSettings(
   uid: string,
   settings: NotificationSettings
@@ -203,6 +224,28 @@ export async function addEntry(
   });
 }
 
+export async function getEntry(uid: string, entryId: string): Promise<Entry | null> {
+  const snap = await getDoc(doc(db, 'users', uid, 'entries', entryId));
+  return snap.exists() ? ({ id: snap.id, ...snap.data() } as Entry) : null;
+}
+
+export async function updateEntry(
+  uid: string,
+  entryId: string,
+  mood: number,
+  memo: string,
+  visibility: Visibility,
+  createdAt: Date
+): Promise<void> {
+  await updateDoc(doc(db, 'users', uid, 'entries', entryId), {
+    mood,
+    memo,
+    visibility,
+    createdAt: Timestamp.fromDate(createdAt),
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function deleteEntry(uid: string, entryId: string): Promise<void> {
   await deleteDoc(doc(db, 'users', uid, 'entries', entryId));
 }
@@ -262,6 +305,52 @@ export async function getRecentConsultations(uid: string, count = 20): Promise<C
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Consultation));
+}
+
+// ---- Consultation Sessions ----
+
+export async function createConsultationSession(
+  uid: string,
+  firstTurn: ConsultationSessionTurn
+): Promise<string> {
+  const ref = await addDoc(collection(db, 'users', uid, 'consultationSessions'), {
+    uid,
+    turns: [firstTurn],
+    favored: false,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function addTurnToSession(
+  uid: string,
+  sessionId: string,
+  turn: ConsultationSessionTurn
+): Promise<void> {
+  await updateDoc(doc(db, 'users', uid, 'consultationSessions', sessionId), {
+    turns: arrayUnion(turn),
+  });
+}
+
+export async function toggleSessionFavorite(
+  uid: string,
+  sessionId: string,
+  favored: boolean
+): Promise<void> {
+  await updateDoc(doc(db, 'users', uid, 'consultationSessions', sessionId), { favored });
+}
+
+export async function getRecentConsultationSessions(
+  uid: string,
+  count = 10
+): Promise<ConsultationSession[]> {
+  const q = query(
+    collection(db, 'users', uid, 'consultationSessions'),
+    orderBy('createdAt', 'desc'),
+    limit(count)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as ConsultationSession));
 }
 
 // ---- Favorites ----

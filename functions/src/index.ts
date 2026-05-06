@@ -166,10 +166,11 @@ export const aiConsult = onCall(
   AI_FUNCTION_OPTIONS,
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
-    const { text, partnerName, conversationHistory } = request.data as {
+    const { text, partnerName, conversationHistory, communicationStyle } = request.data as {
       text?: string;
       partnerName?: string;
       conversationHistory?: { role: 'user' | 'ai'; content: string }[];
+      communicationStyle?: string;
     };
     if (!text || text.trim().length === 0) {
       throw new HttpsError('invalid-argument', '相談内容が必要です');
@@ -187,6 +188,12 @@ export const aiConsult = onCall(
         .join('\n');
     }
 
+    const styleInstruction = communicationStyle
+      ? `文体の指定: ${communicationStyle}`
+      : '話し言葉で、やわらかく、ふだん使いのトーンで書いてください。堅い文語体・敬語体は避けること。';
+
+    const hasPastTurns = conversationHistory && conversationHistory.length > 0;
+
     const prompt = `あなたは夫婦のコミュニケーション支援AIです。
 ユーザーは、${partner}との関係の中で今困っていること・思っていること・伝えたいことを整理しようとしています。
 決めつけず、ユーザーの本音を薄めすぎず、相手を責める表現にも寄せすぎないでください。${historySection}
@@ -194,9 +201,10 @@ export const aiConsult = onCall(
 ## 今回のメッセージ
 ${text}
 
-上記をもとに、次の2つを出力してください。${historySection ? '前の会話の流れを踏まえて深掘りしてください。' : ''}
+上記をもとに、次の2つを出力してください。${hasPastTurns ? '前の会話の流れを踏まえてさらに深掘りしてください。' : ''}
 1. reflection: ユーザーが自分の気持ちを整理できる短いメモ。200文字以内で、箇条書きではなく自然な文章で。
-2. messageDraft: ${partner}に伝えるなら使えそうな文章。120文字以内。自然で、押し付けがましくない表現。
+   さらに深掘りすると気持ちが整理できる余地がある場合は、文末に「〜はどう感じていますか？」「〜が気になっているのはなぜでしょう？」のような問いかけを1つだけ添えること。十分に整理できている・答えが出ている場合は問いかけ不要。
+2. messageDraft: ${hasPastTurns ? 'これまでの会話全体を通じてユーザーが伝えたいことをひとつにまとめて、' : ''}${partner}に伝えるなら使えそうな文章。120文字以内。${styleInstruction}押し付けがましくない自然な表現で。
 
 出力形式（JSON）:
 {

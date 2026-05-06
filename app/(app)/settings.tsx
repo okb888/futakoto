@@ -24,6 +24,7 @@ import {
   unpairPartner,
   updateDisplayName,
   updateNotificationSettings,
+  updateCommunicationStyle,
   NotificationSettings,
   UserProfile,
 } from '../../lib/db';
@@ -67,6 +68,8 @@ export default function SettingsScreen() {
   const [pickerHour, setPickerHour] = useState(DEFAULT_REMINDER_HOUR);
   const [pickerMinute, setPickerMinute] = useState(DEFAULT_REMINDER_MINUTE);
   const [copied, setCopied] = useState(false);
+  const [styleInput, setStyleInput] = useState('');
+  const [styleSaved, setStyleSaved] = useState(false);
 
   async function load() {
     if (!user) return;
@@ -74,6 +77,7 @@ export default function SettingsScreen() {
     setProfile(p);
     setNotificationSettings(withDefaults(p.notificationSettings));
     setNameInput(p.displayName ?? '');
+    setStyleInput(p.communicationStyle ?? '');
     if (p?.partnerUid) {
       const pp = await getUserProfile(p.partnerUid);
       setPartnerProfile(pp);
@@ -127,6 +131,13 @@ export default function SettingsScreen() {
         },
       },
     ]);
+  }
+
+  async function handleSaveStyle() {
+    if (!user) return;
+    await updateCommunicationStyle(user.uid, styleInput.trim());
+    setStyleSaved(true);
+    setTimeout(() => setStyleSaved(false), 2000);
   }
 
   async function handleSaveName() {
@@ -308,6 +319,25 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         </View>
+      )}
+
+      <Text style={styles.sectionTitle}>パートナーへの伝え方</Text>
+      <Text style={styles.hint}>AIが文案を作るときの文体や雰囲気を指定できます（例: タメ口でやわらかく）</Text>
+      <View style={styles.nameEditRow}>
+        <TextInput
+          style={styles.input}
+          value={styleInput}
+          onChangeText={setStyleInput}
+          placeholder="タメ口でやわらかく、など（任意）"
+          placeholderTextColor="#BBB"
+          maxLength={50}
+        />
+        <TouchableOpacity style={styles.smallButton} onPress={handleSaveStyle}>
+          <Text style={styles.smallButtonText}>{styleSaved ? '✓' : '保存'}</Text>
+        </TouchableOpacity>
+      </View>
+      {styleInput.length > 0 && (
+        <Text style={styles.styleCharCount}>{styleInput.length}/50</Text>
       )}
 
       <Text style={styles.sectionTitle}>通知</Text>
@@ -743,6 +773,7 @@ const styles = StyleSheet.create({
   },
   pairButtonDisabled: { backgroundColor: '#C8D8CC' },
   pairButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  styleCharCount: { fontSize: 11, color: '#BBB', textAlign: 'right', marginTop: 4 },
   divider: { height: 1, backgroundColor: '#F0F0F0', marginTop: 32, marginBottom: 8 },
   logoutButton: { paddingVertical: 16, alignItems: 'center' },
   logoutText: { fontSize: 14, color: '#AAA' },

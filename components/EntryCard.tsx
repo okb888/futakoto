@@ -57,7 +57,14 @@ export function EntryCard({
                 ) : (
                   <Users size={11} color="#7B9E87" weight="regular" />
                 )}
-                <Text style={styles.visibilityBadgeText}>{visibilityLabel}</Text>
+                <Text
+                  style={[
+                    styles.visibilityBadgeText,
+                    entry.visibility === 'private' ? styles.privateBadgeText : styles.sharedBadgeText,
+                  ]}
+                >
+                  {visibilityLabel}
+                </Text>
               </View>
             </View>
             <Text style={styles.cardTime}>{timeLabel}</Text>
@@ -127,7 +134,9 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     backgroundColor: '#FAFAF8',
   },
-  visibilityBadgeText: { fontSize: 11, color: '#777', fontWeight: '600' },
+  visibilityBadgeText: { fontSize: 11, fontWeight: '600' },
+  sharedBadgeText: { color: '#7B9E87' },
+  privateBadgeText: { color: '#555' },
   cardTime: { fontSize: 11, color: '#AAA', marginTop: 5 },
   favoriteButton: { padding: 6, marginRight: -6 },
   favoriteStatic: { padding: 6, marginRight: -6 },

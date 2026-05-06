@@ -13,10 +13,10 @@ import {
   Modal,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { ArrowCounterClockwise, CalendarBlank, Clock, Users, Lock, Sparkle } from 'phosphor-react-native';
 import { useAuth } from '../../lib/auth';
-import { addEntry, getUserProfile, Visibility } from '../../lib/db';
+import { addEntry, getEntry, getUserProfile, updateEntry, Visibility } from '../../lib/db';
 import { aiRewrite, RewriteResult } from '../../lib/ai';
 
 const MOODS = [
@@ -39,6 +39,11 @@ function dateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+function timestampToDate(ts: any): Date {
+  if (!ts) return new Date();
+  return ts.toDate ? ts.toDate() : new Date(ts);
+}
+
 type PickerMode = 'date' | 'time';
 const HOURS = Array.from({ length: 24 }, (_, index) => index);
 const MINUTES = Array.from({ length: 60 }, (_, index) => index);
@@ -47,11 +52,15 @@ const TIME_PICKER_ITEM_HEIGHT = 50;
 export default function PostScreen() {
   const { user } = useAuth();
   const router = useRouter();
-  const params = useLocalSearchParams<{ memo?: string }>();
+  const navigation = useNavigation();
+  const params = useLocalSearchParams<{ memo?: string; entryId?: string }>();
+  const entryId = typeof params.entryId === 'string' ? params.entryId : undefined;
+  const isEditing = !!entryId;
   const [mood, setMood] = useState<number | null>(null);
   const [memo, setMemo] = useState('');
   const [visibility, setVisibility] = useState<Visibility>('shared');
   const [loading, setLoading] = useState(false);
+  const [entryLoading, setEntryLoading] = useState(false);
   const [partnerName, setPartnerName] = useState<string>('パートナー');
   const [recordDate, setRecordDate] = useState(() => new Date());
   const [activePicker, setActivePicker] = useState<PickerMode | null>(null);
@@ -65,10 +74,46 @@ export default function PostScreen() {
   const [previousMemo, setPreviousMemo] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof params.memo === 'string') {
+    navigation.setOptions({ title: isEditing ? '記録を編集' : '記録する' });
+  }, [navigation, isEditing]);
+
+  useEffect(() => {
+    if (!isEditing && typeof params.memo === 'string') {
       setMemo(params.memo);
     }
-  }, [params.memo]);
+  }, [isEditing, params.memo]);
+
+  useEffect(() => {
+    if (!user || !entryId) return;
+    let cancelled = false;
+
+    setEntryLoading(true);
+    (async () => {
+      try {
+        const entry = await getEntry(user.uid, entryId);
+        if (cancelled) return;
+        if (!entry) {
+          Alert.alert('投稿が見つかりません', '削除されたか、読み込めない投稿です');
+          router.back();
+          return;
+        }
+        setMood(entry.mood);
+        setMemo(entry.memo ?? '');
+        setVisibility(entry.visibility);
+        setRecordDate(timestampToDate(entry.createdAt));
+        setAiResult(null);
+        setPreviousMemo(null);
+      } catch (e: any) {
+        if (!cancelled) Alert.alert('エラー', e.message);
+      } finally {
+        if (!cancelled) setEntryLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [entryId, router, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -92,7 +137,11 @@ export default function PostScreen() {
     }
     setLoading(true);
     try {
-      await addEntry(user.uid, mood, memo, visibility, recordDate);
+      if (isEditing && entryId) {
+        await updateEntry(user.uid, entryId, mood, memo, visibility, recordDate);
+      } else {
+        await addEntry(user.uid, mood, memo, visibility, recordDate);
+      }
       router.back();
     } catch (e: any) {
       Alert.alert('エラー', e.message);
@@ -177,6 +226,12 @@ export default function PostScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        {entryLoading ? (
+          <View style={styles.entryLoading}>
+            <ActivityIndicator color="#7B9E87" />
+            <Text style={styles.entryLoadingText}>投稿を読み込んでいます</Text>
+          </View>
+        ) : null}
 
         <Text style={styles.label}>そのときの気分は？</Text>
         <View style={styles.moodRow}>
@@ -365,7 +420,7 @@ export default function PostScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>保存する</Text>
+            <Text style={styles.saveButtonText}>{isEditing ? '変更を保存する' : '保存する'}</Text>
           )}
         </TouchableOpacity>
 
@@ -478,6 +533,18 @@ export default function PostScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
   scroll: { padding: 24, paddingBottom: 48 },
+  entryLoading: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  entryLoadingText: { color: '#888', fontSize: 13 },
   label: { fontSize: 14, fontWeight: '600', color: '#555', marginBottom: 12, marginTop: 24 },
   messageLabel: { flex: 1 },
   messageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 },
