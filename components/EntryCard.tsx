@@ -1,3 +1,4 @@
+import type React from 'react';
 import {
   StyleSheet,
   Text,
@@ -20,6 +21,7 @@ type EntryCardProps = {
   timeLabel: string;
   onPressActions?: () => void;
   onToggleFavorite?: () => void;
+  footer?: React.ReactNode;
 };
 
 export function EntryCard({
@@ -30,6 +32,7 @@ export function EntryCard({
   timeLabel,
   onPressActions,
   onToggleFavorite,
+  footer,
 }: EntryCardProps) {
   const visibilityLabel = entry.visibility === 'private' ? '自分だけ' : 'ふたりに共有';
 
@@ -90,6 +93,7 @@ export function EntryCard({
         </View>
         {entry.memo ? <Text style={styles.cardMemo}>{entry.memo}</Text> : null}
       </TouchableOpacity>
+      {footer ? <View style={styles.cardFooter}>{footer}</View> : null}
     </View>
   );
 }
@@ -139,4 +143,5 @@ const styles = StyleSheet.create({
   favoriteButton: { padding: 6, marginRight: -6 },
   favoriteStatic: { padding: 6, marginRight: -6 },
   cardMemo: { fontSize: 14, color: '#444', marginTop: 10, lineHeight: 20 },
+  cardFooter: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
 });

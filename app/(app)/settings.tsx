@@ -13,14 +13,20 @@ import {
   Modal,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { Bell, Clock, Heart } from 'phosphor-react-native';
-import { signOut, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { Bell, Clock, DownloadSimple, EnvelopeSimple, Heart, Sparkle } from 'phosphor-react-native';
+import {
+  signOut,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
 import { useFocusEffect } from 'expo-router';
 import { TimePickerSheet } from '../../components/TimePickerSheet';
 import { auth } from '../../lib/firebase';
 import { useAuth } from '../../lib/auth';
 import {
   getUserProfile,
+  getUserExportData,
   updateDisplayName,
   updateNotificationSettings,
   updateCommunicationStyle,
@@ -50,6 +56,21 @@ function formatReminderTime(hour: number, minute: number): string {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
+function currentMonthKey(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function normalizeForExport(value: any): any {
+  if (!value) return value;
+  if (value.toDate) return value.toDate().toISOString();
+  if (Array.isArray(value)) return value.map(normalizeForExport);
+  if (typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalizeForExport(item)]));
+  }
+  return value;
+}
+
 export default function SettingsScreen() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -70,13 +91,14 @@ export default function SettingsScreen() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   async function load(
     isCancelled: () => boolean = () => false,
     profileOverride?: UserProfile | null
   ) {
     if (!user) return;
-    const p = profileOverride ?? authProfile ?? await refreshProfile();
+    const p = profileOverride ?? await getUserProfile(user.uid) ?? authProfile ?? await refreshProfile();
     if (isCancelled() || !p) return;
     setProfile(p);
     setNotificationSettings(withDefaults(p.notificationSettings));
@@ -287,6 +309,36 @@ export default function SettingsScreen() {
     }
   }
 
+  async function handleSendPasswordReset() {
+    if (!user?.email) return;
+    try {
+      await sendPasswordResetEmail(auth, user.email);
+      Alert.alert('メールを送信しました', 'パスワード再設定用のメールを確認してください');
+    } catch (e: any) {
+      Alert.alert('送信に失敗しました', e.message);
+    }
+  }
+
+  async function handleExportData() {
+    if (!user || exporting) return;
+    setExporting(true);
+    try {
+      const data = await getUserExportData(user.uid);
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        app: 'futakoto',
+        data: normalizeForExport(data),
+      };
+      await Share.share({
+        message: JSON.stringify(payload, null, 2),
+      });
+    } catch (e: any) {
+      Alert.alert('エクスポートに失敗しました', e.message);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   async function toggleSharedPostNotifications(enabled: boolean) {
     if (!user) return;
     setNotificationLoading(true);
@@ -425,6 +477,37 @@ export default function SettingsScreen() {
         <Text style={styles.styleCharCount}>{styleInput.length}/50</Text>
       )}
 
+      <Text style={styles.sectionTitle}>AI利用量</Text>
+      <View style={styles.aiUsageBox}>
+        <View style={styles.notificationIconBox}>
+          <Sparkle size={22} color="#7C5BB7" weight="fill" />
+        </View>
+        <View style={styles.aiUsageContent}>
+          <View style={styles.aiUsageHeader}>
+            <Text style={styles.notificationTitle}>今月のAI利用</Text>
+            <Text style={styles.aiUsageCount}>
+              {profile?.aiCreditsMonth === currentMonthKey() ? (profile.aiCreditsUsed ?? 0) : 0}
+              /{profile?.aiCreditsLimit ?? 500}
+            </Text>
+          </View>
+          <View style={styles.aiUsageTrack}>
+            <View
+              style={[
+                styles.aiUsageFill,
+                {
+                  width: `${Math.min(
+                    100,
+                    (((profile?.aiCreditsMonth === currentMonthKey() ? (profile.aiCreditsUsed ?? 0) : 0)
+                      / (profile?.aiCreditsLimit ?? 500)) * 100)
+                  )}%`,
+                },
+              ]}
+            />
+          </View>
+          <Text style={styles.notificationSub}>月が変わると自動でリセットされます</Text>
+        </View>
+      </View>
+
       <Text style={styles.sectionTitle}>通知</Text>
       <View style={[styles.notificationBox, styles.notificationBoxStack]}>
         <View style={styles.notificationHeaderRow}>
@@ -485,6 +568,26 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.divider} />
+
+      <Text style={styles.sectionTitle}>アカウント</Text>
+      {user?.providerData[0]?.providerId === 'password' ? (
+        <TouchableOpacity style={styles.accountActionButton} onPress={handleSendPasswordReset}>
+          <EnvelopeSimple size={17} color="#7B9E87" weight="bold" />
+          <Text style={styles.accountActionText}>パスワード再設定メールを送る</Text>
+        </TouchableOpacity>
+      ) : null}
+      <TouchableOpacity
+        style={[styles.accountActionButton, exporting && { opacity: 0.6 }]}
+        onPress={handleExportData}
+        disabled={exporting}
+      >
+        {exporting ? (
+          <ActivityIndicator color="#7B9E87" size="small" />
+        ) : (
+          <DownloadSimple size={17} color="#7B9E87" weight="bold" />
+        )}
+        <Text style={styles.accountActionText}>データを書き出す</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.logoutButton}
@@ -681,6 +784,31 @@ const styles = StyleSheet.create({
   notificationContent: { flex: 1 },
   notificationTitle: { fontSize: 14, fontWeight: '700', color: '#2D2D2D' },
   notificationSub: { fontSize: 11, color: '#888', marginTop: 3, lineHeight: 16 },
+  aiUsageBox: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E8E0F2',
+    gap: 12,
+  },
+  aiUsageContent: { flex: 1 },
+  aiUsageHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  aiUsageCount: { fontSize: 13, color: '#7C5BB7', fontWeight: '700' },
+  aiUsageTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#F3EDFA',
+    overflow: 'hidden',
+    marginTop: 9,
+  },
+  aiUsageFill: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#7C5BB7',
+  },
   reminderTimeArea: {
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
@@ -749,6 +877,19 @@ const styles = StyleSheet.create({
   pairButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   styleCharCount: { fontSize: 11, color: '#BBB', textAlign: 'right', marginTop: 4 },
   divider: { height: 1, backgroundColor: '#F0F0F0', marginTop: 32, marginBottom: 8 },
+  accountActionButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#DCE9E1',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  accountActionText: { flex: 1, fontSize: 13, color: '#7B9E87', fontWeight: '700' },
   logoutButton: { paddingVertical: 16, alignItems: 'center' },
   logoutText: { fontSize: 14, color: '#AAA' },
   deleteButton: { paddingVertical: 12, alignItems: 'center', marginBottom: 8 },

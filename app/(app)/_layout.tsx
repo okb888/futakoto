@@ -65,6 +65,7 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen name="post" options={{ href: null, headerShown: true, title: '記録する' }} />
+      <Tabs.Screen name="favorites" options={{ href: null, headerShown: true, title: 'お気に入り' }} />
     </Tabs>
   );
 }

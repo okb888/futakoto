@@ -63,6 +63,10 @@ export interface FavoriteEntry {
   createdAt: any;
 }
 
+export interface FavoriteEntryWithEntry extends FavoriteEntry {
+  entry: Entry | null;
+}
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -71,10 +75,12 @@ export interface UserProfile {
   partnerUid?: string;
   notificationSettings?: NotificationSettings;
   communicationStyle?: string;
+  aiCreditsMonth?: string;
   createdAt: any;
   // 将来用（任意）
   isPremium?: boolean;
   aiCreditsUsed?: number;
+  aiCreditsLimit?: number;
 }
 
 export interface NotificationSettings {
@@ -374,6 +380,24 @@ export async function getFavoriteEntryIds(uid: string): Promise<Set<string>> {
   return new Set(snap.docs.map((d) => d.id));
 }
 
+export async function getFavoriteEntries(uid: string): Promise<FavoriteEntryWithEntry[]> {
+  const q = query(
+    collection(db, 'users', uid, 'favorites'),
+    orderBy('createdAt', 'desc'),
+    limit(100)
+  );
+  const snap = await getDocs(q);
+  const favorites = snap.docs.map((d) => ({ id: d.id, ...d.data() } as FavoriteEntry));
+  return Promise.all(favorites.map(async (favorite) => {
+    try {
+      const entry = await getEntry(favorite.entryUid, favorite.entryId);
+      return { ...favorite, entry };
+    } catch (e) {
+      return { ...favorite, entry: null };
+    }
+  }));
+}
+
 export async function toggleFavoriteEntry(
   uid: string,
   entryUid: string,
@@ -417,4 +441,27 @@ export async function getEntriesInRange(uid: string, start: Date, end: Date): Pr
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry));
+}
+
+// ---- Data Export ----
+
+export async function getUserExportData(uid: string): Promise<{
+  profile: UserProfile | null;
+  entries: Entry[];
+  consultationSessions: ConsultationSession[];
+  favorites: FavoriteEntry[];
+}> {
+  const [profile, entriesSnap, sessionsSnap, favoritesSnap] = await Promise.all([
+    getUserProfile(uid),
+    getDocs(query(collection(db, 'users', uid, 'entries'), orderBy('createdAt', 'desc'), limit(1000))),
+    getDocs(query(collection(db, 'users', uid, 'consultationSessions'), orderBy('createdAt', 'desc'), limit(200))),
+    getDocs(query(collection(db, 'users', uid, 'favorites'), orderBy('createdAt', 'desc'), limit(500))),
+  ]);
+
+  return {
+    profile,
+    entries: entriesSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry)),
+    consultationSessions: sessionsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as ConsultationSession)),
+    favorites: favoritesSnap.docs.map((d) => ({ id: d.id, ...d.data() } as FavoriteEntry)),
+  };
 }

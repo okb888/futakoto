@@ -81,10 +81,6 @@ export default function ConsultScreen() {
   useFocusEffect(useCallback(() => {
     let cancelled = false;
     load(() => cancelled);
-    setConversation([]);
-    setSessionId(null);
-    setIsFavorited(false);
-    setText('');
     return () => {
       cancelled = true;
     };
@@ -126,6 +122,13 @@ export default function ConsultScreen() {
 
   function toggleCollapse(id: string) {
     setConversation((prev) => prev.map((t) => t.id === id ? { ...t, collapsed: !t.collapsed } : t));
+  }
+
+  function handleStartNewConversation() {
+    setConversation([]);
+    setSessionId(null);
+    setIsFavorited(false);
+    setText('');
   }
 
   async function handleToggleFavorite() {
@@ -224,6 +227,13 @@ export default function ConsultScreen() {
                   color={isFavorited ? '#7B9E87' : '#AAA'}
                   weight={isFavorited ? 'fill' : 'regular'}
                 />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.newConversationButton}
+                onPress={handleStartNewConversation}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.newConversationButtonText}>新しく始める</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -403,6 +413,15 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   sessionFavoriteHint: { fontSize: 12, color: '#AAA' },
+  newConversationButton: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#DCE9E1',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: '#fff',
+  },
+  newConversationButtonText: { fontSize: 11, color: '#7B9E87', fontWeight: '700' },
 
   // 入力エリア
   input: {
