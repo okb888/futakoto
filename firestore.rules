@@ -1,12 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function partnerUidOrNull(data) {
+      return data.keys().hasAny(['partnerUid']) ? data.partnerUid : null;
+    }
 
-    // 招待コード: 認証済みなら読める。書き込みは自分のuidのコードのみ
+    // 招待コード: 認証済みなら読める。採番・更新はCloud Functionsのみ
     match /inviteCodes/{code} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
-      allow update, delete: if false;
+      allow create, update, delete: if false;
     }
 
     match /users/{uid} {
@@ -15,8 +17,12 @@ service cloud.firestore {
         request.auth.uid == uid ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.partnerUid == uid
       );
-      // 自分のプロフィールのみ書ける（ペアリングはCloud Functionが行う）
-      allow write: if request.auth.uid == uid;
+      // 自分のプロフィールのみ更新可。partnerUid はCloud Functions以外から変更不可
+      allow create: if request.auth.uid == uid
+        && partnerUidOrNull(request.resource.data) == null;
+      allow update: if request.auth.uid == uid
+        && partnerUidOrNull(request.resource.data) == partnerUidOrNull(resource.data);
+      allow delete: if false;
 
       // 投稿: 自分は全件、パートナーはsharedのみ読める
       match /entries/{entryId} {

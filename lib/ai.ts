@@ -1,5 +1,6 @@
 import { httpsCallable } from 'firebase/functions';
 import { auth, functions } from './firebase';
+import type { UserProfile } from './db';
 
 export interface RewriteResult {
   understanding?: {
@@ -21,6 +22,10 @@ export interface SummaryResult {
 export interface ConsultResult {
   reflection: string;
   messageDraft: string;
+}
+
+export interface EnsureUserProfileResult {
+  profile: UserProfile;
 }
 
 async function call<T>(name: string, data: any): Promise<T> {
@@ -49,6 +54,13 @@ export async function deleteAccount(): Promise<void> {
 
 export async function regenerateInviteCode(): Promise<{ inviteCode: string }> {
   return call<{ inviteCode: string }>('regenerateInviteCode', {});
+}
+
+export async function ensureUserProfile(): Promise<UserProfile> {
+  const result = await call<EnsureUserProfileResult>('ensureUserProfile', {
+    email: auth.currentUser?.email ?? '',
+  });
+  return result.profile;
 }
 
 export async function aiRewrite(text: string, partnerName?: string): Promise<RewriteResult> {

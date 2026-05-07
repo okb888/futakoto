@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from './firebase';
-import { createUserProfile, UserProfile } from './db';
+import { ensureUserProfile } from './ai';
+import { UserProfile } from './db';
 
 type AuthContextType = {
   user: User | null;
@@ -28,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null);
       return null;
     }
-    const nextProfile = await createUserProfile(currentUser.uid, currentUser.email ?? '');
+    const nextProfile = await ensureUserProfile();
     setProfile(nextProfile);
     return nextProfile;
   }, []);
@@ -45,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const nextProfile = await createUserProfile(u.uid, u.email ?? '');
+        const nextProfile = await ensureUserProfile();
         if (active) {
           setProfile(nextProfile);
           setUser(u);

@@ -30,6 +30,9 @@ const AI_DAILY_LIMITS = {
   aiSummary: 10,
 } as const;
 const AI_MONTHLY_CREDIT_LIMIT = 500;
+const AI_SUMMARY_MAX_ENTRIES = 500;
+const AI_SUMMARY_MAX_TOTAL_CHARS = 50000;
+const AI_SUMMARY_MAX_MEMO_CHARS = 500;
 
 type AiFeature = keyof typeof AI_DAILY_LIMITS;
 type AiModelKey = 'rewrite' | 'consult' | 'interpret' | 'summary';
@@ -239,6 +242,80 @@ async function consumeAiQuota(uid: string, feature: AiFeature): Promise<void> {
     }, { merge: true });
   });
 }
+
+export const ensureUserProfile = onCall(PAIR_OPTIONS, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
+
+  const uid = request.auth.uid;
+  const tokenEmail = request.auth.token.email;
+  const email = typeof tokenEmail === 'string'
+    ? tokenEmail
+    : ((request.data as { email?: string } | undefined)?.email ?? '');
+  const userRef = db.doc(`users/${uid}`);
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const inviteCode = generateInviteCode();
+    const codeRef = db.doc(`inviteCodes/${inviteCode}`);
+
+    try {
+      const profile = await db.runTransaction(async (transaction) => {
+        const [userSnap, codeSnap] = await Promise.all([
+          transaction.get(userRef),
+          transaction.get(codeRef),
+        ]);
+
+        if (codeSnap.exists) {
+          throw new Error('invite-code-collision');
+        }
+
+        if (userSnap.exists) {
+          const data = userSnap.data()!;
+          if (data.inviteCode) {
+            return {
+              uid,
+              email: data.email ?? email,
+              ...data,
+            };
+          }
+
+          transaction.set(codeRef, { uid });
+          transaction.update(userRef, {
+            inviteCode,
+            email: data.email ?? email,
+          });
+          return {
+            uid,
+            email: data.email ?? email,
+            ...data,
+            inviteCode,
+          };
+        }
+
+        const newProfile = {
+          uid,
+          email,
+          displayName: email.includes('@') ? email.split('@')[0] : 'ふたことユーザー',
+          inviteCode,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        transaction.set(codeRef, { uid });
+        transaction.set(userRef, newProfile);
+
+        return {
+          ...newProfile,
+          createdAt: new Date().toISOString(),
+        };
+      });
+
+      return { profile };
+    } catch (e: any) {
+      if (e?.message === 'invite-code-collision') continue;
+      throw e;
+    }
+  }
+
+  throw new HttpsError('internal', '招待コードを生成できませんでした');
+});
 
 export const pairWithCode = onCall(PAIR_OPTIONS, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
@@ -653,17 +730,32 @@ export const aiSummary = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
     const { entries, target, partnerName } = request.data as {
-      entries?: { mood: number; memo: string }[];
+      entries?: { mood: number; memo: unknown }[];
       target?: 'me' | 'partner';
       partnerName?: string;
     };
-    if (!entries || entries.length === 0) {
+    if (!Array.isArray(entries) || entries.length === 0) {
       throw new HttpsError('invalid-argument', '投稿データが必要です');
     }
+    if (entries.length > AI_SUMMARY_MAX_ENTRIES) {
+      throw new HttpsError('invalid-argument', `投稿データは${AI_SUMMARY_MAX_ENTRIES}件以内で送信してください`);
+    }
+
+    const normalizedEntries = entries.map((entry) => ({
+      mood: typeof entry.mood === 'number' ? entry.mood : 3,
+      memo: typeof entry.memo === 'string' ? entry.memo : '',
+    }));
+    const totalMemoChars = normalizedEntries.reduce((sum, entry) => sum + entry.memo.length, 0);
+    if (totalMemoChars > AI_SUMMARY_MAX_TOTAL_CHARS) {
+      throw new HttpsError('invalid-argument', `投稿本文の合計は${AI_SUMMARY_MAX_TOTAL_CHARS}文字以内で送信してください`);
+    }
+
     await consumeAiQuota(request.auth.uid, 'aiSummary');
 
     const partner = partnerName || 'パートナー';
-    const summary = entries.map((e) => `[気分${e.mood}] ${e.memo}`).join('\n');
+    const summary = normalizedEntries
+      .map((e) => `[気分${e.mood}] ${e.memo.slice(0, AI_SUMMARY_MAX_MEMO_CHARS)}`)
+      .join('\n');
 
     const prompt = target === 'partner'
       ? `あなたは夫婦のコミュニケーション支援AIです。

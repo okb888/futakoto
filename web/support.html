@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>サポート | ふたこと</title>
+<meta name="description" content="ふたことのサポートページ。お問い合わせ、よくある質問、アカウント削除について。">
+<link rel="icon" href="/favicon.png">
+<style>
+  :root {
+    --bg: #FAFAF8;
+    --card: #FFFFFF;
+    --sage: #7B9E87;
+    --sage-soft: #EDF4F0;
+    --text: #2D2D2D;
+    --text-2: #444;
+    --text-3: #555;
+    --text-weak: #888;
+    --border: #E0E0E0;
+    --border-light: #F0F0F0;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--sage); }
+  .container { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+  .nav {
+    padding: 24px 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .logo {
+    color: var(--text); text-decoration: none;
+    font-size: 22px; font-weight: 700; letter-spacing: 4px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo svg { width: 32px; height: 32px; }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a { color: var(--text-3); text-decoration: none; font-size: 13px; }
+  .hero { padding: 56px 0 40px; border-top: 1px solid var(--border-light); }
+  .eyebrow {
+    color: var(--sage); font-size: 11px; font-weight: 700;
+    letter-spacing: 4px; margin-bottom: 18px;
+  }
+  h1 { font-size: 40px; line-height: 1.35; letter-spacing: 1px; margin: 0 0 18px; }
+  .lead { color: var(--text-3); font-size: 15px; line-height: 1.8; max-width: 680px; margin: 0; }
+  .contact-card {
+    background: var(--sage-soft);
+    border: 1px solid #DDEBE3;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+  }
+  .contact-card h2 { margin-top: 0; }
+  .doc {
+    background: var(--card);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 36px;
+    margin: 24px 0 72px;
+  }
+  h2 { font-size: 20px; margin: 36px 0 12px; letter-spacing: 1px; }
+  h3 { font-size: 16px; margin: 28px 0 8px; }
+  p, li { color: var(--text-2); font-size: 14px; line-height: 1.9; }
+  ul { padding-left: 1.2em; }
+  .updated { color: var(--text-weak); font-size: 12px; margin-top: 32px; }
+  .foot {
+    border-top: 1px solid var(--border);
+    padding: 28px 0 40px;
+    color: var(--text-weak);
+    font-size: 12px;
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .foot-links { display: flex; gap: 18px; flex-wrap: wrap; }
+  .foot a { color: var(--text-weak); text-decoration: none; }
+  @media (max-width: 640px) {
+    h1 { font-size: 30px; }
+    .doc { padding: 24px 20px; }
+    .nav-links { gap: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <nav class="nav">
+    <a class="logo" href="/">
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <clipPath id="mark"><circle cx="78" cy="100" r="56"/></clipPath>
+        <circle cx="78" cy="100" r="56" fill="#7B9E87"/>
+        <circle cx="122" cy="100" r="56" fill="#C8D8CC"/>
+        <g clip-path="url(#mark)"><circle cx="122" cy="100" r="56" fill="#5A7E68"/></g>
+      </svg>
+      <span>ふたこと</span>
+    </a>
+    <div class="nav-links">
+      <a href="/">ホーム</a>
+      <a href="/privacy">プライバシー</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="eyebrow">SUPPORT</div>
+    <h1>サポート</h1>
+    <p class="lead">ふたことの使い方、アカウント、データ削除、AI機能について困ったときのページです。</p>
+  </header>
+
+  <section class="contact-card">
+    <h2>お問い合わせ</h2>
+    <p>不具合、アカウント、データ削除、その他のお問い合わせは、以下のメールアドレスまでご連絡ください。</p>
+    <p><a href="mailto:support@futakoto.jp">support@futakoto.jp</a></p>
+  </section>
+
+  <main class="doc">
+    <h2>よくある質問</h2>
+
+    <h3>Q1. パートナーと連携するにはどうすればいいですか？</h3>
+    <p>設定画面に表示される6桁の招待コードを相手に共有してください。相手がそのコードを入力すると、ふたりのアカウントが連携されます。</p>
+
+    <h3>Q2. 「自分のみ」の投稿は相手に見えますか？</h3>
+    <p>見えません。「自分のみ」は自分のアカウントだけで表示されます。相手に共有したい投稿は「ふたりへ」を選んで投稿してください。</p>
+
+    <h3>Q3. 通知が届かないときはどうすればいいですか？</h3>
+    <p>iPhoneの通知設定でふたことの通知が許可されているか確認してください。アプリ内の設定画面で、毎日の記録リマインダーや共有投稿通知がオンになっているかも確認してください。</p>
+
+    <h3>Q4. AI機能では何が送信されますか？</h3>
+    <p>AIで整える、壁打ち、気持ちを読み解く、月次要約を使うと、処理に必要な投稿や相談テキストがGoogle Gemini APIへ送信されます。詳しくは <a href="/privacy">プライバシーポリシー</a> を確認してください。</p>
+
+    <h3>Q5. アカウントを削除できますか？</h3>
+    <p>設定画面からアカウント削除ができます。削除すると、プロフィール、投稿、相談履歴、お気に入り、通知トークンなど、アカウントに紐づくデータが削除されます。</p>
+
+    <h3>Q6. パートナー連携を解除できますか？</h3>
+    <p>設定画面から連携を解除できます。解除後、相手の共有投稿は表示されなくなります。必要であれば、招待コードを使って再度連携できます。</p>
+
+    <h2>お問い合わせ時にあると助かる情報</h2>
+    <ul>
+      <li>利用している端末名とiOSバージョン</li>
+      <li>発生した画面と操作内容</li>
+      <li>表示されたエラーメッセージ</li>
+      <li>発生日時のおおよその時刻</li>
+    </ul>
+
+    <p class="updated">最終更新日: 2026年5月8日</p>
+  </main>
+
+  <footer class="foot">
+    <div>© 2026 futakoto</div>
+    <div class="foot-links">
+      <a href="/privacy">プライバシー</a>
+      <a href="/support">サポート</a>
+      <a href="https://x.com/futakoto_app" target="_blank" rel="noopener">X</a>
+      <a href="https://instagram.com/futakoto_app" target="_blank" rel="noopener">Instagram</a>
+    </div>
+  </footer>
+</div>
+</body>
+</html>
