@@ -16,6 +16,16 @@ const AI_FUNCTION_OPTIONS = {
 };
 const db = admin.firestore();
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const SHARED_POST_NOTIFICATION_COOLDOWN_MS = 5 * 60 * 1000;
+const AI_DAILY_TOTAL_LIMIT = 50;
+const AI_DAILY_LIMITS = {
+  aiRewrite: 30,
+  aiConsult: 20,
+  aiInterpret: 30,
+  aiSummary: 10,
+} as const;
+
+type AiFeature = keyof typeof AI_DAILY_LIMITS;
 
 function getModel() {
   const apiKey = GEMINI_API_KEY.value()
@@ -63,45 +73,102 @@ function generateInviteCode(): string {
   return code;
 }
 
+function tokyoDateKey(date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+async function consumeAiQuota(uid: string, feature: AiFeature): Promise<void> {
+  const dateKey = tokyoDateKey();
+  const usageRef = db.doc(`users/${uid}/aiUsage/${dateKey}`);
+  const featureLimit = AI_DAILY_LIMITS[feature];
+
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(usageRef);
+    const data = snap.exists ? snap.data()! : {};
+    const total = typeof data.total === 'number' ? data.total : 0;
+    const featureCount = typeof data[feature] === 'number' ? data[feature] : 0;
+
+    if (total >= AI_DAILY_TOTAL_LIMIT || featureCount >= featureLimit) {
+      throw new HttpsError(
+        'resource-exhausted',
+        `今日のAI利用上限に達しました（1日${AI_DAILY_TOTAL_LIMIT}回まで）。明日また使えます`
+      );
+    }
+
+    const payload: Record<string, any> = {
+      date: dateKey,
+      total: admin.firestore.FieldValue.increment(1),
+      [feature]: admin.firestore.FieldValue.increment(1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    if (!snap.exists) {
+      payload.createdAt = admin.firestore.FieldValue.serverTimestamp();
+    }
+    transaction.set(usageRef, payload, { merge: true });
+  });
+}
+
 export const pairWithCode = onCall(PAIR_OPTIONS, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
   const { code } = request.data as { code?: string };
   if (!code) throw new HttpsError('invalid-argument', 'コードが必要です');
 
   const myUid = request.auth.uid;
-  const codeSnap = await db.doc(`inviteCodes/${code.toUpperCase()}`).get();
-  if (!codeSnap.exists) throw new HttpsError('not-found', '招待コードが見つかりません');
-  const partnerUid = codeSnap.data()!.uid as string;
-  if (partnerUid === myUid) throw new HttpsError('invalid-argument', '自分のコードは使えません');
+  const codeRef = db.doc(`inviteCodes/${code.toUpperCase()}`);
+  const myRef = db.doc(`users/${myUid}`);
 
-  const partnerSnap = await db.doc(`users/${partnerUid}`).get();
-  if (!partnerSnap.exists) throw new HttpsError('not-found', '相手のアカウントが見つかりません');
-  const partnerData = partnerSnap.data()!;
-  if (partnerData.partnerUid && partnerData.partnerUid !== myUid) {
-    throw new HttpsError('failed-precondition', '相手はすでに別のパートナーと繋がっています');
-  }
+  await db.runTransaction(async (transaction) => {
+    const codeSnap = await transaction.get(codeRef);
+    if (!codeSnap.exists) throw new HttpsError('not-found', '招待コードが見つかりません');
+    const partnerUid = codeSnap.data()!.uid as string;
+    if (partnerUid === myUid) throw new HttpsError('invalid-argument', '自分のコードは使えません');
 
-  const mySnap = await db.doc(`users/${myUid}`).get();
-  const myData = mySnap.data()!;
-  if (myData.partnerUid && myData.partnerUid !== partnerUid) {
-    throw new HttpsError('failed-precondition', '既にペアリング済みです。先に解除してください');
-  }
+    const partnerRef = db.doc(`users/${partnerUid}`);
+    const [mySnap, partnerSnap] = await Promise.all([
+      transaction.get(myRef),
+      transaction.get(partnerRef),
+    ]);
+    if (!mySnap.exists) throw new HttpsError('not-found', '自分のプロフィールが見つかりません');
+    if (!partnerSnap.exists) throw new HttpsError('not-found', '相手のアカウントが見つかりません');
 
-  await db.doc(`users/${myUid}`).update({ partnerUid });
-  await db.doc(`users/${partnerUid}`).update({ partnerUid: myUid });
+    const myData = mySnap.data()!;
+    const partnerData = partnerSnap.data()!;
+    if (partnerData.partnerUid && partnerData.partnerUid !== myUid) {
+      throw new HttpsError('failed-precondition', '相手はすでに別のパートナーと繋がっています');
+    }
+    if (myData.partnerUid && myData.partnerUid !== partnerUid) {
+      throw new HttpsError('failed-precondition', '既にペアリング済みです。先に解除してください');
+    }
+
+    transaction.update(myRef, { partnerUid });
+    transaction.update(partnerRef, { partnerUid: myUid });
+  });
 });
 
 export const unpairPartner = onCall(PAIR_OPTIONS, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
   const myUid = request.auth.uid;
 
-  const mySnap = await db.doc(`users/${myUid}`).get();
-  if (!mySnap.exists) throw new HttpsError('not-found', 'プロフィールが見つかりません');
-  const partnerUid = mySnap.data()!.partnerUid as string | undefined;
-  if (!partnerUid) throw new HttpsError('failed-precondition', 'ペアリングされていません');
+  const myRef = db.doc(`users/${myUid}`);
 
-  await db.doc(`users/${myUid}`).update({ partnerUid: admin.firestore.FieldValue.delete() });
-  await db.doc(`users/${partnerUid}`).update({ partnerUid: admin.firestore.FieldValue.delete() });
+  await db.runTransaction(async (transaction) => {
+    const mySnap = await transaction.get(myRef);
+    if (!mySnap.exists) throw new HttpsError('not-found', 'プロフィールが見つかりません');
+    const partnerUid = mySnap.data()!.partnerUid as string | undefined;
+    if (!partnerUid) throw new HttpsError('failed-precondition', 'ペアリングされていません');
+
+    const partnerRef = db.doc(`users/${partnerUid}`);
+    const partnerSnap = await transaction.get(partnerRef);
+    transaction.update(myRef, { partnerUid: admin.firestore.FieldValue.delete() });
+    if (partnerSnap.exists && partnerSnap.data()?.partnerUid === myUid) {
+      transaction.update(partnerRef, { partnerUid: admin.firestore.FieldValue.delete() });
+    }
+  });
 });
 
 export const regenerateInviteCode = onCall(PAIR_OPTIONS, async (request) => {
@@ -155,7 +222,10 @@ async function sendSharedEntryNotification(authorUid: string, entryId: string): 
   if (!partner?.notificationSettings?.sharedPostNotificationsEnabled) return;
 
   const lastNotifiedAt = partner.notificationMeta?.lastSharedPostNotificationAt;
-  if (lastNotifiedAt?.toMillis && Date.now() - lastNotifiedAt.toMillis() < 60 * 60 * 1000) {
+  if (
+    lastNotifiedAt?.toMillis &&
+    Date.now() - lastNotifiedAt.toMillis() < SHARED_POST_NOTIFICATION_COOLDOWN_MS
+  ) {
     return;
   }
 
@@ -257,6 +327,7 @@ export const aiRewrite = onCall(
     if (text.length > 1000) {
       throw new HttpsError('invalid-argument', 'テキストが長すぎます（1000文字以内）');
     }
+    await consumeAiQuota(request.auth.uid, 'aiRewrite');
 
     const partner = partnerName || 'パートナー';
     const prompt = `あなたは夫婦のコミュニケーション支援AIです。
@@ -321,6 +392,7 @@ export const aiConsult = onCall(
     if (text.length > 2000) {
       throw new HttpsError('invalid-argument', '相談内容が長すぎます（2000文字以内）');
     }
+    await consumeAiQuota(request.auth.uid, 'aiConsult');
 
     const partner = partnerName || 'パートナー';
 
@@ -390,6 +462,7 @@ export const aiInterpret = onCall(
         return { interpretations: cacheSnap.data()!.interpretations };
       }
     }
+    await consumeAiQuota(viewerUid, 'aiInterpret');
 
     const partner = partnerName || 'パートナー';
     const moodLabel = ['', '😣つらい', '😔しんどい', '😐ふつう', '🙂まあまあ', '😊いい感じ'][mood ?? 3];
@@ -445,6 +518,7 @@ export const aiSummary = onCall(
     if (!entries || entries.length === 0) {
       throw new HttpsError('invalid-argument', '投稿データが必要です');
     }
+    await consumeAiQuota(request.auth.uid, 'aiSummary');
 
     const partner = partnerName || 'パートナー';
     const summary = entries.map((e) => `[気分${e.mood}] ${e.memo}`).join('\n');

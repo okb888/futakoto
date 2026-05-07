@@ -25,6 +25,7 @@ export interface Entry {
   mood: number;
   memo: string;
   visibility: Visibility;
+  sourceConsultationSessionId?: string;
   createdAt: any;
   updatedAt?: any;
   // 将来のAI統合用（任意）
@@ -214,15 +215,20 @@ export async function addEntry(
   mood: number,
   memo: string,
   visibility: Visibility,
-  createdAt?: Date
+  createdAt?: Date,
+  sourceConsultationSessionId?: string
 ): Promise<void> {
-  await addDoc(collection(db, 'users', uid, 'entries'), {
+  const payload: Record<string, any> = {
     uid,
     mood,
     memo,
     visibility,
     createdAt: createdAt ? Timestamp.fromDate(createdAt) : serverTimestamp(),
-  });
+  };
+  if (sourceConsultationSessionId) {
+    payload.sourceConsultationSessionId = sourceConsultationSessionId;
+  }
+  await addDoc(collection(db, 'users', uid, 'entries'), payload);
 }
 
 export async function getEntry(uid: string, entryId: string): Promise<Entry | null> {
@@ -351,6 +357,14 @@ export async function getRecentConsultationSessions(
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as ConsultationSession));
+}
+
+export async function getConsultationSession(
+  uid: string,
+  sessionId: string
+): Promise<ConsultationSession | null> {
+  const snap = await getDoc(doc(db, 'users', uid, 'consultationSessions', sessionId));
+  return snap.exists() ? ({ id: snap.id, ...snap.data() } as ConsultationSession) : null;
 }
 
 // ---- Favorites ----

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,14 +10,13 @@ import {
 } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Sparkle } from 'phosphor-react-native';
+import { ArrowRight, Sparkle } from 'phosphor-react-native';
 import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
 import { useAuth } from '../../lib/auth';
 import { aiSummary } from '../../lib/ai';
 import { MOOD_COLORS, MOOD_EMOJI } from '../../lib/mood';
 import {
-  createUserProfile,
   getUserProfile,
   getEntriesInRange,
   getPartnerSharedEntries,
@@ -82,7 +81,7 @@ function latestByDate(entries: Entry[]): Record<string, Entry> {
 }
 
 export default function CalendarScreen() {
-  const { user } = useAuth();
+  const { user, profile: authProfile, refreshProfile } = useAuth();
   const router = useRouter();
   const [myEntries, setMyEntries] = useState<Entry[]>([]);
   const [myEntriesCache, setMyEntriesCache] = useState<Record<string, Entry[]>>({});
@@ -133,16 +132,21 @@ export default function CalendarScreen() {
     }
   }
 
-  async function load() {
+  async function load(isCancelled: () => boolean = () => false) {
     if (!user) return;
     setLoading(true);
-    const p = await createUserProfile(user.uid, user.email ?? '');
+    const p = authProfile ?? await refreshProfile();
+    if (isCancelled() || !p) {
+      if (!isCancelled()) setLoading(false);
+      return;
+    }
     const { start, end } = getMonthBounds(currentMonth);
     const [my, savedConsultations, favorites] = await Promise.all([
       getEntriesInRange(user.uid, start, end),
       getRecentConsultations(user.uid, 100),
       getFavoriteEntryIds(user.uid),
     ]);
+    if (isCancelled()) return;
     const newCache = { [currentMonth]: my };
     setMyEntries(my);
     setMyEntriesCache(newCache);
@@ -150,17 +154,30 @@ export default function CalendarScreen() {
     setFavoriteIds(favorites);
     if (p?.partnerUid) {
       const pp = await getUserProfile(p.partnerUid);
+      if (isCancelled()) return;
       setPartnerProfile(pp);
       const partner = await getPartnerSharedEntries(p.partnerUid, 500);
+      if (isCancelled()) return;
       setPartnerEntries(partner);
     } else {
       setPartnerEntries([]);
       setPartnerProfile(null);
+      if (summaryTarget === 'partner') {
+        setSummaryTarget('me');
+        setAiSummaryText(aiSummaryCache[`${currentMonth}-me`] ?? null);
+      }
+      if (filter === 'partner') setFilter('all');
     }
-    setLoading(false);
+    if (!isCancelled()) setLoading(false);
   }
 
-  useFocusEffect(useCallback(() => { load(); }, [user]));
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    load(() => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authProfile, currentMonth]));
 
   function switchSummaryTarget(target: 'me' | 'partner') {
     setSummaryTarget(target);
@@ -239,11 +256,11 @@ export default function CalendarScreen() {
     return map;
   };
 
-  const myByDate = groupByDate(myEntries);
-  const partnerByDate = groupByDate(partnerEntries);
-  const consultationsByDate = groupConsultationsByDate(consultations);
-  const latestMyByDate = latestByDate(myEntries);
-  const latestPartnerByDate = latestByDate(partnerEntries);
+  const myByDate = useMemo(() => groupByDate(myEntries), [myEntries]);
+  const partnerByDate = useMemo(() => groupByDate(partnerEntries), [partnerEntries]);
+  const consultationsByDate = useMemo(() => groupConsultationsByDate(consultations), [consultations]);
+  const latestMyByDate = useMemo(() => latestByDate(myEntries), [myEntries]);
+  const latestPartnerByDate = useMemo(() => latestByDate(partnerEntries), [partnerEntries]);
 
   const markedDates: Record<string, any> = {};
   if (selected) {
@@ -251,7 +268,7 @@ export default function CalendarScreen() {
   }
 
   const partnerName = partnerProfile?.displayName ?? partnerProfile?.email?.split('@')[0] ?? 'パートナー';
-  const selectedDayRecords = [
+  const selectedDayRecords = useMemo(() => [
     ...(myByDate[selected] ?? []).map((entry) => ({
       kind: 'entry' as const,
       entry,
@@ -283,7 +300,16 @@ export default function CalendarScreen() {
       if (filter === 'favorite') return record.isFavorite;
       return true;
     })
-    .sort((a, b) => sortOrder === 'desc' ? b.sortSeconds - a.sortSeconds : a.sortSeconds - b.sortSeconds);
+    .sort((a, b) => sortOrder === 'desc' ? b.sortSeconds - a.sortSeconds : a.sortSeconds - b.sortSeconds), [
+    consultationsByDate,
+    favoriteIds,
+    filter,
+    myByDate,
+    partnerByDate,
+    partnerName,
+    selected,
+    sortOrder,
+  ]);
 
   async function handleToggleVisibility(entry: Entry) {
     if (!user || !entry.id) return;
@@ -319,6 +345,14 @@ export default function CalendarScreen() {
     if (entry.uid !== user?.uid) return;
     const key = actionKey(entry);
     setActiveActionKey((current) => current === key ? null : key);
+  }
+
+  function openSourceConsultation(entry: Entry) {
+    if (!entry.sourceConsultationSessionId) return;
+    router.push({
+      pathname: '/(app)/consult',
+      params: { sessionId: entry.sourceConsultationSessionId },
+    });
   }
 
   async function handleToggleFavorite(entry: Entry) {
@@ -585,6 +619,17 @@ export default function CalendarScreen() {
                   onDelete={() => handleDelete(e)}
                 />
               ) : null}
+              {isOwn && e.sourceConsultationSessionId ? (
+                <TouchableOpacity
+                  style={styles.sourceConsultationLink}
+                  onPress={() => openSourceConsultation(e)}
+                  activeOpacity={0.7}
+                >
+                  <Sparkle size={13} color="#7C5BB7" weight="fill" />
+                  <Text style={styles.sourceConsultationLinkText}>この壁打ちを見る</Text>
+                  <ArrowRight size={13} color="#7C5BB7" weight="bold" />
+                </TouchableOpacity>
+              ) : null}
             </View>
           );
         })
@@ -690,6 +735,23 @@ const styles = StyleSheet.create({
   cardMemo: { fontSize: 13, color: '#444', marginTop: 10, lineHeight: 19 },
   usePostButton: { alignSelf: 'flex-start', marginTop: 10, paddingVertical: 4 },
   usePostButtonText: { fontSize: 12, color: '#7B9E87', fontWeight: '700' },
+  sourceConsultationLink: {
+    marginHorizontal: 16,
+    marginTop: -6,
+    marginBottom: 10,
+    backgroundColor: '#F9F7FC',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: '#EBE4F5',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sourceConsultationLinkText: { flex: 1, fontSize: 12, color: '#7C5BB7', fontWeight: '700' },
   summaryButtonArea: { paddingHorizontal: 24, paddingTop: 4, paddingBottom: 8, gap: 10 },
   summaryTargetRow: { flexDirection: 'row', gap: 8 },
   summaryTargetBtn: {

@@ -59,7 +59,7 @@
 - 同時に `@react-native-community/datetimepicker` (`display="spinner"`) への置換も検討。自作離散リストは選択時に自動スクロールしないため UX が劣る。
 - 工数: 0.5〜1日
 
-### P1-4. 壁打ち→投稿の紐付け
+### P1-4. 壁打ち→投稿の紐付け ✅ 完了
 - `entries` に `sourceConsultationSessionId` を持たせ、投稿カードから「この壁打ちを見る」導線を追加。
 - 工数: 0.5日
 
@@ -67,33 +67,33 @@
 - 設定画面に「コードを作り直す」ボタン。旧コードを削除→新規発行。
 - 工数: 0.3日
 
-### P1-6. ペア解除時のクリーンアップ表示
+### P1-6. ペア解除時のクリーンアップ表示 ✅ 完了
 - 解除後、ホーム/カレンダーに残るパートナー投稿カードや「気持ちを読み解く」キャッシュの表示制御を確認・整備。
 - 工数: 0.3日
 
-### P1-7. `useFocusEffect` の race 対策統一
+### P1-7. `useFocusEffect` の race 対策統一 ✅ 完了
 - `index.tsx` `calendar.tsx` `consult.tsx` `settings.tsx` の `load()` に `cancelled` フラグを導入（`post.tsx` の実装に合わせる）。
 - 工数: 0.3日
 
-### P1-8. `calendar.tsx` のメモ化
+### P1-8. `calendar.tsx` のメモ化 ✅ 完了
 - `selectedDayRecords` `latestByDate` `groupByDate` を `useMemo` 化。`dayComponent` を `React.memo` 検討。
 - 工数: 0.3日
 
-### P1-9. `createUserProfile` の頻度削減
+### P1-9. `createUserProfile` の頻度削減 ✅ 完了
 - 画面フォーカスごとに呼ばれている。`AuthProvider` 直後に1度だけ呼ぶ構造に変更。
 - 工数: 0.3日
 
-### P1-10. 通知レート制限の見直し
-- `functions/src/index.ts:76-79` の「1時間1通」は、忙しい日に2件目以降が黙殺される。デバウンス（最後の投稿から3〜5分後にまとめて1通）の方が体験に近い。
+### P1-10. 通知レート制限の見直し ✅ 完了
+- `functions/src/index.ts:76-79` の「1時間1通」は、忙しい日に2件目以降が黙殺される。現時点では5分クールダウンに短縮し、将来の集約通知に進めやすい定数化を実施。
 - 工数: 0.5日
 
-### P1-11. ペアリングの `runTransaction` 化（P0-1 残課題）
+### P1-11. ペアリングの `runTransaction` 化（P0-1 残課題） ✅ 完了
 - 現状の Cloud Function は `update` を逐次2回。同時 pair リクエストや片側書き込み失敗時の整合性穴を `runTransaction` で塞ぐ。
 - 工数: 0.3日
 
-### P1-12. AI 呼び出しレート制限（公開前）
+### P1-12. AI 呼び出しレート制限（公開前） ✅ 完了
 - 現在 `aiRewrite` / `aiConsult` / `aiInterpret` / `aiSummary` は文字数上限のみで回数制限なし。Gemini コスト暴走防止のため「ユーザーごと1日 N 回」を Cloud Function 入口に追加。
-- データ: `users/{uid}/aiUsage/{YYYY-MM-DD}` に counter を持たせ、超過で `resource-exhausted` を投げる。
+- データ: `users/{uid}/aiUsage/{YYYY-MM-DD}` に counter を持たせ、超過で `resource-exhausted` を投げる。上限はおすすめ初期値として全体50回/日、機能別に rewrite 30 / consult 20 / interpret 30 / summary 10。
 - 受け入れ条件: 日付またぎでリセット。
 - 工数: 0.5日
 
@@ -146,6 +146,7 @@
 - **2026-05-08**: P0-1 を別スレッドで完了 (commit e2df360)。`firestore.rules` / `pairWithCode`/`unpairPartner` の Cloud Function 化 / `getPartnerSharedEntries` クエリフィルタ をまとめて適用。残存リスクとして AI レート制限・プロンプトインジェクション緩和が浮上 → P1-12 / P2-8 として追加。
 - **2026-05-08**: P0-2 / P0-3 を完了。`deleteAccount` Cloud Function（サブコレクション連鎖削除＋パートナー解除＋inviteCode 解放＋Auth 削除）、設定画面に削除フロー UI（password 再認証対応、Google/Apple は将来追加可能な構造）。`notifyPartnerOnVisibilityChange`（`onDocumentUpdated`）追加で private→shared 切替時の通知も発火するよう対応。
 - **2026-05-08**: P1-1 / P1-2 / P1-5 を完了。`lib/theme.ts` / `lib/mood.ts` 追加、投稿・設定の時刻選択を `TimePickerSheet` に共通化、`regenerateInviteCode` callable と設定画面の「コードを作り直す」導線を追加。
+- **2026-05-08**: P1-4 / P1-6〜P1-12 を完了。壁打ち→投稿の `sourceConsultationSessionId` 紐付け、ペア解除後の表示クリア、`useFocusEffect` race対策、カレンダー計算のメモ化、`AuthProvider` でのプロフィール作成集約、共有投稿通知の5分クールダウン、ペアリング transaction 化、AI日次レート制限（全体50回/日＋機能別上限）を追加。
 
 ## メモ
 - Firestore ルール ([firestore.rules](../firestore.rules)) は P0-1 完了で堅牢化済み。`entries` の partner 読み取りは shared のみに絞られている。

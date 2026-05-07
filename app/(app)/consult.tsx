@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowRight, Sparkle, Star } from 'phosphor-react-native';
 import { useAuth } from '../../lib/auth';
 import { aiConsult, ConsultResult } from '../../lib/ai';
@@ -19,9 +19,9 @@ import {
   createConsultationSession,
   addTurnToSession,
   toggleSessionFavorite,
+  getConsultationSession,
   getRecentConsultationSessions,
   ConsultationSession,
-  createUserProfile,
   getUserProfile,
 } from '../../lib/db';
 
@@ -41,8 +41,10 @@ function formatDate(ts: any): string {
 }
 
 export default function ConsultScreen() {
-  const { user } = useAuth();
+  const { user, profile: authProfile, refreshProfile } = useAuth();
   const router = useRouter();
+  const params = useLocalSearchParams<{ sessionId?: string }>();
+  const focusSessionId = typeof params.sessionId === 'string' ? params.sessionId : undefined;
   const [text, setText] = useState('');
   const [partnerName, setPartnerName] = useState('パートナー');
   const [communicationStyle, setCommunicationStyle] = useState<string | undefined>(undefined);
@@ -56,25 +58,37 @@ export default function ConsultScreen() {
 
   const tooShort = text.trim().length > 0 && text.trim().length < 50;
 
-  async function load() {
+  async function load(isCancelled: () => boolean = () => false) {
     if (!user) return;
-    const profile = await createUserProfile(user.uid, user.email ?? '');
+    const profile = authProfile ?? await refreshProfile();
+    if (isCancelled() || !profile) return;
     setCommunicationStyle(profile.communicationStyle ?? undefined);
     if (profile.partnerUid) {
       const partner = await getUserProfile(profile.partnerUid);
+      if (isCancelled()) return;
       if (partner) setPartnerName(partner.displayName ?? partner.email?.split('@')[0] ?? 'パートナー');
     }
-    const sessions = await getRecentConsultationSessions(user.uid, 10);
+    let sessions = await getRecentConsultationSessions(user.uid, 10);
+    if (focusSessionId && !sessions.some((session) => session.id === focusSessionId)) {
+      const focused = await getConsultationSession(user.uid, focusSessionId);
+      if (focused) sessions = [focused, ...sessions];
+    }
+    if (isCancelled()) return;
     setRecentSessions(sessions);
+    if (focusSessionId) setExpandedSessionId(focusSessionId);
   }
 
   useFocusEffect(useCallback(() => {
-    load();
+    let cancelled = false;
+    load(() => cancelled);
     setConversation([]);
     setSessionId(null);
     setIsFavorited(false);
     setText('');
-  }, [user]));
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authProfile, focusSessionId]));
 
   async function handleConsult() {
     if (!user || !text.trim() || conversation.length >= MAX_TURNS) return;
@@ -138,8 +152,14 @@ export default function ConsultScreen() {
     }
   }
 
-  function useAsPost(messageDraft: string) {
-    router.push({ pathname: '/(app)/post', params: { memo: messageDraft } });
+  function useAsPost(messageDraft: string, sourceSessionId?: string) {
+    router.push({
+      pathname: '/(app)/post',
+      params: {
+        memo: messageDraft,
+        ...(sourceSessionId ? { sourceConsultationSessionId: sourceSessionId } : {}),
+      },
+    });
   }
 
   return (
@@ -181,7 +201,7 @@ export default function ConsultScreen() {
                     </View>
                     <TouchableOpacity
                       style={styles.usePostButton}
-                      onPress={() => useAsPost(turn.result.messageDraft)}
+                      onPress={() => useAsPost(turn.result.messageDraft, sessionId ?? undefined)}
                     >
                       <ArrowRight size={13} color="#7B9E87" weight="bold" />
                       <Text style={styles.usePostButtonText}>投稿に使う</Text>
@@ -321,7 +341,7 @@ export default function ConsultScreen() {
                           </View>
                           <TouchableOpacity
                             style={styles.usePostButton}
-                            onPress={() => useAsPost(turn.messageDraft)}
+                            onPress={() => useAsPost(turn.messageDraft, session.id)}
                           >
                             <ArrowRight size={13} color="#7B9E87" weight="bold" />
                             <Text style={styles.usePostButtonText}>投稿に使う</Text>

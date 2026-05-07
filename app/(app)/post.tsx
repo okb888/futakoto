@@ -43,8 +43,10 @@ export default function PostScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const navigation = useNavigation();
-  const params = useLocalSearchParams<{ memo?: string; entryId?: string }>();
+  const params = useLocalSearchParams<{ memo?: string; entryId?: string; sourceConsultationSessionId?: string }>();
   const entryId = typeof params.entryId === 'string' ? params.entryId : undefined;
+  const sourceConsultationSessionId =
+    typeof params.sourceConsultationSessionId === 'string' ? params.sourceConsultationSessionId : undefined;
   const isEditing = !!entryId;
   const [mood, setMood] = useState<number | null>(null);
   const [memo, setMemo] = useState('');
@@ -130,7 +132,7 @@ export default function PostScreen() {
       if (isEditing && entryId) {
         await updateEntry(user.uid, entryId, mood, memo, visibility, recordDate);
       } else {
-        await addEntry(user.uid, mood, memo, visibility, recordDate);
+        await addEntry(user.uid, mood, memo, visibility, recordDate, sourceConsultationSessionId);
       }
       router.back();
     } catch (e: any) {

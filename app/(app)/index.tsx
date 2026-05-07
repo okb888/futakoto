@@ -10,13 +10,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Plus, Heart, Sparkle } from 'phosphor-react-native';
+import { ArrowRight, Plus, Heart, Sparkle } from 'phosphor-react-native';
 import { aiInterpret } from '../../lib/ai';
 import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
 import { useAuth } from '../../lib/auth';
 import {
-  createUserProfile,
   getUserProfile,
   getRecentEntries,
   getPartnerSharedEntries,
@@ -40,7 +39,7 @@ function formatDate(ts: any): string {
 }
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, profile: authProfile, refreshProfile } = useAuth();
   const router = useRouter();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -55,24 +54,28 @@ export default function HomeScreen() {
     return `${entry.uid}_${entry.id ?? ''}`;
   }
 
-  async function load() {
+  async function load(isCancelled: () => boolean = () => false) {
     if (!user) return;
     const [p, favorites, caches] = await Promise.all([
-      createUserProfile(user.uid, user.email ?? ''),
+      authProfile ?? refreshProfile(),
       getFavoriteEntryIds(user.uid),
       getAllInterpretationCaches(user.uid),
     ]);
+    if (isCancelled() || !p) return;
     setProfile(p);
     setFavoriteIds(favorites);
     setInterpretationsCache(caches);
 
     const myEntries = await getRecentEntries(user.uid);
+    if (isCancelled()) return;
 
     let allEntries = myEntries;
     if (p?.partnerUid) {
       const pp = await getUserProfile(p.partnerUid);
+      if (isCancelled()) return;
       setPartnerProfile(pp);
       const partnerEntries = await getPartnerSharedEntries(p.partnerUid);
+      if (isCancelled()) return;
       allEntries = [...myEntries, ...partnerEntries].sort(
         (a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
       );
@@ -83,7 +86,13 @@ export default function HomeScreen() {
     setEntries(allEntries);
   }
 
-  useFocusEffect(useCallback(() => { load(); }, [user]));
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    load(() => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authProfile]));
 
   async function onRefresh() {
     setRefreshing(true);
@@ -158,6 +167,14 @@ export default function HomeScreen() {
     }
   }
 
+  function openSourceConsultation(entry: Entry) {
+    if (!entry.sourceConsultationSessionId) return;
+    router.push({
+      pathname: '/(app)/consult',
+      params: { sessionId: entry.sourceConsultationSessionId },
+    });
+  }
+
   const isPaired = !!profile?.partnerUid;
   const partnerName = partnerProfile?.displayName ?? partnerProfile?.email?.split('@')[0] ?? 'パートナー';
 
@@ -214,6 +231,17 @@ export default function HomeScreen() {
                   onToggleVisibility={() => handleToggleVisibility(item)}
                   onDelete={() => handleDelete(item)}
                 />
+              ) : null}
+              {isOwn && item.sourceConsultationSessionId ? (
+                <TouchableOpacity
+                  style={styles.sourceConsultationLink}
+                  onPress={() => openSourceConsultation(item)}
+                  activeOpacity={0.7}
+                >
+                  <Sparkle size={13} color="#7C5BB7" weight="fill" />
+                  <Text style={styles.sourceConsultationLinkText}>この壁打ちを見る</Text>
+                  <ArrowRight size={13} color="#7C5BB7" weight="bold" />
+                </TouchableOpacity>
               ) : null}
               {!isOwn && item.memo ? (
                 <View style={styles.interpretArea}>
@@ -325,4 +353,21 @@ const styles = StyleSheet.create({
   interpretItem: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
   interpretBullet: { fontSize: 13, color: '#7C5BB7', lineHeight: 20, fontWeight: '700' },
   interpretText: { flex: 1, fontSize: 13, color: '#444', lineHeight: 20 },
+  sourceConsultationLink: {
+    marginHorizontal: 16,
+    marginTop: -6,
+    marginBottom: 10,
+    backgroundColor: '#F9F7FC',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: '#EBE4F5',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sourceConsultationLinkText: { flex: 1, fontSize: 12, color: '#7C5BB7', fontWeight: '700' },
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,11 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { Bell, Clock, Heart } from 'phosphor-react-native';
 import { signOut, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { useFocusEffect } from 'expo-router';
 import { TimePickerSheet } from '../../components/TimePickerSheet';
 import { auth } from '../../lib/firebase';
 import { useAuth } from '../../lib/auth';
 import {
-  createUserProfile,
   getUserProfile,
   updateDisplayName,
   updateNotificationSettings,
@@ -51,7 +51,7 @@ function formatReminderTime(hour: number, minute: number): string {
 }
 
 export default function SettingsScreen() {
-  const { user } = useAuth();
+  const { user, profile: authProfile, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [partnerProfile, setPartnerProfile] = useState<UserProfile | null>(null);
   const [inputCode, setInputCode] = useState('');
@@ -71,22 +71,33 @@ export default function SettingsScreen() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  async function load() {
+  async function load(
+    isCancelled: () => boolean = () => false,
+    profileOverride?: UserProfile | null
+  ) {
     if (!user) return;
-    const p = await createUserProfile(user.uid, user.email ?? '');
+    const p = profileOverride ?? authProfile ?? await refreshProfile();
+    if (isCancelled() || !p) return;
     setProfile(p);
     setNotificationSettings(withDefaults(p.notificationSettings));
     setNameInput(p.displayName ?? '');
     setStyleInput(p.communicationStyle ?? '');
     if (p?.partnerUid) {
       const pp = await getUserProfile(p.partnerUid);
+      if (isCancelled()) return;
       setPartnerProfile(pp);
     } else {
       setPartnerProfile(null);
     }
   }
 
-  useEffect(() => { load(); }, [user]);
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    load(() => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authProfile]));
 
   async function handleCopy() {
     if (!profile?.inviteCode) return;
@@ -118,6 +129,7 @@ export default function SettingsScreen() {
             try {
               const result = await regenerateInviteCode();
               setProfile((current) => current ? { ...current, inviteCode: result.inviteCode } : current);
+              await refreshProfile();
               setCopied(false);
               Alert.alert('新しいコードを作りました', '古いコードは使えなくなりました');
             } catch (e: any) {
@@ -136,7 +148,8 @@ export default function SettingsScreen() {
     setLoading(true);
     try {
       await pairWithCode(inputCode.trim().toUpperCase());
-      await load();
+      const nextProfile = await refreshProfile();
+      await load(() => false, nextProfile);
       setInputCode('');
       Alert.alert('ペアリング完了', 'パートナーと繋がりました');
     } catch (e: any) {
@@ -155,7 +168,8 @@ export default function SettingsScreen() {
         style: 'destructive',
         onPress: async () => {
           await unpairPartner();
-          await load();
+          const nextProfile = await refreshProfile();
+          await load(() => false, nextProfile);
         },
       },
     ]);
@@ -164,6 +178,7 @@ export default function SettingsScreen() {
   async function handleSaveStyle() {
     if (!user) return;
     await updateCommunicationStyle(user.uid, styleInput.trim());
+    await refreshProfile();
     setStyleSaved(true);
     setTimeout(() => setStyleSaved(false), 2000);
   }
@@ -175,7 +190,8 @@ export default function SettingsScreen() {
     }
     await updateDisplayName(user.uid, nameInput.trim());
     setEditingName(false);
-    await load();
+    const nextProfile = await refreshProfile();
+    await load(() => false, nextProfile);
   }
 
   async function saveNotificationSettings(next: Required<NotificationSettings>) {
