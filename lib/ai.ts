@@ -47,6 +47,10 @@ export async function deleteAccount(): Promise<void> {
   await call<void>('deleteAccount', {});
 }
 
+export async function regenerateInviteCode(): Promise<{ inviteCode: string }> {
+  return call<{ inviteCode: string }>('regenerateInviteCode', {});
+}
+
 export async function aiRewrite(text: string, partnerName?: string): Promise<RewriteResult> {
   return call<RewriteResult>('aiRewrite', { text, partnerName });
 }

@@ -15,6 +15,7 @@ import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
 import { useAuth } from '../../lib/auth';
 import { aiSummary } from '../../lib/ai';
+import { MOOD_COLORS, MOOD_EMOJI } from '../../lib/mood';
 import {
   createUserProfile,
   getUserProfile,
@@ -38,9 +39,6 @@ LocaleConfig.locales['ja'] = {
   dayNamesShort: ['日', '月', '火', '水', '木', '金', '土'],
 };
 LocaleConfig.defaultLocale = 'ja';
-
-const MOOD_EMOJI = ['', '😣', '😔', '😐', '🙂', '😊'];
-const MOOD_COLORS = ['', '#E57373', '#FFB74D', '#FFF176', '#AED581', '#81D4FA'];
 
 type FilterType = 'all' | 'me' | 'partner' | 'favorite' | 'consultation';
 type SortOrder = 'desc' | 'asc';

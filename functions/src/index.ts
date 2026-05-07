@@ -15,6 +15,7 @@ const AI_FUNCTION_OPTIONS = {
   invoker: 'public',
 };
 const db = admin.firestore();
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 function getModel() {
   const apiKey = GEMINI_API_KEY.value()
@@ -53,6 +54,14 @@ async function sendExpoPush(messages: ExpoPushMessage[]) {
 }
 
 const PAIR_OPTIONS = { region: REGION, invoker: 'public' };
+
+function generateInviteCode(): string {
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  }
+  return code;
+}
 
 export const pairWithCode = onCall(PAIR_OPTIONS, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
@@ -93,6 +102,45 @@ export const unpairPartner = onCall(PAIR_OPTIONS, async (request) => {
 
   await db.doc(`users/${myUid}`).update({ partnerUid: admin.firestore.FieldValue.delete() });
   await db.doc(`users/${partnerUid}`).update({ partnerUid: admin.firestore.FieldValue.delete() });
+});
+
+export const regenerateInviteCode = onCall(PAIR_OPTIONS, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
+  const uid = request.auth.uid;
+  const userRef = db.doc(`users/${uid}`);
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const newCode = generateInviteCode();
+    const newCodeRef = db.doc(`inviteCodes/${newCode}`);
+
+    try {
+      await db.runTransaction(async (transaction) => {
+        const userSnap = await transaction.get(userRef);
+        const newCodeSnap = await transaction.get(newCodeRef);
+
+        if (!userSnap.exists) {
+          throw new HttpsError('not-found', 'プロフィールが見つかりません');
+        }
+        if (newCodeSnap.exists) {
+          throw new Error('invite-code-collision');
+        }
+
+        const currentCode = userSnap.data()?.inviteCode as string | undefined;
+        if (currentCode) {
+          transaction.delete(db.doc(`inviteCodes/${currentCode}`));
+        }
+        transaction.set(newCodeRef, { uid });
+        transaction.update(userRef, { inviteCode: newCode });
+      });
+
+      return { inviteCode: newCode };
+    } catch (e: any) {
+      if (e?.message === 'invite-code-collision') continue;
+      throw e;
+    }
+  }
+
+  throw new HttpsError('internal', '招待コードを生成できませんでした');
 });
 
 async function sendSharedEntryNotification(authorUid: string, entryId: string): Promise<void> {

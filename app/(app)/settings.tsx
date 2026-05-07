@@ -15,6 +15,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { Bell, Clock, Heart } from 'phosphor-react-native';
 import { signOut, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { TimePickerSheet } from '../../components/TimePickerSheet';
 import { auth } from '../../lib/firebase';
 import { useAuth } from '../../lib/auth';
 import {
@@ -26,7 +27,7 @@ import {
   NotificationSettings,
   UserProfile,
 } from '../../lib/db';
-import { pairWithCode, unpairPartner, deleteAccount } from '../../lib/ai';
+import { pairWithCode, unpairPartner, deleteAccount, regenerateInviteCode } from '../../lib/ai';
 import {
   cancelDailyReminder,
   DEFAULT_REMINDER_HOUR,
@@ -49,10 +50,6 @@ function formatReminderTime(hour: number, minute: number): string {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
-const HOURS = Array.from({ length: 24 }, (_, index) => index);
-const MINUTES = Array.from({ length: 60 }, (_, index) => index);
-const TIME_PICKER_ITEM_HEIGHT = 50;
-
 export default function SettingsScreen() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -67,6 +64,7 @@ export default function SettingsScreen() {
   const [pickerHour, setPickerHour] = useState(DEFAULT_REMINDER_HOUR);
   const [pickerMinute, setPickerMinute] = useState(DEFAULT_REMINDER_MINUTE);
   const [copied, setCopied] = useState(false);
+  const [regeneratingCode, setRegeneratingCode] = useState(false);
   const [styleInput, setStyleInput] = useState('');
   const [styleSaved, setStyleSaved] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -103,6 +101,34 @@ export default function SettingsScreen() {
     try {
       await Share.share({ message });
     } catch (e) {}
+  }
+
+  function handleRegenerateInviteCode() {
+    if (!user || regeneratingCode) return;
+    Alert.alert(
+      'コードを作り直しますか？',
+      '今の招待コードは使えなくなります。すでに連携中のパートナーとの接続は変わりません。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '作り直す',
+          style: 'destructive',
+          onPress: async () => {
+            setRegeneratingCode(true);
+            try {
+              const result = await regenerateInviteCode();
+              setProfile((current) => current ? { ...current, inviteCode: result.inviteCode } : current);
+              setCopied(false);
+              Alert.alert('新しいコードを作りました', '古いコードは使えなくなりました');
+            } catch (e: any) {
+              Alert.alert('エラー', e.message);
+            } finally {
+              setRegeneratingCode(false);
+            }
+          },
+        },
+      ]
+    );
   }
 
   async function handlePair() {
@@ -309,6 +335,17 @@ export default function SettingsScreen() {
           <Text style={styles.shareButtonText}>共有</Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity
+        style={[styles.regenerateButton, regeneratingCode && { opacity: 0.6 }]}
+        onPress={handleRegenerateInviteCode}
+        disabled={!profile?.inviteCode || regeneratingCode}
+      >
+        {regeneratingCode ? (
+          <ActivityIndicator color="#7B9E87" size="small" />
+        ) : (
+          <Text style={styles.regenerateButtonText}>コードを作り直す</Text>
+        )}
+      </TouchableOpacity>
 
       <Text style={styles.sectionTitle}>パートナー</Text>
       {profile?.partnerUid ? (
@@ -507,111 +544,18 @@ export default function SettingsScreen() {
         </View>
       </Modal>
 
-      <Modal
+      <TimePickerSheet
         visible={timePickerOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setTimePickerOpen(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.modalBackdrop}
-            activeOpacity={1}
-            onPress={() => setTimePickerOpen(false)}
-          />
-          <View style={styles.timePickerSheet}>
-            <View style={styles.timePickerHeader}>
-              <TouchableOpacity onPress={() => setTimePickerOpen(false)} hitSlop={10}>
-                <Text style={styles.timePickerCancel}>キャンセル</Text>
-              </TouchableOpacity>
-              <Text style={styles.timePickerTitle}>リマインダー時刻</Text>
-              <TouchableOpacity
-                onPress={saveReminderTime}
-                disabled={notificationLoading}
-                hitSlop={10}
-              >
-                <Text
-                  style={[
-                    styles.timePickerSave,
-                    notificationLoading && styles.timePickerSaveDisabled,
-                  ]}
-                >
-                  保存
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.timePickerPreviewCard}>
-              <Text style={styles.timePickerPreviewLabel}>この時間に通知します</Text>
-              <Text style={styles.timePickerPreview}>
-                {formatReminderTime(pickerHour, pickerMinute)}
-              </Text>
-            </View>
-            <View style={styles.timePickerPanel}>
-            <View style={styles.timePickerColumns}>
-              <View style={styles.timePickerColumn}>
-                <Text style={styles.timePickerColumnLabel}>時</Text>
-                <ScrollView
-                  style={styles.timePickerList}
-                  showsVerticalScrollIndicator={false}
-                  contentOffset={{ x: 0, y: Math.max(0, pickerHour * TIME_PICKER_ITEM_HEIGHT - 100) }}
-                >
-                  {HOURS.map((hour) => {
-                    const selected = hour === pickerHour;
-                    return (
-                      <TouchableOpacity
-                        key={hour}
-                        style={[styles.timePickerItem, selected && styles.timePickerItemSelected]}
-                        onPress={() => setPickerHour(hour)}
-                      >
-                        <Text
-                          style={[
-                            styles.timePickerItemText,
-                            selected && styles.timePickerItemTextSelected,
-                          ]}
-                        >
-                          {String(hour).padStart(2, '0')}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-              <View style={styles.timePickerColon}>
-                <Text style={styles.timePickerColonText}>:</Text>
-              </View>
-              <View style={styles.timePickerColumn}>
-                <Text style={styles.timePickerColumnLabel}>分</Text>
-                <ScrollView
-                  style={styles.timePickerList}
-                  showsVerticalScrollIndicator={false}
-                  contentOffset={{ x: 0, y: Math.max(0, pickerMinute * TIME_PICKER_ITEM_HEIGHT - 100) }}
-                >
-                  {MINUTES.map((minute) => {
-                    const selected = minute === pickerMinute;
-                    return (
-                      <TouchableOpacity
-                        key={minute}
-                        style={[styles.timePickerItem, selected && styles.timePickerItemSelected]}
-                        onPress={() => setPickerMinute(minute)}
-                      >
-                        <Text
-                          style={[
-                            styles.timePickerItemText,
-                            selected && styles.timePickerItemTextSelected,
-                          ]}
-                        >
-                          {String(minute).padStart(2, '0')}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        title="リマインダー時刻"
+        previewLabel="この時間に通知します"
+        hour={pickerHour}
+        minute={pickerMinute}
+        saving={notificationLoading}
+        onChangeHour={setPickerHour}
+        onChangeMinute={setPickerMinute}
+        onCancel={() => setTimePickerOpen(false)}
+        onSave={saveReminderTime}
+      />
 
     </ScrollView>
   );
@@ -670,6 +614,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   shareButtonText: { color: '#7B9E87', fontSize: 13, fontWeight: '600' },
+  regenerateButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  regenerateButtonText: { color: '#888', fontSize: 12, fontWeight: '700' },
   pairedBox: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -751,101 +705,6 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
-  },
-  timePickerSheet: {
-    backgroundColor: '#FAFAF8',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 32,
-  },
-  timePickerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  timePickerCancel: { color: '#888', fontSize: 13, fontWeight: '600' },
-  timePickerTitle: { color: '#2D2D2D', fontSize: 15, fontWeight: '700' },
-  timePickerSave: { color: '#7B9E87', fontSize: 13, fontWeight: '700' },
-  timePickerSaveDisabled: { color: '#C8D8CC' },
-  timePickerPreviewCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    alignItems: 'center',
-    paddingVertical: 14,
-    marginTop: 18,
-    marginBottom: 12,
-  },
-  timePickerPreviewLabel: {
-    color: '#888',
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  timePickerPreview: {
-    color: '#5A7E68',
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: 0,
-  },
-  timePickerPanel: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    padding: 12,
-  },
-  timePickerColumns: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  timePickerColumn: {
-    flex: 1,
-  },
-  timePickerColumnLabel: {
-    color: '#888',
-    fontSize: 11,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  timePickerList: {
-    height: 224,
-  },
-  timePickerItem: {
-    height: 44,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  timePickerItemSelected: {
-    backgroundColor: '#EDF4F0',
-    borderWidth: 1,
-    borderColor: '#C8D8CC',
-  },
-  timePickerItemText: {
-    color: '#555',
-    fontSize: 18,
-    fontWeight: '600',
-    letterSpacing: 0,
-  },
-  timePickerItemTextSelected: {
-    color: '#7B9E87',
-    fontWeight: '700',
-  },
-  timePickerColon: {
-    paddingTop: 22,
-  },
-  timePickerColonText: {
-    color: '#AAA',
-    fontSize: 28,
-    fontWeight: '700',
   },
   pairedInfo: { flex: 1 },
   pairedLabel: { fontSize: 13, fontWeight: '600', color: '#7B9E87' },

@@ -10,9 +10,7 @@ import {
   Users,
 } from 'phosphor-react-native';
 import { Entry } from '../lib/db';
-
-const MOOD_EMOJI = ['', '😣', '😔', '😐', '🙂', '😊'];
-const MOOD_COLORS = ['', '#E57373', '#FFB74D', '#FFF176', '#AED581', '#81D4FA'];
+import { getMoodColor, getMoodEmoji } from '../lib/mood';
 
 type EntryCardProps = {
   entry: Entry;
@@ -36,14 +34,14 @@ export function EntryCard({
   const visibilityLabel = entry.visibility === 'private' ? '自分だけ' : 'ふたりに共有';
 
   return (
-    <View style={[styles.card, { borderLeftColor: MOOD_COLORS[entry.mood] }]}>
+    <View style={[styles.card, { borderLeftColor: getMoodColor(entry.mood) }]}>
       <TouchableOpacity
         activeOpacity={onPressActions ? 0.65 : 1}
         onPress={onPressActions}
         onLongPress={onPressActions}
       >
         <View style={styles.cardTop}>
-          <Text style={styles.cardEmoji}>{MOOD_EMOJI[entry.mood]}</Text>
+          <Text style={styles.cardEmoji}>{getMoodEmoji(entry.mood)}</Text>
           <View style={styles.cardMeta}>
             <View style={styles.badgeRow}>
               <View style={[styles.authorBadge, isOwn ? styles.ownBadge : styles.partnerBadge]}>

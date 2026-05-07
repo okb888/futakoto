@@ -10,22 +10,15 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
-  Modal,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { ArrowCounterClockwise, CalendarBlank, Clock, Users, Lock, Sparkle } from 'phosphor-react-native';
+import { TimePickerSheet } from '../../components/TimePickerSheet';
 import { useAuth } from '../../lib/auth';
 import { addEntry, getEntry, getUserProfile, updateEntry, Visibility } from '../../lib/db';
 import { aiRewrite, RewriteResult } from '../../lib/ai';
-
-const MOODS = [
-  { score: 1, emoji: '😣', label: 'つらい', color: '#E57373' },
-  { score: 2, emoji: '😔', label: 'しんどい', color: '#FFB74D' },
-  { score: 3, emoji: '😐', label: 'ふつう', color: '#FFF176' },
-  { score: 4, emoji: '🙂', label: 'まあまあ', color: '#AED581' },
-  { score: 5, emoji: '😊', label: 'いい感じ', color: '#81D4FA' },
-];
+import { MOODS } from '../../lib/mood';
 
 function formatDateInput(date: Date): string {
   return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
@@ -45,9 +38,6 @@ function timestampToDate(ts: any): Date {
 }
 
 type PickerMode = 'date' | 'time';
-const HOURS = Array.from({ length: 24 }, (_, index) => index);
-const MINUTES = Array.from({ length: 60 }, (_, index) => index);
-const TIME_PICKER_ITEM_HEIGHT = 50;
 
 export default function PostScreen() {
   const { user } = useAuth();
@@ -426,105 +416,18 @@ export default function PostScreen() {
 
       </ScrollView>
 
-      <Modal
+      <TimePickerSheet
         visible={timePickerOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setTimePickerOpen(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.modalBackdrop}
-            activeOpacity={1}
-            onPress={() => setTimePickerOpen(false)}
-          />
-          <View style={styles.timePickerSheet}>
-            <View style={styles.timePickerHeader}>
-              <TouchableOpacity onPress={() => setTimePickerOpen(false)} hitSlop={10}>
-                <Text style={styles.timePickerCancel}>キャンセル</Text>
-              </TouchableOpacity>
-              <Text style={styles.timePickerTitle}>記録した時間</Text>
-              <TouchableOpacity onPress={saveRecordTime} hitSlop={10}>
-                <Text style={styles.timePickerSave}>保存</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.timePickerPreviewCard}>
-              <View style={styles.timePickerPreviewHeader}>
-                <Text style={styles.timePickerPreviewLabel}>この時間で記録します</Text>
-                <TouchableOpacity style={styles.timePickerNowButton} onPress={setPickerToNow}>
-                  <Text style={styles.timePickerNowText}>今</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.timePickerPreview}>
-                {formatTimeInput(new Date(2000, 0, 1, pickerHour, pickerMinute))}
-              </Text>
-            </View>
-            <View style={styles.timePickerPanel}>
-              <View style={styles.timePickerColumns}>
-                <View style={styles.timePickerColumn}>
-                  <Text style={styles.timePickerColumnLabel}>時</Text>
-                  <ScrollView
-                    style={styles.timePickerList}
-                    showsVerticalScrollIndicator={false}
-                    contentOffset={{ x: 0, y: Math.max(0, pickerHour * TIME_PICKER_ITEM_HEIGHT - 100) }}
-                  >
-                    {HOURS.map((hour) => {
-                      const selected = hour === pickerHour;
-                      return (
-                        <TouchableOpacity
-                          key={hour}
-                          style={[styles.timePickerItem, selected && styles.timePickerItemSelected]}
-                          onPress={() => setPickerHour(hour)}
-                        >
-                          <Text
-                            style={[
-                              styles.timePickerItemText,
-                              selected && styles.timePickerItemTextSelected,
-                            ]}
-                          >
-                            {String(hour).padStart(2, '0')}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-                <View style={styles.timePickerColon}>
-                  <Text style={styles.timePickerColonText}>:</Text>
-                </View>
-                <View style={styles.timePickerColumn}>
-                  <Text style={styles.timePickerColumnLabel}>分</Text>
-                  <ScrollView
-                    style={styles.timePickerList}
-                    showsVerticalScrollIndicator={false}
-                    contentOffset={{ x: 0, y: Math.max(0, pickerMinute * TIME_PICKER_ITEM_HEIGHT - 100) }}
-                  >
-                    {MINUTES.map((minute) => {
-                      const selected = minute === pickerMinute;
-                      return (
-                        <TouchableOpacity
-                          key={minute}
-                          style={[styles.timePickerItem, selected && styles.timePickerItemSelected]}
-                          onPress={() => setPickerMinute(minute)}
-                        >
-                          <Text
-                            style={[
-                              styles.timePickerItemText,
-                              selected && styles.timePickerItemTextSelected,
-                            ]}
-                          >
-                            {String(minute).padStart(2, '0')}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        title="記録した時間"
+        previewLabel="この時間で記録します"
+        hour={pickerHour}
+        minute={pickerMinute}
+        onChangeHour={setPickerHour}
+        onChangeMinute={setPickerMinute}
+        onCancel={() => setTimePickerOpen(false)}
+        onSave={saveRecordTime}
+        quickAction={{ label: '今', onPress: setPickerToNow }}
+      />
 
     </KeyboardAvoidingView>
   );
@@ -612,107 +515,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     overflow: 'hidden',
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(45,45,45,0.24)',
-  },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  timePickerSheet: {
-    backgroundColor: '#FAFAF8',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 32,
-  },
-  timePickerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  timePickerCancel: { color: '#888', fontSize: 13, fontWeight: '600' },
-  timePickerTitle: { color: '#2D2D2D', fontSize: 15, fontWeight: '700' },
-  timePickerSave: { color: '#7B9E87', fontSize: 13, fontWeight: '700' },
-  timePickerPreviewCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    alignItems: 'center',
-    paddingVertical: 14,
-    marginTop: 18,
-    marginBottom: 12,
-  },
-  timePickerPreviewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  timePickerPreviewLabel: {
-    color: '#888',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  timePickerNowButton: {
-    backgroundColor: '#EDF4F0',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  timePickerNowText: {
-    color: '#7B9E87',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  timePickerPreview: {
-    color: '#5A7E68',
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: 0,
-  },
-  timePickerPanel: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    padding: 12,
-  },
-  timePickerColumns: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  timePickerColumn: { flex: 1 },
-  timePickerColumnLabel: {
-    color: '#888',
-    fontSize: 11,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  timePickerList: { height: 224 },
-  timePickerItem: {
-    height: 44,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  timePickerItemSelected: {
-    backgroundColor: '#EDF4F0',
-    borderWidth: 1,
-    borderColor: '#C8D8CC',
-  },
-  timePickerItemText: {
-    color: '#555',
-    fontSize: 18,
-    fontWeight: '600',
-    letterSpacing: 0,
-  },
-  timePickerItemTextSelected: { color: '#7B9E87', fontWeight: '700' },
-  timePickerColon: { paddingTop: 22 },
-  timePickerColonText: { color: '#AAA', fontSize: 28, fontWeight: '700' },
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,

@@ -49,12 +49,12 @@
 
 ## P1: 近いスプリント
 
-### P1-1. デザイントークン集約（`lib/theme.ts` / `lib/mood.ts`）
+### P1-1. デザイントークン集約（`lib/theme.ts` / `lib/mood.ts`） ✅ 完了
 - 色: `#7B9E87` `#EDF4F0` `#7C5BB7` `#F3EDFA` `#FAFAF8` ほか頻出値を集約。
 - `MOOD_EMOJI` / `MOOD_COLORS` / `MOODS` の三重定義（`calendar.tsx` `post.tsx` `EntryCard.tsx`）を `lib/mood.ts` 一本に。
 - 工数: 0.5日
 
-### P1-2. TimePickerSheet 共通コンポーネント化
+### P1-2. TimePickerSheet 共通コンポーネント化 ✅ 完了
 - `app/(app)/post.tsx:429-527` と `app/(app)/settings.tsx:411-515` がほぼ同じ実装。`components/TimePickerSheet.tsx` に切り出し。
 - 同時に `@react-native-community/datetimepicker` (`display="spinner"`) への置換も検討。自作離散リストは選択時に自動スクロールしないため UX が劣る。
 - 工数: 0.5〜1日
@@ -63,7 +63,7 @@
 - `entries` に `sourceConsultationSessionId` を持たせ、投稿カードから「この壁打ちを見る」導線を追加。
 - 工数: 0.5日
 
-### P1-5. 招待コード再生成
+### P1-5. 招待コード再生成 ✅ 完了
 - 設定画面に「コードを作り直す」ボタン。旧コードを削除→新規発行。
 - 工数: 0.3日
 
@@ -145,6 +145,7 @@
 ## 進捗ログ
 - **2026-05-08**: P0-1 を別スレッドで完了 (commit e2df360)。`firestore.rules` / `pairWithCode`/`unpairPartner` の Cloud Function 化 / `getPartnerSharedEntries` クエリフィルタ をまとめて適用。残存リスクとして AI レート制限・プロンプトインジェクション緩和が浮上 → P1-12 / P2-8 として追加。
 - **2026-05-08**: P0-2 / P0-3 を完了。`deleteAccount` Cloud Function（サブコレクション連鎖削除＋パートナー解除＋inviteCode 解放＋Auth 削除）、設定画面に削除フロー UI（password 再認証対応、Google/Apple は将来追加可能な構造）。`notifyPartnerOnVisibilityChange`（`onDocumentUpdated`）追加で private→shared 切替時の通知も発火するよう対応。
+- **2026-05-08**: P1-1 / P1-2 / P1-5 を完了。`lib/theme.ts` / `lib/mood.ts` 追加、投稿・設定の時刻選択を `TimePickerSheet` に共通化、`regenerateInviteCode` callable と設定画面の「コードを作り直す」導線を追加。
 
 ## メモ
 - Firestore ルール ([firestore.rules](../firestore.rules)) は P0-1 完了で堅牢化済み。`entries` の partner 読み取りは shared のみに絞られている。
