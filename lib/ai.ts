@@ -43,6 +43,10 @@ export async function unpairPartner(): Promise<void> {
   await call<void>('unpairPartner', {});
 }
 
+export async function deleteAccount(): Promise<void> {
+  await call<void>('deleteAccount', {});
+}
+
 export async function aiRewrite(text: string, partnerName?: string): Promise<RewriteResult> {
   return call<RewriteResult>('aiRewrite', { text, partnerName });
 }
@@ -59,9 +63,11 @@ export async function aiConsult(
 export async function aiInterpret(
   text: string,
   mood: number,
-  partnerName?: string
+  partnerName?: string,
+  entryId?: string,
+  entryOwnerId?: string,
 ): Promise<InterpretResult> {
-  return call<InterpretResult>('aiInterpret', { text, mood, partnerName });
+  return call<InterpretResult>('aiInterpret', { text, mood, partnerName, entryId, entryOwnerId });
 }
 
 export async function aiSummary(

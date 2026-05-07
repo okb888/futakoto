@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Bell, Clock, Heart } from 'phosphor-react-native';
-import { signOut } from 'firebase/auth';
+import { signOut, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { useAuth } from '../../lib/auth';
 import {
@@ -26,7 +26,7 @@ import {
   NotificationSettings,
   UserProfile,
 } from '../../lib/db';
-import { pairWithCode, unpairPartner } from '../../lib/ai';
+import { pairWithCode, unpairPartner, deleteAccount } from '../../lib/ai';
 import {
   cancelDailyReminder,
   DEFAULT_REMINDER_HOUR,
@@ -69,6 +69,9 @@ export default function SettingsScreen() {
   const [copied, setCopied] = useState(false);
   const [styleInput, setStyleInput] = useState('');
   const [styleSaved, setStyleSaved] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   async function load() {
     if (!user) return;
@@ -209,6 +212,36 @@ export default function SettingsScreen() {
       Alert.alert('エラー', e.message);
     } finally {
       setNotificationLoading(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!user || deleteLoading) return;
+    const providerId = user.providerData[0]?.providerId ?? 'password';
+
+    if (providerId === 'password' && !deletePassword.trim()) {
+      Alert.alert('パスワードを入力してください');
+      return;
+    }
+
+    setDeleteLoading(true);
+    try {
+      if (providerId === 'password') {
+        const credential = EmailAuthProvider.credential(user.email!, deletePassword);
+        await reauthenticateWithCredential(user, credential);
+      }
+      // Google / Apple 再認証はプロバイダ実装時に追加
+      await deleteAccount();
+      await signOut(auth).catch(() => {});
+    } catch (e: any) {
+      const isWrongPassword =
+        e?.code === 'auth/wrong-password' || e?.code === 'auth/invalid-credential';
+      Alert.alert(
+        isWrongPassword ? 'パスワードが違います' : '削除に失敗しました',
+        isWrongPassword ? 'もう一度確認してください' : e.message
+      );
+      setDeleteLoading(false);
+      setDeletePassword('');
     }
   }
 
@@ -406,6 +439,73 @@ export default function SettingsScreen() {
       >
         <Text style={styles.logoutText}>ログアウト</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => setDeleteModalOpen(true)}
+      >
+        <Text style={styles.deleteButtonText}>アカウントを削除</Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={deleteModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { if (!deleteLoading) setDeleteModalOpen(false); }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => { if (!deleteLoading) { setDeleteModalOpen(false); setDeletePassword(''); } }}
+          />
+          <View style={styles.deleteSheet}>
+            <Text style={styles.deleteSheetTitle}>アカウントを削除</Text>
+            <Text style={styles.deleteSheetBody}>
+              すべての記録・壁打ち・お気に入りが完全に削除されます。この操作は取り消せません。
+            </Text>
+            {user?.providerData[0]?.providerId === 'password' ? (
+              <>
+                <Text style={styles.deleteSheetLabel}>パスワードを入力して確認</Text>
+                <TextInput
+                  style={styles.deleteInput}
+                  value={deletePassword}
+                  onChangeText={setDeletePassword}
+                  placeholder="パスワード"
+                  placeholderTextColor="#CCC"
+                  secureTextEntry
+                  autoFocus
+                />
+              </>
+            ) : (
+              <View style={styles.deleteProviderNote}>
+                <Text style={styles.deleteProviderNoteText}>
+                  {user?.providerData[0]?.providerId === 'google.com' ? 'Google' : 'Apple'}
+                  アカウントで認証済みとして削除します。
+                </Text>
+              </View>
+            )}
+            <TouchableOpacity
+              style={[styles.deleteConfirmButton, deleteLoading && { opacity: 0.6 }]}
+              onPress={handleDeleteAccount}
+              disabled={deleteLoading}
+            >
+              {deleteLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.deleteConfirmText}>削除する（取り消せません）</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.deleteCancelButton}
+              onPress={() => { setDeleteModalOpen(false); setDeletePassword(''); }}
+              disabled={deleteLoading}
+            >
+              <Text style={styles.deleteCancelText}>キャンセル</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={timePickerOpen}
@@ -776,4 +876,46 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#F0F0F0', marginTop: 32, marginBottom: 8 },
   logoutButton: { paddingVertical: 16, alignItems: 'center' },
   logoutText: { fontSize: 14, color: '#AAA' },
+  deleteButton: { paddingVertical: 12, alignItems: 'center', marginBottom: 8 },
+  deleteButtonText: { fontSize: 13, color: '#E57373' },
+  deleteSheet: {
+    backgroundColor: '#FAFAF8',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
+    gap: 12,
+  },
+  deleteSheetTitle: { fontSize: 17, fontWeight: '700', color: '#2D2D2D' },
+  deleteSheetBody: { fontSize: 13, color: '#888', lineHeight: 20 },
+  deleteSheetLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginTop: 4 },
+  deleteInput: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#2D2D2D',
+  },
+  deleteProviderNote: {
+    backgroundColor: '#FFF5F5',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FDDADA',
+  },
+  deleteProviderNoteText: { fontSize: 13, color: '#B25C5C', lineHeight: 19 },
+  deleteConfirmButton: {
+    backgroundColor: '#E57373',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  deleteConfirmText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  deleteCancelButton: { paddingVertical: 10, alignItems: 'center' },
+  deleteCancelText: { fontSize: 14, color: '#AAA' },
 });

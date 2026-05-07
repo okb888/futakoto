@@ -24,7 +24,14 @@ export default function AppLayout() {
         name="index"
         options={{
           title: 'ホーム',
-          headerShown: false,
+          headerShown: true,
+          headerTitle: 'ふたこと',
+          headerTitleStyle: {
+            fontWeight: '700',
+            color: '#2D2D2D',
+            fontSize: 18,
+            letterSpacing: 3,
+          },
           tabBarIcon: ({ color, focused }) => (
             <House size={24} color={color} weight={focused ? 'fill' : 'regular'} />
           ),

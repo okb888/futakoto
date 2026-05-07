@@ -1,5 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -95,53 +95,105 @@ export const unpairPartner = onCall(PAIR_OPTIONS, async (request) => {
   await db.doc(`users/${partnerUid}`).update({ partnerUid: admin.firestore.FieldValue.delete() });
 });
 
+async function sendSharedEntryNotification(authorUid: string, entryId: string): Promise<void> {
+  const authorSnap = await db.doc(`users/${authorUid}`).get();
+  const author = authorSnap.data();
+  const partnerUid = author?.partnerUid;
+  if (!partnerUid) return;
+
+  const partnerRef = db.doc(`users/${partnerUid}`);
+  const partnerSnap = await partnerRef.get();
+  const partner = partnerSnap.data();
+  if (!partner?.notificationSettings?.sharedPostNotificationsEnabled) return;
+
+  const lastNotifiedAt = partner.notificationMeta?.lastSharedPostNotificationAt;
+  if (lastNotifiedAt?.toMillis && Date.now() - lastNotifiedAt.toMillis() < 60 * 60 * 1000) {
+    return;
+  }
+
+  const tokenSnap = await partnerRef.collection('pushTokens').get();
+  const tokens = tokenSnap.docs
+    .map((doc) => doc.data().token)
+    .filter((token): token is string => (
+      typeof token === 'string' &&
+      (token.startsWith('ExponentPushToken') || token.startsWith('ExpoPushToken'))
+    ));
+
+  await sendExpoPush(tokens.map((token) => ({
+    to: token,
+    title: 'ふたこと',
+    body: 'ふたりの記録に新しい投稿があります',
+    sound: null,
+    data: { kind: 'sharedEntry', entryId, authorUid },
+  })));
+
+  await partnerRef.set({
+    notificationMeta: {
+      lastSharedPostNotificationAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+  }, { merge: true });
+}
+
 export const notifyPartnerOnSharedEntry = onDocumentCreated(
-  {
-    region: REGION,
-    document: 'users/{authorUid}/entries/{entryId}',
-  },
+  { region: REGION, document: 'users/{authorUid}/entries/{entryId}' },
   async (event) => {
     const entry = event.data?.data();
     const authorUid = event.params.authorUid;
     const entryId = event.params.entryId;
     if (!entry || entry.visibility !== 'shared') return;
+    await sendSharedEntryNotification(authorUid, entryId);
+  }
+);
 
-    const authorSnap = await db.doc(`users/${authorUid}`).get();
-    const author = authorSnap.data();
-    const partnerUid = author?.partnerUid;
-    if (!partnerUid) return;
+export const notifyPartnerOnVisibilityChange = onDocumentUpdated(
+  { region: REGION, document: 'users/{authorUid}/entries/{entryId}' },
+  async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    const authorUid = event.params.authorUid;
+    const entryId = event.params.entryId;
+    if (!before || !after) return;
+    if (before.visibility === 'shared' || after.visibility !== 'shared') return;
+    await sendSharedEntryNotification(authorUid, entryId);
+  }
+);
 
-    const partnerRef = db.doc(`users/${partnerUid}`);
-    const partnerSnap = await partnerRef.get();
-    const partner = partnerSnap.data();
-    if (!partner?.notificationSettings?.sharedPostNotificationsEnabled) return;
+// ---- アカウント削除 ----
+export const deleteAccount = onCall(
+  { region: REGION },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
+    const uid = request.auth.uid;
 
-    const lastNotifiedAt = partner.notificationMeta?.lastSharedPostNotificationAt;
-    if (lastNotifiedAt?.toMillis && Date.now() - lastNotifiedAt.toMillis() < 60 * 60 * 1000) {
-      return;
+    const userSnap = await db.doc(`users/${uid}`).get();
+    if (!userSnap.exists) throw new HttpsError('not-found', 'アカウントが見つかりません');
+    const userData = userSnap.data()!;
+
+    if (userData.partnerUid) {
+      await db.doc(`users/${userData.partnerUid}`).update({
+        partnerUid: admin.firestore.FieldValue.delete(),
+      }).catch(() => {});
     }
 
-    const tokenSnap = await partnerRef.collection('pushTokens').get();
-    const tokens = tokenSnap.docs
-      .map((doc) => doc.data().token)
-      .filter((token): token is string => (
-        typeof token === 'string' &&
-        (token.startsWith('ExponentPushToken') || token.startsWith('ExpoPushToken'))
-      ));
+    if (userData.inviteCode) {
+      await db.doc(`inviteCodes/${userData.inviteCode}`).delete().catch(() => {});
+    }
 
-    await sendExpoPush(tokens.map((token) => ({
-      to: token,
-      title: 'ふたこと',
-      body: 'ふたりの記録に新しい投稿があります',
-      sound: null,
-      data: { kind: 'sharedEntry', entryId, authorUid },
-    })));
+    const subcollections = ['entries', 'consultations', 'consultationSessions', 'favorites', 'pushTokens'];
+    for (const sub of subcollections) {
+      let hasMore = true;
+      while (hasMore) {
+        const snap = await db.collection(`users/${uid}/${sub}`).limit(400).get();
+        if (snap.empty) { hasMore = false; break; }
+        const batch = db.batch();
+        snap.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+        hasMore = snap.docs.length === 400;
+      }
+    }
 
-    await partnerRef.set({
-      notificationMeta: {
-        lastSharedPostNotificationAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-    }, { merge: true });
+    await db.doc(`users/${uid}`).delete();
+    await admin.auth().deleteUser(uid);
   }
 );
 
@@ -270,13 +322,25 @@ export const aiInterpret = onCall(
   AI_FUNCTION_OPTIONS,
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
-    const { text, mood, partnerName } = request.data as {
+    const { text, mood, partnerName, entryId, entryOwnerId } = request.data as {
       text?: string;
       mood?: number;
       partnerName?: string;
+      entryId?: string;
+      entryOwnerId?: string;
     };
     if (!text || text.trim().length === 0) {
       throw new HttpsError('invalid-argument', 'テキストが必要です');
+    }
+
+    const viewerUid = request.auth.uid;
+    const cacheKey = entryId && entryOwnerId ? `${entryOwnerId}_${entryId}` : null;
+
+    if (cacheKey) {
+      const cacheSnap = await db.doc(`users/${viewerUid}/interpretationCache/${cacheKey}`).get();
+      if (cacheSnap.exists) {
+        return { interpretations: cacheSnap.data()!.interpretations };
+      }
     }
 
     const partner = partnerName || 'パートナー';
@@ -303,6 +367,16 @@ ${text}
     try {
       const result = await getModel().generateContent(prompt);
       const json = JSON.parse(result.response.text());
+
+      if (cacheKey) {
+        await db.doc(`users/${viewerUid}/interpretationCache/${cacheKey}`).set({
+          entryOwnerId,
+          entryId,
+          interpretations: json.interpretations,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+
       return json;
     } catch (e: any) {
       throw new HttpsError('internal', `AI処理に失敗しました: ${e.message}`);
