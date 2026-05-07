@@ -18,7 +18,7 @@ import { aiSummary } from '../../lib/ai';
 import {
   createUserProfile,
   getUserProfile,
-  getRecentEntries,
+  getEntriesInRange,
   getPartnerSharedEntries,
   getRecentConsultations,
   getFavoriteEntryIds,
@@ -87,6 +87,7 @@ export default function CalendarScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const [myEntries, setMyEntries] = useState<Entry[]>([]);
+  const [myEntriesCache, setMyEntriesCache] = useState<Record<string, Entry[]>>({});
   const [partnerEntries, setPartnerEntries] = useState<Entry[]>([]);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -110,20 +111,49 @@ export default function CalendarScreen() {
     return `${entry.uid}_${entry.id ?? ''}`;
   }
 
+  function getMonthBounds(monthStr: string): { start: Date; end: Date } {
+    const [year, month] = monthStr.split('-').map(Number);
+    return { start: new Date(year, month - 1, 1), end: new Date(year, month, 1) };
+  }
+
+  async function loadMonthEntries(monthStr: string, cache: Record<string, Entry[]>) {
+    if (!user) return;
+    if (cache[monthStr]) {
+      setMyEntries(cache[monthStr]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const { start, end } = getMonthBounds(monthStr);
+      const entries = await getEntriesInRange(user.uid, start, end);
+      setMyEntries(entries);
+      setMyEntriesCache((prev) => ({ ...prev, [monthStr]: entries }));
+    } catch (e: any) {
+      Alert.alert('エラー', e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function load() {
     if (!user) return;
     setLoading(true);
     const p = await createUserProfile(user.uid, user.email ?? '');
-    const my = await getRecentEntries(user.uid, 200);
-    const savedConsultations = await getRecentConsultations(user.uid, 100);
-    const favorites = await getFavoriteEntryIds(user.uid);
+    const { start, end } = getMonthBounds(currentMonth);
+    const [my, savedConsultations, favorites] = await Promise.all([
+      getEntriesInRange(user.uid, start, end),
+      getRecentConsultations(user.uid, 100),
+      getFavoriteEntryIds(user.uid),
+    ]);
+    const newCache = { [currentMonth]: my };
     setMyEntries(my);
+    setMyEntriesCache(newCache);
     setConsultations(savedConsultations);
     setFavoriteIds(favorites);
     if (p?.partnerUid) {
       const pp = await getUserProfile(p.partnerUid);
       setPartnerProfile(pp);
-      const partner = await getPartnerSharedEntries(p.partnerUid, 200);
+      const partner = await getPartnerSharedEntries(p.partnerUid, 500);
       setPartnerEntries(partner);
     } else {
       setPartnerEntries([]);
@@ -148,6 +178,7 @@ export default function CalendarScreen() {
       const key = `${newMonth}-${summaryTarget}`;
       setAiSummaryText(aiSummaryCache[key] ?? null);
       setSummaryExpanded(false);
+      loadMonthEntries(newMonth, myEntriesCache);
     }
   }
 

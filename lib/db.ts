@@ -379,3 +379,28 @@ export async function toggleFavoriteEntry(
     createdAt: serverTimestamp(),
   });
 }
+
+// ---- 解釈キャッシュ (P0-4) ----
+
+export async function getAllInterpretationCaches(uid: string): Promise<Record<string, string[]>> {
+  const snap = await getDocs(collection(db, 'users', uid, 'interpretationCache'));
+  const result: Record<string, string[]> = {};
+  snap.docs.forEach((d) => {
+    result[d.id] = (d.data().interpretations ?? []) as string[];
+  });
+  return result;
+}
+
+// ---- 月単位エントリ取得 (P0-5) ----
+
+export async function getEntriesInRange(uid: string, start: Date, end: Date): Promise<Entry[]> {
+  const q = query(
+    collection(db, 'users', uid, 'entries'),
+    where('createdAt', '>=', Timestamp.fromDate(start)),
+    where('createdAt', '<', Timestamp.fromDate(end)),
+    orderBy('createdAt', 'desc'),
+    limit(500)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry));
+}

@@ -25,6 +25,7 @@ import {
   favoriteKey,
   getFavoriteEntryIds,
   toggleFavoriteEntry,
+  getAllInterpretationCaches,
   Entry,
   UserProfile,
 } from '../../lib/db';
@@ -56,9 +57,14 @@ export default function HomeScreen() {
 
   async function load() {
     if (!user) return;
-    const p = await createUserProfile(user.uid, user.email ?? '');
+    const [p, favorites, caches] = await Promise.all([
+      createUserProfile(user.uid, user.email ?? ''),
+      getFavoriteEntryIds(user.uid),
+      getAllInterpretationCaches(user.uid),
+    ]);
     setProfile(p);
-    setFavoriteIds(await getFavoriteEntryIds(user.uid));
+    setFavoriteIds(favorites);
+    setInterpretationsCache(caches);
 
     const myEntries = await getRecentEntries(user.uid);
 
@@ -136,17 +142,17 @@ export default function HomeScreen() {
 
   async function handleInterpret(entry: Entry) {
     if (!entry.id || !entry.memo) return;
-    const entryId = entry.id;
-    setInterpretLoadingIds((prev) => new Set([...prev, entryId]));
+    const cacheKey = favoriteKey(entry.uid, entry.id);
+    setInterpretLoadingIds((prev) => new Set([...prev, cacheKey]));
     try {
-      const res = await aiInterpret(entry.memo, entry.mood, partnerName);
-      setInterpretationsCache((prev) => ({ ...prev, [entryId]: res.interpretations }));
+      const res = await aiInterpret(entry.memo, entry.mood, partnerName, entry.id, entry.uid);
+      setInterpretationsCache((prev) => ({ ...prev, [cacheKey]: res.interpretations }));
     } catch (e: any) {
       Alert.alert('エラー', e.message);
     } finally {
       setInterpretLoadingIds((prev) => {
         const next = new Set(prev);
-        next.delete(entryId);
+        next.delete(cacheKey);
         return next;
       });
     }
@@ -163,15 +169,16 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={styles.list}
         ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={styles.appName}>ふたこと</Text>
+          <View style={styles.connectionHeader}>
             {isPaired ? (
-              <View style={styles.pairedRow}>
+              <View style={styles.connectionPill}>
                 <Heart size={14} color="#E58B8B" weight="fill" />
-                <Text style={styles.sub}>{partnerName} と繋がっています</Text>
+                <Text style={styles.connectionText}>{partnerName} と繋がっています</Text>
               </View>
             ) : (
-              <Text style={styles.sub}>設定タブからパートナーと繋がろう</Text>
+              <View style={styles.connectionPillMuted}>
+                <Text style={styles.connectionMutedText}>設定タブからパートナーと繋がろう</Text>
+              </View>
             )}
           </View>
         }
@@ -185,10 +192,10 @@ export default function HomeScreen() {
           const isOwn = item.uid === user?.uid;
           const authorName = isOwn ? '自分' : partnerName;
           const isFavorite = item.id ? favoriteIds.has(favoriteKey(item.uid, item.id)) : false;
-          const entryId = item.id ?? '';
+          const cacheKey = item.id ? favoriteKey(item.uid, item.id) : '';
           const isActionOpen = activeActionKey === actionKey(item);
-          const cachedInterps = !isOwn ? interpretationsCache[entryId] : undefined;
-          const isInterpreting = !isOwn && interpretLoadingIds.has(entryId);
+          const cachedInterps = !isOwn ? interpretationsCache[cacheKey] : undefined;
+          const isInterpreting = !isOwn && interpretLoadingIds.has(cacheKey);
           return (
             <View>
               <EntryCard
@@ -254,11 +261,31 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAF8' },
-  list: { paddingBottom: 100, paddingTop: 16 },
-  header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16 },
-  appName: { fontSize: 28, fontWeight: '700', color: '#2D2D2D', letterSpacing: 3 },
-  sub: { fontSize: 13, color: '#999', marginTop: 4 },
-  pairedRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  list: { paddingBottom: 100, paddingTop: 12 },
+  connectionHeader: { paddingHorizontal: 16, paddingBottom: 12 },
+  connectionPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8D5D5',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  connectionText: { fontSize: 12, color: '#B26F6F', fontWeight: '700' },
+  connectionPillMuted: {
+    alignSelf: 'flex-start',
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  connectionMutedText: { fontSize: 12, color: '#888', fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: 64 },
   emptyText: { fontSize: 15, color: '#AAA' },
   emptyHint: { fontSize: 13, color: '#CCC', marginTop: 8 },
