@@ -20,14 +20,13 @@ import { useAuth } from '../../lib/auth';
 import {
   createUserProfile,
   getUserProfile,
-  pairWithCode,
-  unpairPartner,
   updateDisplayName,
   updateNotificationSettings,
   updateCommunicationStyle,
   NotificationSettings,
   UserProfile,
 } from '../../lib/db';
+import { pairWithCode, unpairPartner } from '../../lib/ai';
 import {
   cancelDailyReminder,
   DEFAULT_REMINDER_HOUR,
@@ -107,7 +106,7 @@ export default function SettingsScreen() {
     if (!user || !inputCode.trim()) return;
     setLoading(true);
     try {
-      await pairWithCode(user.uid, inputCode.trim().toUpperCase());
+      await pairWithCode(inputCode.trim().toUpperCase());
       await load();
       setInputCode('');
       Alert.alert('ペアリング完了', 'パートナーと繋がりました');
@@ -126,7 +125,7 @@ export default function SettingsScreen() {
         text: '解除する',
         style: 'destructive',
         onPress: async () => {
-          await unpairPartner(user.uid, profile.partnerUid!);
+          await unpairPartner();
           await load();
         },
       },

@@ -52,6 +52,49 @@ async function sendExpoPush(messages: ExpoPushMessage[]) {
   }
 }
 
+const PAIR_OPTIONS = { region: REGION, invoker: 'public' };
+
+export const pairWithCode = onCall(PAIR_OPTIONS, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
+  const { code } = request.data as { code?: string };
+  if (!code) throw new HttpsError('invalid-argument', 'コードが必要です');
+
+  const myUid = request.auth.uid;
+  const codeSnap = await db.doc(`inviteCodes/${code.toUpperCase()}`).get();
+  if (!codeSnap.exists) throw new HttpsError('not-found', '招待コードが見つかりません');
+  const partnerUid = codeSnap.data()!.uid as string;
+  if (partnerUid === myUid) throw new HttpsError('invalid-argument', '自分のコードは使えません');
+
+  const partnerSnap = await db.doc(`users/${partnerUid}`).get();
+  if (!partnerSnap.exists) throw new HttpsError('not-found', '相手のアカウントが見つかりません');
+  const partnerData = partnerSnap.data()!;
+  if (partnerData.partnerUid && partnerData.partnerUid !== myUid) {
+    throw new HttpsError('failed-precondition', '相手はすでに別のパートナーと繋がっています');
+  }
+
+  const mySnap = await db.doc(`users/${myUid}`).get();
+  const myData = mySnap.data()!;
+  if (myData.partnerUid && myData.partnerUid !== partnerUid) {
+    throw new HttpsError('failed-precondition', '既にペアリング済みです。先に解除してください');
+  }
+
+  await db.doc(`users/${myUid}`).update({ partnerUid });
+  await db.doc(`users/${partnerUid}`).update({ partnerUid: myUid });
+});
+
+export const unpairPartner = onCall(PAIR_OPTIONS, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
+  const myUid = request.auth.uid;
+
+  const mySnap = await db.doc(`users/${myUid}`).get();
+  if (!mySnap.exists) throw new HttpsError('not-found', 'プロフィールが見つかりません');
+  const partnerUid = mySnap.data()!.partnerUid as string | undefined;
+  if (!partnerUid) throw new HttpsError('failed-precondition', 'ペアリングされていません');
+
+  await db.doc(`users/${myUid}`).update({ partnerUid: admin.firestore.FieldValue.delete() });
+  await db.doc(`users/${partnerUid}`).update({ partnerUid: admin.firestore.FieldValue.delete() });
+});
+
 export const notifyPartnerOnSharedEntry = onDocumentCreated(
   {
     region: REGION,

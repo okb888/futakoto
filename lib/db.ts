@@ -3,6 +3,7 @@ import {
   addDoc,
   query,
   orderBy,
+  where,
   limit,
   getDocs,
   getDoc,
@@ -271,13 +272,12 @@ export async function getRecentEntries(uid: string, count = 50): Promise<Entry[]
 export async function getPartnerSharedEntries(partnerUid: string, count = 50): Promise<Entry[]> {
   const q = query(
     collection(db, 'users', partnerUid, 'entries'),
+    where('visibility', '==', 'shared'),
     orderBy('createdAt', 'desc'),
     limit(count)
   );
   const snap = await getDocs(q);
-  return snap.docs
-    .map((d) => ({ id: d.id, ...d.data() } as Entry))
-    .filter((e) => e.visibility === 'shared');
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry));
 }
 
 // ---- Consultations ----

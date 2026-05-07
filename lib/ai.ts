@@ -35,6 +35,14 @@ async function call<T>(name: string, data: any): Promise<T> {
   return res.data;
 }
 
+export async function pairWithCode(code: string): Promise<void> {
+  await call<void>('pairWithCode', { code });
+}
+
+export async function unpairPartner(): Promise<void> {
+  await call<void>('unpairPartner', {});
+}
+
 export async function aiRewrite(text: string, partnerName?: string): Promise<RewriteResult> {
   return call<RewriteResult>('aiRewrite', { text, partnerName });
 }

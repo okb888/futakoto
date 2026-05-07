@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 招待コード: 認証済みなら読める。書き込みは自分のuidのコードのみ
+    match /inviteCodes/{code} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+      allow update, delete: if false;
+    }
+
+    match /users/{uid} {
+      // 自分または自分がパートナーとして登録されている相手のみ読める
+      allow read: if request.auth != null && (
+        request.auth.uid == uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.partnerUid == uid
+      );
+      // 自分のプロフィールのみ書ける（ペアリングはCloud Functionが行う）
+      allow write: if request.auth.uid == uid;
+
+      // 投稿: 自分は全件、パートナーはsharedのみ読める
+      match /entries/{entryId} {
+        allow read: if request.auth.uid == uid ||
+          (
+            get(/databases/$(database)/documents/users/$(uid)).data.partnerUid == request.auth.uid &&
+            resource.data.visibility == 'shared'
+          );
+        allow write: if request.auth.uid == uid;
+      }
+
+      // プッシュトークン・お気に入り・相談系: 自分のみ
+      match /pushTokens/{tokenId} {
+        allow read, write: if request.auth.uid == uid;
+      }
+      match /favorites/{favoriteId} {
+        allow read, write: if request.auth.uid == uid;
+      }
+      match /consultations/{consultationId} {
+        allow read, write: if request.auth.uid == uid;
+      }
+      match /consultationSessions/{sessionId} {
+        allow read, write: if request.auth.uid == uid;
+      }
+    }
+  }
+}
