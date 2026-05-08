@@ -237,6 +237,9 @@ export default function PostScreen() {
                 mood === m.score && { backgroundColor: m.color, borderColor: m.color },
               ]}
               onPress={() => setMood(m.score)}
+              accessibilityLabel={`気分: ${m.label}`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: mood === m.score }}
             >
               <Text style={styles.moodEmoji}>{m.emoji}</Text>
               <Text style={[styles.moodLabel, mood === m.score && styles.moodLabelSelected]}>

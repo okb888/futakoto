@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react';
 import {
   Modal,
   ScrollView,
@@ -11,6 +12,10 @@ import { COLORS } from '../lib/theme';
 const HOURS = Array.from({ length: 24 }, (_, index) => index);
 const MINUTES = Array.from({ length: 60 }, (_, index) => index);
 const ITEM_HEIGHT = 50;
+
+function scrollToValue(ref: React.RefObject<ScrollView | null>, value: number) {
+  ref.current?.scrollTo({ y: Math.max(0, value * ITEM_HEIGHT - 100), animated: true });
+}
 
 type QuickAction = {
   label: string;
@@ -48,6 +53,21 @@ export function TimePickerSheet({
   onSave,
   quickAction,
 }: TimePickerSheetProps) {
+  const hourRef = useRef<ScrollView>(null);
+  const minuteRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (visible) {
+      setTimeout(() => {
+        scrollToValue(hourRef, hour);
+        scrollToValue(minuteRef, minute);
+      }, 100);
+    }
+  }, [visible]);
+
+  useEffect(() => { scrollToValue(hourRef, hour); }, [hour]);
+  useEffect(() => { scrollToValue(minuteRef, minute); }, [minute]);
+
   return (
     <Modal
       visible={visible}
@@ -89,9 +109,9 @@ export function TimePickerSheet({
               <View style={styles.column}>
                 <Text style={styles.columnLabel}>時</Text>
                 <ScrollView
+                  ref={hourRef}
                   style={styles.list}
                   showsVerticalScrollIndicator={false}
-                  contentOffset={{ x: 0, y: Math.max(0, hour * ITEM_HEIGHT - 100) }}
                 >
                   {HOURS.map((item) => {
                     const selected = item === hour;
@@ -117,9 +137,9 @@ export function TimePickerSheet({
               <View style={styles.column}>
                 <Text style={styles.columnLabel}>分</Text>
                 <ScrollView
+                  ref={minuteRef}
                   style={styles.list}
                   showsVerticalScrollIndicator={false}
-                  contentOffset={{ x: 0, y: Math.max(0, minute * ITEM_HEIGHT - 100) }}
                 >
                   {MINUTES.map((item) => {
                     const selected = item === minute;

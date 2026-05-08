@@ -10,10 +10,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { ArrowRight, Plus, Heart, Sparkle, Star } from 'phosphor-react-native';
+import { Plus, Heart, Sparkle, Star } from 'phosphor-react-native';
 import { aiInterpret } from '../../lib/ai';
 import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
+import { SourceConsultationLink } from '../../components/SourceConsultationLink';
 import { useAuth } from '../../lib/auth';
 import {
   getUserProfile,
@@ -225,15 +226,7 @@ export default function HomeScreen() {
           const cachedInterps = !isOwn ? interpretationsCache[cacheKey] : undefined;
           const isInterpreting = !isOwn && interpretLoadingIds.has(cacheKey);
           const footer = isOwn && item.sourceConsultationSessionId ? (
-            <TouchableOpacity
-              style={styles.sourceConsultationLink}
-              onPress={() => openSourceConsultation(item)}
-              activeOpacity={0.7}
-            >
-              <Sparkle size={13} color="#7C5BB7" weight="fill" />
-              <Text style={styles.sourceConsultationLinkText}>この壁打ちを見る</Text>
-              <ArrowRight size={13} color="#7C5BB7" weight="bold" />
-            </TouchableOpacity>
+            <SourceConsultationLink onPress={() => openSourceConsultation(item)} />
           ) : !isOwn && item.memo ? (
             <View style={styles.interpretArea}>
               {cachedInterps ? (
@@ -291,6 +284,8 @@ export default function HomeScreen() {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => router.push('/(app)/post')}
+        accessibilityLabel="新しい記録を追加"
+        accessibilityRole="button"
       >
         <Plus size={28} color="#fff" weight="bold" />
       </TouchableOpacity>
@@ -371,16 +366,4 @@ const styles = StyleSheet.create({
   interpretItem: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
   interpretBullet: { fontSize: 13, color: COLORS.ai, lineHeight: 20, fontWeight: '700' },
   interpretText: { flex: 1, fontSize: 13, color: COLORS.textBody, lineHeight: 20 },
-  sourceConsultationLink: {
-    backgroundColor: COLORS.aiBgSoft,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.aiBorderSoft,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sourceConsultationLinkText: { flex: 1, fontSize: 12, color: COLORS.ai, fontWeight: '700' },
 });

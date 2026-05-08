@@ -31,7 +31,8 @@ export function EntryActionPanel({
 
   return (
     <View style={styles.panel}>
-      <TouchableOpacity style={styles.editButton} onPress={onEdit} activeOpacity={0.65}>
+      <TouchableOpacity style={styles.editButton} onPress={onEdit} activeOpacity={0.65}
+        accessibilityLabel="投稿を編集" accessibilityRole="button">
         <PencilSimple size={15} color="#555" weight="regular" />
         <Text style={styles.editButtonText}>編集</Text>
       </TouchableOpacity>
@@ -43,6 +44,8 @@ export function EntryActionPanel({
         ]}
         onPress={onToggleVisibility}
         activeOpacity={0.65}
+        accessibilityLabel={visibilityLabel}
+        accessibilityRole="button"
       >
         {nextIsShared ? (
           <Users size={15} color="#7B9E87" weight="fill" />
@@ -59,7 +62,8 @@ export function EntryActionPanel({
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.deleteButton} onPress={onDelete} activeOpacity={0.65}>
+      <TouchableOpacity style={styles.deleteButton} onPress={onDelete} activeOpacity={0.65}
+        accessibilityLabel="投稿を削除" accessibilityRole="button">
         <Trash size={15} color="#E57373" weight="regular" />
       </TouchableOpacity>
     </View>

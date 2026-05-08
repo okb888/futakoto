@@ -28,9 +28,6 @@ export interface Entry {
   sourceConsultationSessionId?: string;
   createdAt: any;
   updatedAt?: any;
-  // 将来のAI統合用（任意）
-  aiSummary?: string;
-  aiTags?: string[];
 }
 
 export interface Consultation {
@@ -77,8 +74,6 @@ export interface UserProfile {
   communicationStyle?: string;
   aiCreditsMonth?: string;
   createdAt: any;
-  // 将来用（任意）
-  isPremium?: boolean;
   aiCreditsUsed?: number;
   aiCreditsLimit?: number;
 }
@@ -214,22 +209,7 @@ export async function getPartnerSharedEntries(partnerUid: string, count = 50): P
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry));
 }
 
-// ---- Consultations ----
-
-export async function addConsultation(
-  uid: string,
-  input: string,
-  reflection: string,
-  messageDraft: string
-): Promise<void> {
-  await addDoc(collection(db, 'users', uid, 'consultations'), {
-    uid,
-    input,
-    reflection,
-    messageDraft,
-    createdAt: serverTimestamp(),
-  });
-}
+// ---- Consultations (旧 collection。getRecentConsultations のみ calendar.tsx で参照中) ----
 
 export async function getRecentConsultations(uid: string, count = 20): Promise<Consultation[]> {
   const q = query(

@@ -79,6 +79,8 @@ export function EntryCard({
                 event.stopPropagation();
                 onToggleFavorite();
               }}
+              accessibilityLabel={isFavorite ? 'お気に入りを外す' : 'お気に入りに追加'}
+              accessibilityRole="button"
             >
               <Star
                 size={18}

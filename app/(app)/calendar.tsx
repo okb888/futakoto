@@ -10,9 +10,10 @@ import {
 } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { ArrowRight, Sparkle } from 'phosphor-react-native';
+import { Sparkle } from 'phosphor-react-native';
 import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
+import { SourceConsultationLink } from '../../components/SourceConsultationLink';
 import { useAuth } from '../../lib/auth';
 import { aiSummary } from '../../lib/ai';
 import { MOOD_COLORS, MOOD_EMOJI } from '../../lib/mood';
@@ -20,14 +21,14 @@ import {
   getUserProfile,
   getEntriesInRange,
   getPartnerSharedEntries,
-  getRecentConsultations,
+  getRecentConsultationSessions,
   getFavoriteEntryIds,
   deleteEntry,
   favoriteKey,
   toggleFavoriteEntry,
   updateEntryVisibility,
   Entry,
-  Consultation,
+  ConsultationSession,
   UserProfile,
 } from '../../lib/db';
 import { firebaseErrorMessage } from '../../lib/errors';
@@ -88,7 +89,7 @@ export default function CalendarScreen() {
   const [myEntries, setMyEntries] = useState<Entry[]>([]);
   const [myEntriesCache, setMyEntriesCache] = useState<Record<string, Entry[]>>({});
   const [partnerEntries, setPartnerEntries] = useState<Entry[]>([]);
-  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [consultations, setConsultations] = useState<ConsultationSession[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [partnerProfile, setPartnerProfile] = useState<UserProfile | null>(null);
   const [selected, setSelected] = useState(todayKey());
@@ -145,7 +146,7 @@ export default function CalendarScreen() {
     const { start, end } = getMonthBounds(currentMonth);
     const [my, savedConsultations, favorites] = await Promise.all([
       getEntriesInRange(user.uid, start, end),
-      getRecentConsultations(user.uid, 100),
+      getRecentConsultationSessions(user.uid, 100),
       getFavoriteEntryIds(user.uid),
     ]);
     if (isCancelled()) return;
@@ -247,8 +248,8 @@ export default function CalendarScreen() {
     return map;
   };
 
-  const groupConsultationsByDate = (items: Consultation[]) => {
-    const map: Record<string, Consultation[]> = {};
+  const groupConsultationsByDate = (items: ConsultationSession[]) => {
+    const map: Record<string, ConsultationSession[]> = {};
     items.forEach((item) => {
       const k = dateKey(item.createdAt);
       if (!k) return;
@@ -576,23 +577,25 @@ export default function CalendarScreen() {
       ) : (
         selectedDayRecords.map((record) => {
           if (record.kind === 'consultation') {
-            const item = record.consultation;
+            const session = record.consultation;
+            const firstTurn = session.turns?.[0];
+            if (!firstTurn) return null;
             return (
               <View
-                key={`consultation-${item.id}`}
+                key={`consultation-${session.id}`}
                 style={[styles.card, styles.consultationCard]}
               >
                 <View style={styles.cardTop}>
                   <Sparkle size={22} color="#7C5BB7" weight="fill" />
                   <View style={styles.cardMeta}>
                     <Text style={styles.cardAuthor}>相談 / 自分だけ</Text>
-                    <Text style={styles.cardTime}>{formatTime(item.createdAt)}</Text>
+                    <Text style={styles.cardTime}>{formatTime(session.createdAt)}</Text>
                   </View>
                 </View>
-                <Text style={styles.cardMemo}>{item.reflection}</Text>
+                <Text style={styles.cardMemo}>{firstTurn.reflection}</Text>
                 <TouchableOpacity
                   style={styles.usePostButton}
-                  onPress={() => router.push({ pathname: '/(app)/post', params: { memo: item.messageDraft } })}
+                  onPress={() => router.push({ pathname: '/(app)/post', params: { memo: firstTurn.messageDraft } })}
                 >
                   <Text style={styles.usePostButtonText}>投稿に使う</Text>
                 </TouchableOpacity>
@@ -622,15 +625,9 @@ export default function CalendarScreen() {
                 />
               ) : null}
               {isOwn && e.sourceConsultationSessionId ? (
-                <TouchableOpacity
-                  style={styles.sourceConsultationLink}
-                  onPress={() => openSourceConsultation(e)}
-                  activeOpacity={0.7}
-                >
-                  <Sparkle size={13} color="#7C5BB7" weight="fill" />
-                  <Text style={styles.sourceConsultationLinkText}>この壁打ちを見る</Text>
-                  <ArrowRight size={13} color="#7C5BB7" weight="bold" />
-                </TouchableOpacity>
+                <View style={styles.sourceConsultationLinkWrapper}>
+                  <SourceConsultationLink onPress={() => openSourceConsultation(e)} />
+                </View>
               ) : null}
             </View>
           );
@@ -737,23 +734,7 @@ const styles = StyleSheet.create({
   cardMemo: { fontSize: 13, color: COLORS.textBody, marginTop: 10, lineHeight: 19 },
   usePostButton: { alignSelf: 'flex-start', marginTop: 10, paddingVertical: 4 },
   usePostButtonText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
-  sourceConsultationLink: {
-    marginHorizontal: 16,
-    marginTop: -6,
-    marginBottom: 10,
-    backgroundColor: COLORS.aiBgSoft,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    borderWidth: 1,
-    borderTopWidth: 0,
-    borderColor: COLORS.aiBorderSoft,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sourceConsultationLinkText: { flex: 1, fontSize: 12, color: COLORS.ai, fontWeight: '700' },
+  sourceConsultationLinkWrapper: { marginHorizontal: 16, marginTop: -6, marginBottom: 10 },
   summaryButtonArea: { paddingHorizontal: 24, paddingTop: 4, paddingBottom: 8, gap: 10 },
   summaryTargetRow: { flexDirection: 'row', gap: 8 },
   summaryTargetBtn: {

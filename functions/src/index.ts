@@ -814,3 +814,28 @@ ${wrapUserData(summary)}
     }
   }
 );
+
+// ---- 解釈キャッシュ invalidate: 投稿編集時に古いキャッシュを削除 ----
+export const invalidateInterpretationCacheOnEntryUpdate = onDocumentUpdated(
+  { document: 'users/{uid}/entries/{entryId}', region: REGION },
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    // memo か mood が変化していなければ何もしない
+    if (before.memo === after.memo && before.mood === after.mood) return;
+
+    const uid = event.params.uid;
+    const entryId = event.params.entryId;
+    const cacheKey = `${uid}_${entryId}`;
+
+    // 全ユーザーの interpretationCache から該当キーを削除
+    // パートナーのみが持つはずだが、uid 単位で広めに検索
+    const usersSnap = await db.collection('users').get();
+    const deletes = usersSnap.docs.map((userDoc) =>
+      db.doc(`users/${userDoc.id}/interpretationCache/${cacheKey}`).delete()
+    );
+    await Promise.all(deletes);
+  }
+);

@@ -133,6 +133,34 @@ export default function ConsultScreen() {
     setText('');
   }
 
+  function handleResumeSession(session: ConsultationSession) {
+    const doResume = () => {
+      const restored: ConversationTurn[] = session.turns.map((turn, i) => ({
+        id: `${session.id}-${i}`,
+        input: turn.input,
+        result: { reflection: turn.reflection, messageDraft: turn.messageDraft },
+        collapsed: true,
+      }));
+      setConversation(restored);
+      setSessionId(session.id ?? null);
+      setIsFavorited(session.favored);
+      setText('');
+    };
+
+    if (conversation.length > 0) {
+      Alert.alert(
+        '進行中の会話があります',
+        '現在の会話を破棄して、このセッションを再開しますか？',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          { text: '再開する', style: 'destructive', onPress: doResume },
+        ]
+      );
+    } else {
+      doResume();
+    }
+  }
+
   async function handleToggleFavorite() {
     if (!user || !sessionId) return;
     setTogglingFavorite(true);
@@ -319,6 +347,13 @@ export default function ConsultScreen() {
                     </View>
                     <View style={styles.sessionHeaderRight}>
                       <Text style={styles.sessionTurnsLabel}>{session.turns.length}往復</Text>
+                      <TouchableOpacity
+                        style={styles.resumeButton}
+                        onPress={() => handleResumeSession(session)}
+                        hitSlop={6}
+                      >
+                        <Text style={styles.resumeButtonText}>続きから話す</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleToggleSessionFavorite(session)}
                         hitSlop={8}
@@ -532,6 +567,13 @@ const styles = StyleSheet.create({
   sessionPreview: { fontSize: 13, color: COLORS.textBody, lineHeight: 19 },
   sessionHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sessionTurnsLabel: { fontSize: 11, color: COLORS.ai, fontWeight: '700' },
+  resumeButton: {
+    backgroundColor: COLORS.primarySoft,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  resumeButtonText: { fontSize: 11, color: COLORS.primaryDeep, fontWeight: '700' },
   sessionBody: { borderTopWidth: 1, borderTopColor: COLORS.aiDivider, paddingHorizontal: 14, paddingBottom: 14 },
   sessionTurnItem: { marginTop: 14 },
   sessionTurnHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 4 },

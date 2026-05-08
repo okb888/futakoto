@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.futakoto.app"
+      "bundleIdentifier": "com.futakoto.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +30,13 @@
     "plugins": [
       "expo-router",
       "expo-notifications"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6cf40c14-7b75-471f-9ce5-17d8585326c5"
+      }
+    },
+    "owner": "h.okb"
   }
 }

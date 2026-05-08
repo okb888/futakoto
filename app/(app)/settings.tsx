@@ -11,6 +11,7 @@ import {
   Share,
   Switch,
   Modal,
+  Linking,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Bell, Clock, DownloadSimple, EnvelopeSimple, Heart, Sparkle } from 'phosphor-react-native';
@@ -19,6 +20,8 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   sendPasswordResetEmail,
+  sendEmailVerification,
+  reload,
 } from 'firebase/auth';
 import { useFocusEffect } from 'expo-router';
 import { TimePickerSheet } from '../../components/TimePickerSheet';
@@ -94,6 +97,8 @@ export default function SettingsScreen() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(user?.emailVerified ?? true);
 
   async function load(
     isCancelled: () => boolean = () => false,
@@ -311,6 +316,26 @@ export default function SettingsScreen() {
     }
   }
 
+  async function handleResendVerification() {
+    const currentUser = auth.currentUser;
+    if (!currentUser || sendingVerification) return;
+    setSendingVerification(true);
+    try {
+      await reload(currentUser);
+      if (currentUser.emailVerified) {
+        setEmailVerified(true);
+        Alert.alert('認証済みです', 'メールアドレスはすでに認証されています');
+        return;
+      }
+      await sendEmailVerification(currentUser);
+      Alert.alert('メールを送信しました', '届いた確認メールのリンクをタップしてください');
+    } catch (e: any) {
+      Alert.alert('エラー', firebaseErrorMessage(e));
+    } finally {
+      setSendingVerification(false);
+    }
+  }
+
   async function handleSendPasswordReset() {
     if (!user?.email) return;
     try {
@@ -449,6 +474,8 @@ export default function SettingsScreen() {
               style={[styles.pairButton, inputCode.length !== 6 && styles.pairButtonDisabled]}
               onPress={handlePair}
               disabled={loading || inputCode.length !== 6}
+              accessibilityLabel="パートナーと繋がる"
+              accessibilityRole="button"
             >
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -572,6 +599,22 @@ export default function SettingsScreen() {
       <View style={styles.divider} />
 
       <Text style={styles.sectionTitle}>アカウント</Text>
+      {!emailVerified && user?.providerData[0]?.providerId === 'password' && (
+        <View style={styles.verificationBanner}>
+          <Text style={styles.verificationBannerText}>メールアドレスが未認証です</Text>
+          <TouchableOpacity
+            style={[styles.verificationResendButton, sendingVerification && { opacity: 0.6 }]}
+            onPress={handleResendVerification}
+            disabled={sendingVerification}
+          >
+            {sendingVerification ? (
+              <ActivityIndicator color={COLORS.primary} size="small" />
+            ) : (
+              <Text style={styles.verificationResendText}>認証メールを再送</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
       {user?.providerData[0]?.providerId === 'password' ? (
         <TouchableOpacity style={styles.accountActionButton} onPress={handleSendPasswordReset}>
           <EnvelopeSimple size={17} color="#7B9E87" weight="bold" />
@@ -590,6 +633,16 @@ export default function SettingsScreen() {
         )}
         <Text style={styles.accountActionText}>データを書き出す</Text>
       </TouchableOpacity>
+
+      <View style={styles.legalLinks}>
+        <TouchableOpacity onPress={() => Linking.openURL('https://futakoto.jp/privacy')}>
+          <Text style={styles.legalLinkText}>プライバシーポリシー</Text>
+        </TouchableOpacity>
+        <Text style={styles.legalSep}>·</Text>
+        <TouchableOpacity onPress={() => Linking.openURL('https://futakoto.jp/terms')}>
+          <Text style={styles.legalLinkText}>利用規約</Text>
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity
         style={styles.logoutButton}
@@ -945,4 +998,31 @@ const styles = StyleSheet.create({
   deleteConfirmText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   deleteCancelButton: { paddingVertical: 10, alignItems: 'center' },
   deleteCancelText: { fontSize: 14, color: COLORS.textWeak },
+  legalLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  legalLinkText: { fontSize: 12, color: COLORS.textMuted, textDecorationLine: 'underline' },
+  legalSep: { fontSize: 12, color: COLORS.disabled },
+  verificationBanner: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#F5D67A',
+    padding: 12,
+    marginBottom: 8,
+    gap: 8,
+  },
+  verificationBannerText: { fontSize: 13, color: '#7A5C00' },
+  verificationResendButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.primarySoft,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  verificationResendText: { fontSize: 12, color: COLORS.primaryDeep, fontWeight: '600' },
 });

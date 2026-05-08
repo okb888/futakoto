@@ -10,8 +10,9 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { ArrowRight, Sparkle, Star } from 'phosphor-react-native';
+import { Star } from 'phosphor-react-native';
 import { EntryCard } from '../../components/EntryCard';
+import { SourceConsultationLink } from '../../components/SourceConsultationLink';
 import { useAuth } from '../../lib/auth';
 import {
   Entry,
@@ -130,15 +131,7 @@ export default function FavoritesScreen() {
           const entry = item.entry;
           const isOwn = entry.uid === user?.uid;
           const footer = isOwn && entry.sourceConsultationSessionId ? (
-            <TouchableOpacity
-              style={styles.sourceConsultationLink}
-              onPress={() => openSourceConsultation(entry)}
-              activeOpacity={0.7}
-            >
-              <Sparkle size={13} color="#7C5BB7" weight="fill" />
-              <Text style={styles.sourceConsultationLinkText}>この壁打ちを見る</Text>
-              <ArrowRight size={13} color="#7C5BB7" weight="bold" />
-            </TouchableOpacity>
+            <SourceConsultationLink onPress={() => openSourceConsultation(entry)} />
           ) : undefined;
 
           return (
@@ -184,16 +177,4 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   missingText: { fontSize: 13, color: COLORS.textWeak },
-  sourceConsultationLink: {
-    backgroundColor: COLORS.aiBgSoft,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.aiBorderSoft,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sourceConsultationLinkText: { flex: 1, fontSize: 12, color: COLORS.ai, fontWeight: '700' },
 });
