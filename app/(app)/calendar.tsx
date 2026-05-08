@@ -30,6 +30,8 @@ import {
   Consultation,
   UserProfile,
 } from '../../lib/db';
+import { firebaseErrorMessage } from '../../lib/errors';
+import { COLORS } from '../../lib/theme';
 
 LocaleConfig.locales['ja'] = {
   monthNames: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
@@ -126,7 +128,7 @@ export default function CalendarScreen() {
       setMyEntries(entries);
       setMyEntriesCache((prev) => ({ ...prev, [monthStr]: entries }));
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -228,7 +230,7 @@ export default function CalendarScreen() {
       setAiSummaryCache((prev) => ({ ...prev, [cacheKey]: res.summary }));
       setSummaryExpanded(true);
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setAiSummaryLoading(false);
     }
@@ -264,7 +266,7 @@ export default function CalendarScreen() {
 
   const markedDates: Record<string, any> = {};
   if (selected) {
-    markedDates[selected] = { ...(markedDates[selected] ?? {}), selected: true, selectedColor: '#7B9E87' };
+    markedDates[selected] = { ...(markedDates[selected] ?? {}), selected: true, selectedColor: COLORS.primary };
   }
 
   const partnerName = partnerProfile?.displayName ?? partnerProfile?.email?.split('@')[0] ?? 'パートナー';
@@ -426,11 +428,11 @@ export default function CalendarScreen() {
         onMonthChange={handleMonthChange}
         dayComponent={({ date, state }) => renderDay(date, state)}
         theme={{
-          backgroundColor: '#FAFAF8',
-          calendarBackground: '#FAFAF8',
-          todayTextColor: '#7B9E87',
-          arrowColor: '#7B9E87',
-          monthTextColor: '#2D2D2D',
+          backgroundColor: COLORS.background,
+          calendarBackground: COLORS.background,
+          todayTextColor: COLORS.primary,
+          arrowColor: COLORS.primary,
+          monthTextColor: COLORS.text,
           textDayFontSize: 14,
           textMonthFontSize: 16,
           textDayHeaderFontSize: 12,
@@ -639,15 +641,15 @@ export default function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   content: { paddingBottom: 64 },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FAFAF8' },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.background },
   legend: { paddingHorizontal: 24, paddingVertical: 12 },
   ownerLegendRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 10 },
   ownerLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendCellSample: { width: 18, height: 18, borderRadius: 4, backgroundColor: '#AED58144' },
   legendStripSample: { width: 18, height: 4, borderRadius: 2, backgroundColor: '#81D4FA' },
-  consultationLegendDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#7C5BB7' },
+  consultationLegendDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.ai },
   legendLabel: { fontSize: 11, color: '#999' },
   legendRow: { flexDirection: 'row', gap: 16 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -663,10 +665,10 @@ const styles = StyleSheet.create({
   },
   dayCellSelected: {
     borderWidth: 2,
-    borderColor: '#7B9E87',
+    borderColor: COLORS.primary,
   },
-  dayText: { fontSize: 13, color: '#2D2D2D', fontWeight: '600' },
-  dayTextDisabled: { color: '#CCC' },
+  dayText: { fontSize: 13, color: COLORS.text, fontWeight: '600' },
+  dayTextDisabled: { color: COLORS.disabled },
   dayTextSelected: { color: '#5F856B', fontWeight: '700' },
   partnerStrip: {
     position: 'absolute',
@@ -684,7 +686,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#7C5BB7',
+    backgroundColor: COLORS.ai,
   },
   filterRow: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 8, gap: 8 },
   filterButton: {
@@ -693,13 +695,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
   },
-  filterButtonActive: { backgroundColor: '#EDF4F0', borderColor: '#7B9E87' },
-  filterButtonAiActive: { backgroundColor: '#F3EDFA', borderColor: '#E8E0F2' },
-  filterText: { fontSize: 12, color: '#888', fontWeight: '600' },
-  filterTextActive: { color: '#7B9E87' },
-  filterTextAiActive: { color: '#7C5BB7' },
+  filterButtonActive: { backgroundColor: COLORS.primarySoft, borderColor: COLORS.primary },
+  filterButtonAiActive: { backgroundColor: COLORS.aiBg, borderColor: COLORS.aiBorder },
+  filterText: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
+  filterTextActive: { color: COLORS.primary },
+  filterTextAiActive: { color: COLORS.ai },
   sortRow: {
     paddingHorizontal: 24,
     paddingTop: 16,
@@ -708,17 +710,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  dateTitle: { fontSize: 14, fontWeight: '600', color: '#555' },
+  dateTitle: { fontSize: 14, fontWeight: '600', color: COLORS.textSubtle },
   sortButton: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  sortButtonText: { fontSize: 12, color: '#7B9E87', fontWeight: '700' },
-  empty: { fontSize: 13, color: '#BBB', textAlign: 'center', paddingVertical: 24 },
+  sortButtonText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
+  empty: { fontSize: 13, color: COLORS.placeholder, textAlign: 'center', paddingVertical: 24 },
   card: {
     backgroundColor: '#fff',
     marginHorizontal: 16,
@@ -727,31 +729,31 @@ const styles = StyleSheet.create({
     padding: 16,
     borderLeftWidth: 4,
   },
-  consultationCard: { borderLeftColor: '#7C5BB7', borderWidth: 1, borderColor: '#E8E0F2' },
+  consultationCard: { borderLeftColor: COLORS.ai, borderWidth: 1, borderColor: COLORS.aiBorder },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   cardMeta: { flex: 1 },
-  cardAuthor: { fontSize: 13, fontWeight: '600', color: '#444' },
-  cardTime: { fontSize: 11, color: '#AAA', marginTop: 2 },
-  cardMemo: { fontSize: 13, color: '#444', marginTop: 10, lineHeight: 19 },
+  cardAuthor: { fontSize: 13, fontWeight: '600', color: COLORS.textBody },
+  cardTime: { fontSize: 11, color: COLORS.textWeak, marginTop: 2 },
+  cardMemo: { fontSize: 13, color: COLORS.textBody, marginTop: 10, lineHeight: 19 },
   usePostButton: { alignSelf: 'flex-start', marginTop: 10, paddingVertical: 4 },
-  usePostButtonText: { fontSize: 12, color: '#7B9E87', fontWeight: '700' },
+  usePostButtonText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
   sourceConsultationLink: {
     marginHorizontal: 16,
     marginTop: -6,
     marginBottom: 10,
-    backgroundColor: '#F9F7FC',
+    backgroundColor: COLORS.aiBgSoft,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
     borderWidth: 1,
     borderTopWidth: 0,
-    borderColor: '#EBE4F5',
+    borderColor: COLORS.aiBorderSoft,
     paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  sourceConsultationLinkText: { flex: 1, fontSize: 12, color: '#7C5BB7', fontWeight: '700' },
+  sourceConsultationLinkText: { flex: 1, fontSize: 12, color: COLORS.ai, fontWeight: '700' },
   summaryButtonArea: { paddingHorizontal: 24, paddingTop: 4, paddingBottom: 8, gap: 10 },
   summaryTargetRow: { flexDirection: 'row', gap: 8 },
   summaryTargetBtn: {
@@ -760,30 +762,30 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
   },
-  summaryTargetBtnActive: { backgroundColor: '#F3EDFA', borderColor: '#E8E0F2' },
+  summaryTargetBtnActive: { backgroundColor: COLORS.aiBg, borderColor: COLORS.aiBorder },
   summaryTargetBtnDisabled: { opacity: 0.4 },
-  summaryTargetText: { fontSize: 12, color: '#888', fontWeight: '600' },
-  summaryTargetTextActive: { color: '#7C5BB7' },
-  summaryTargetTextDisabled: { color: '#CCC' },
+  summaryTargetText: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
+  summaryTargetTextActive: { color: COLORS.ai },
+  summaryTargetTextDisabled: { color: COLORS.disabled },
   summaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F3EDFA',
+    backgroundColor: COLORS.aiBg,
     borderRadius: 16,
     paddingVertical: 8,
     paddingHorizontal: 14,
   },
-  summaryButtonText: { fontSize: 13, color: '#7C5BB7', fontWeight: '700' },
+  summaryButtonText: { fontSize: 13, color: COLORS.ai, fontWeight: '700' },
   summaryCard: {
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: '#F3EDFA',
+    backgroundColor: COLORS.aiBg,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E8E0F2',
+    borderColor: COLORS.aiBorder,
     overflow: 'hidden',
   },
   summaryCardHeader: {
@@ -793,7 +795,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  summaryCardTitle: { flex: 1, fontSize: 13, color: '#7C5BB7', fontWeight: '700' },
-  summaryToggle: { fontSize: 11, color: '#7C5BB7' },
-  summaryText: { fontSize: 14, color: '#2D2D2D', lineHeight: 21, paddingHorizontal: 14, paddingBottom: 14 },
+  summaryCardTitle: { flex: 1, fontSize: 13, color: COLORS.ai, fontWeight: '700' },
+  summaryToggle: { fontSize: 11, color: COLORS.ai },
+  summaryText: { fontSize: 14, color: COLORS.text, lineHeight: 21, paddingHorizontal: 14, paddingBottom: 14 },
 });

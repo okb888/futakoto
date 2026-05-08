@@ -28,6 +28,8 @@ import {
   Entry,
   UserProfile,
 } from '../../lib/db';
+import { firebaseErrorMessage } from '../../lib/errors';
+import { COLORS } from '../../lib/theme';
 
 function formatDate(ts: any): string {
   if (!ts) return '';
@@ -157,7 +159,7 @@ export default function HomeScreen() {
       const res = await aiInterpret(entry.memo, entry.mood, partnerName, entry.id, entry.uid);
       setInterpretationsCache((prev) => ({ ...prev, [cacheKey]: res.interpretations }));
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setInterpretLoadingIds((prev) => {
         const next = new Set(prev);
@@ -297,7 +299,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   list: { paddingBottom: 100, paddingTop: 12 },
   connectionHeader: { paddingHorizontal: 16, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
   connectionPill: {
@@ -306,38 +308,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#E8D5D5',
+    borderColor: COLORS.partnerBorder,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  connectionText: { fontSize: 12, color: '#B26F6F', fontWeight: '700' },
+  connectionText: { fontSize: 12, color: COLORS.partnerText, fontWeight: '700' },
   connectionPillMuted: {
     alignSelf: 'flex-start',
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  connectionMutedText: { fontSize: 12, color: '#888', fontWeight: '600' },
+  connectionMutedText: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
   favoriteShortcut: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#DCE9E1',
+    borderColor: COLORS.primaryBorder,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  favoriteShortcutText: { fontSize: 12, color: '#7B9E87', fontWeight: '700' },
+  favoriteShortcutText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
   empty: { alignItems: 'center', paddingTop: 64 },
-  emptyText: { fontSize: 15, color: '#AAA' },
-  emptyHint: { fontSize: 13, color: '#CCC', marginTop: 8 },
+  emptyText: { fontSize: 15, color: COLORS.textWeak },
+  emptyHint: { fontSize: 13, color: COLORS.disabled, marginTop: 8 },
   fab: {
     position: 'absolute',
     bottom: 16,
@@ -345,7 +347,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#7B9E87',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -356,29 +358,29 @@ const styles = StyleSheet.create({
   },
   fabText: { fontSize: 28, color: '#fff', lineHeight: 32 },
   interpretArea: {
-    backgroundColor: '#F9F7FC',
+    backgroundColor: COLORS.aiBgSoft,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#EBE4F5',
+    borderColor: COLORS.aiBorderSoft,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   interpretButton: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  interpretButtonText: { fontSize: 12, color: '#7C5BB7', fontWeight: '700' },
+  interpretButtonText: { fontSize: 12, color: COLORS.ai, fontWeight: '700' },
   interpretResult: { gap: 6 },
   interpretItem: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
-  interpretBullet: { fontSize: 13, color: '#7C5BB7', lineHeight: 20, fontWeight: '700' },
-  interpretText: { flex: 1, fontSize: 13, color: '#444', lineHeight: 20 },
+  interpretBullet: { fontSize: 13, color: COLORS.ai, lineHeight: 20, fontWeight: '700' },
+  interpretText: { flex: 1, fontSize: 13, color: COLORS.textBody, lineHeight: 20 },
   sourceConsultationLink: {
-    backgroundColor: '#F9F7FC',
+    backgroundColor: COLORS.aiBgSoft,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#EBE4F5',
+    borderColor: COLORS.aiBorderSoft,
     paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  sourceConsultationLinkText: { flex: 1, fontSize: 12, color: '#7C5BB7', fontWeight: '700' },
+  sourceConsultationLinkText: { flex: 1, fontSize: 12, color: COLORS.ai, fontWeight: '700' },
 });

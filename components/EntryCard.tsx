@@ -12,6 +12,7 @@ import {
 } from 'phosphor-react-native';
 import { Entry } from '../lib/db';
 import { getMoodColor, getMoodEmoji } from '../lib/mood';
+import { COLORS } from '../lib/theme';
 
 type EntryCardProps = {
   entry: Entry;
@@ -81,7 +82,7 @@ export function EntryCard({
             >
               <Star
                 size={18}
-                color={isFavorite ? '#7B9E87' : '#AAA'}
+                color={isFavorite ? COLORS.primary : COLORS.textWeak}
                 weight={isFavorite ? 'fill' : 'regular'}
               />
             </TouchableOpacity>
@@ -116,32 +117,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 3,
   },
-  ownBadge: { backgroundColor: '#EDF4F0' },
-  partnerBadge: { backgroundColor: '#FBF4F4' },
+  ownBadge: { backgroundColor: COLORS.primarySoft },
+  partnerBadge: { backgroundColor: COLORS.partnerBgSoft },
   authorBadgeText: { fontSize: 12, fontWeight: '700' },
   ownBadgeText: { color: '#5F856B' },
-  partnerBadgeText: { color: '#B26F6F' },
+  partnerBadgeText: { color: COLORS.partnerText },
   visibilityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#DCE9E1',
+    borderColor: COLORS.primaryBorder,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    backgroundColor: '#F7FBF8',
+    backgroundColor: COLORS.primaryBgSoft,
   },
   privateBadge: {
-    borderColor: '#E0E0E0',
-    backgroundColor: '#FAFAF8',
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
   },
   visibilityBadgeText: { fontSize: 11, fontWeight: '600' },
-  sharedBadgeText: { color: '#7B9E87' },
-  privateBadgeText: { color: '#555' },
-  cardTime: { fontSize: 11, color: '#AAA', marginTop: 5 },
+  sharedBadgeText: { color: COLORS.primary },
+  privateBadgeText: { color: COLORS.textSubtle },
+  cardTime: { fontSize: 11, color: COLORS.textWeak, marginTop: 5 },
   favoriteButton: { padding: 6, marginRight: -6 },
   favoriteStatic: { padding: 6, marginRight: -6 },
-  cardMemo: { fontSize: 14, color: '#444', marginTop: 10, lineHeight: 20 },
-  cardFooter: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
+  cardMemo: { fontSize: 14, color: COLORS.textBody, marginTop: 10, lineHeight: 20 },
+  cardFooter: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.borderSoft },
 });

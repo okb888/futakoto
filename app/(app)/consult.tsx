@@ -24,6 +24,8 @@ import {
   ConsultationSession,
   getUserProfile,
 } from '../../lib/db';
+import { firebaseErrorMessage } from '../../lib/errors';
+import { COLORS } from '../../lib/theme';
 
 const MAX_TURNS = 10;
 
@@ -114,7 +116,7 @@ export default function ConsultScreen() {
       ]);
       setText('');
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -139,7 +141,7 @@ export default function ConsultScreen() {
       setIsFavorited(!isFavorited);
       await load();
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setTogglingFavorite(false);
     }
@@ -151,7 +153,7 @@ export default function ConsultScreen() {
       await toggleSessionFavorite(user.uid, session.id, !session.favored);
       setRecentSessions((prev) => prev.map((s) => s.id === session.id ? { ...s, favored: !s.favored } : s));
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     }
   }
 
@@ -224,7 +226,7 @@ export default function ConsultScreen() {
               >
                 <Star
                   size={22}
-                  color={isFavorited ? '#7B9E87' : '#AAA'}
+                  color={isFavorited ? COLORS.primary : COLORS.textWeak}
                   weight={isFavorited ? 'fill' : 'regular'}
                 />
               </TouchableOpacity>
@@ -323,7 +325,7 @@ export default function ConsultScreen() {
                       >
                         <Star
                           size={16}
-                          color={session.favored ? '#7B9E87' : '#CCC'}
+                          color={session.favored ? COLORS.primary : COLORS.disabled}
                           weight={session.favored ? 'fill' : 'regular'}
                         />
                       </TouchableOpacity>
@@ -371,10 +373,10 @@ export default function ConsultScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: 24, paddingBottom: 64 },
-  title: { fontSize: 18, fontWeight: '700', color: '#2D2D2D', marginBottom: 8 },
-  lead: { fontSize: 14, fontWeight: '600', color: '#555', marginTop: 20, marginBottom: 12 },
+  title: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
+  lead: { fontSize: 14, fontWeight: '600', color: COLORS.textSubtle, marginTop: 20, marginBottom: 12 },
 
   // 今の会話
   conversationArea: { gap: 8, marginBottom: 4 },
@@ -382,7 +384,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#7C5BB7',
+    borderLeftColor: COLORS.ai,
     overflow: 'hidden',
   },
   turnHeader: {
@@ -396,15 +398,15 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#F3EDFA',
+    backgroundColor: COLORS.aiBg,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  turnBadgeText: { fontSize: 11, color: '#7C5BB7', fontWeight: '700' },
-  turnPreview: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
-  collapseToggle: { fontSize: 10, color: '#888' },
-  turnBody: { paddingHorizontal: 14, paddingBottom: 14, borderTopWidth: 1, borderTopColor: '#F0EAF8' },
+  turnBadgeText: { fontSize: 11, color: COLORS.ai, fontWeight: '700' },
+  turnPreview: { flex: 1, fontSize: 13, color: COLORS.textSubtle, lineHeight: 19 },
+  collapseToggle: { fontSize: 10, color: COLORS.textMuted },
+  turnBody: { paddingHorizontal: 14, paddingBottom: 14, borderTopWidth: 1, borderTopColor: COLORS.aiDivider },
   sessionFavoriteRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -412,34 +414,34 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 4,
   },
-  sessionFavoriteHint: { fontSize: 12, color: '#AAA' },
+  sessionFavoriteHint: { fontSize: 12, color: COLORS.textWeak },
   newConversationButton: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#DCE9E1',
+    borderColor: COLORS.primaryBorder,
     paddingHorizontal: 10,
     paddingVertical: 5,
     backgroundColor: '#fff',
   },
-  newConversationButtonText: { fontSize: 11, color: '#7B9E87', fontWeight: '700' },
+  newConversationButtonText: { fontSize: 11, color: COLORS.primary, fontWeight: '700' },
 
   // 入力エリア
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     borderRadius: 12,
     padding: 16,
     minHeight: 150,
     fontSize: 15,
     lineHeight: 22,
-    color: '#2D2D2D',
+    color: COLORS.text,
   },
   inputCompact: { minHeight: 100 },
-  shortHint: { fontSize: 12, color: '#888', marginTop: 8, lineHeight: 18 },
+  shortHint: { fontSize: 12, color: COLORS.textMuted, marginTop: 8, lineHeight: 18 },
   aiButton: {
     marginTop: 14,
-    backgroundColor: '#F3EDFA',
+    backgroundColor: COLORS.aiBg,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -448,7 +450,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   aiButtonDisabled: { opacity: 0.5 },
-  aiButtonText: { color: '#7C5BB7', fontSize: 14, fontWeight: '700' },
+  aiButtonText: { color: COLORS.ai, fontSize: 14, fontWeight: '700' },
   loadingCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -457,11 +459,11 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#F0EAF8',
+    borderColor: COLORS.aiDivider,
   },
-  loadingText: { fontSize: 13, color: '#888' },
+  loadingText: { fontSize: 13, color: COLORS.textMuted },
   limitCard: {
-    backgroundColor: '#F3EDFA',
+    backgroundColor: COLORS.aiBg,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -469,35 +471,35 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 8,
   },
-  limitText: { flex: 1, fontSize: 13, color: '#7C5BB7', lineHeight: 20 },
+  limitText: { flex: 1, fontSize: 13, color: COLORS.ai, lineHeight: 20 },
 
   // AIカード（紫: AIとの対話）
   aiCard: {
     backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E8E0F2',
+    borderColor: COLORS.aiBorder,
     borderLeftWidth: 3,
-    borderLeftColor: '#7C5BB7',
+    borderLeftColor: COLORS.ai,
     padding: 14,
     marginTop: 10,
   },
-  aiCardLabel: { fontSize: 11, color: '#7C5BB7', fontWeight: '700', marginBottom: 6 },
+  aiCardLabel: { fontSize: 11, color: COLORS.ai, fontWeight: '700', marginBottom: 6 },
 
   // パートナーへの文カード（セージ: パートナーとの対話）
   partnerDraftCard: {
     backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#DCE9E1',
+    borderColor: COLORS.primaryBorder,
     borderLeftWidth: 3,
-    borderLeftColor: '#7B9E87',
+    borderLeftColor: COLORS.primary,
     padding: 14,
     marginTop: 10,
   },
-  partnerDraftLabel: { fontSize: 11, color: '#7B9E87', fontWeight: '700', marginBottom: 6 },
+  partnerDraftLabel: { fontSize: 11, color: COLORS.primary, fontWeight: '700', marginBottom: 6 },
 
-  cardText: { fontSize: 14, color: '#2D2D2D', lineHeight: 21 },
+  cardText: { fontSize: 14, color: COLORS.text, lineHeight: 21 },
   usePostButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -506,16 +508,16 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingVertical: 4,
   },
-  usePostButtonText: { fontSize: 12, color: '#7B9E87', fontWeight: '700' },
+  usePostButtonText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
 
   // 過去の記録
-  empty: { textAlign: 'center', color: '#BBB', fontSize: 13, paddingVertical: 20 },
+  empty: { textAlign: 'center', color: COLORS.placeholder, fontSize: 13, paddingVertical: 20 },
   sessionList: { gap: 10 },
   sessionCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#7C5BB7',
+    borderLeftColor: COLORS.ai,
     overflow: 'hidden',
   },
   sessionHeader: {
@@ -526,12 +528,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sessionHeaderLeft: { flex: 1, gap: 3 },
-  sessionDate: { fontSize: 11, color: '#888' },
-  sessionPreview: { fontSize: 13, color: '#444', lineHeight: 19 },
+  sessionDate: { fontSize: 11, color: COLORS.textMuted },
+  sessionPreview: { fontSize: 13, color: COLORS.textBody, lineHeight: 19 },
   sessionHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  sessionTurnsLabel: { fontSize: 11, color: '#7C5BB7', fontWeight: '700' },
-  sessionBody: { borderTopWidth: 1, borderTopColor: '#F0EAF8', paddingHorizontal: 14, paddingBottom: 14 },
+  sessionTurnsLabel: { fontSize: 11, color: COLORS.ai, fontWeight: '700' },
+  sessionBody: { borderTopWidth: 1, borderTopColor: COLORS.aiDivider, paddingHorizontal: 14, paddingBottom: 14 },
   sessionTurnItem: { marginTop: 14 },
   sessionTurnHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 4 },
-  sessionTurnInput: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
+  sessionTurnInput: { flex: 1, fontSize: 13, color: COLORS.textSubtle, lineHeight: 19 },
 });

@@ -19,6 +19,8 @@ import { useAuth } from '../../lib/auth';
 import { addEntry, getEntry, getUserProfile, updateEntry, Visibility } from '../../lib/db';
 import { aiRewrite, RewriteResult } from '../../lib/ai';
 import { MOODS } from '../../lib/mood';
+import { firebaseErrorMessage } from '../../lib/errors';
+import { COLORS } from '../../lib/theme';
 
 function formatDateInput(date: Date): string {
   return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
@@ -96,7 +98,7 @@ export default function PostScreen() {
         setAiResult(null);
         setPreviousMemo(null);
       } catch (e: any) {
-        if (!cancelled) Alert.alert('エラー', e.message);
+        if (!cancelled) Alert.alert('エラー', firebaseErrorMessage(e));
       } finally {
         if (!cancelled) setEntryLoading(false);
       }
@@ -136,7 +138,7 @@ export default function PostScreen() {
       }
       router.back();
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -152,7 +154,7 @@ export default function PostScreen() {
       const result = await aiRewrite(memo, partnerName);
       setAiResult(result);
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setAiLoading(false);
     }
@@ -265,14 +267,14 @@ export default function PostScreen() {
             style={[styles.pickerButton, activePicker === 'date' && styles.pickerButtonActive]}
             onPress={() => setActivePicker((current) => current === 'date' ? null : 'date')}
           >
-            <CalendarBlank size={16} color={activePicker === 'date' ? '#7B9E87' : '#888'} />
+            <CalendarBlank size={16} color={activePicker === 'date' ? COLORS.primary : COLORS.textMuted} />
             <Text style={styles.pickerButtonText}>{formatDateInput(recordDate)}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.pickerButton, styles.timePickerButton, timePickerOpen && styles.pickerButtonActive]}
             onPress={openTimePicker}
           >
-            <Clock size={16} color={timePickerOpen ? '#7B9E87' : '#888'} />
+            <Clock size={16} color={timePickerOpen ? COLORS.primary : COLORS.textMuted} />
             <Text style={styles.pickerButtonText}>{formatTimeInput(recordDate)}</Text>
           </TouchableOpacity>
         </View>
@@ -283,14 +285,14 @@ export default function PostScreen() {
                 current={dateKey(recordDate)}
                 maxDate={dateKey(new Date())}
                 markedDates={{
-                  [dateKey(recordDate)]: { selected: true, selectedColor: '#7B9E87' },
+                  [dateKey(recordDate)]: { selected: true, selectedColor: COLORS.primary },
                 }}
                 onDayPress={(day) => handleDaySelect(day.dateString)}
                 theme={{
                   calendarBackground: '#fff',
-                  todayTextColor: '#7B9E87',
-                  arrowColor: '#7B9E87',
-                  monthTextColor: '#2D2D2D',
+                  todayTextColor: COLORS.primary,
+                  arrowColor: COLORS.primary,
+                  monthTextColor: COLORS.text,
                   textDayFontSize: 14,
                   textMonthFontSize: 15,
                   textDayHeaderFontSize: 12,
@@ -388,7 +390,7 @@ export default function PostScreen() {
             style={[styles.visBtn, visibility === 'shared' && styles.visBtnSharedActive]}
             onPress={() => setVisibility('shared')}
           >
-            <Users size={16} color={visibility === 'shared' ? '#7B9E87' : '#AAA'} weight={visibility === 'shared' ? 'fill' : 'regular'} />
+            <Users size={16} color={visibility === 'shared' ? COLORS.primary : COLORS.textWeak} weight={visibility === 'shared' ? 'fill' : 'regular'} />
             <Text style={[styles.visBtnText, visibility === 'shared' && styles.visBtnSharedTextActive]}>
               ふたりへ
             </Text>
@@ -397,7 +399,7 @@ export default function PostScreen() {
             style={[styles.visBtn, visibility === 'private' && styles.visBtnPrivateActive]}
             onPress={() => setVisibility('private')}
           >
-            <Lock size={16} color={visibility === 'private' ? '#555' : '#AAA'} weight={visibility === 'private' ? 'fill' : 'regular'} />
+            <Lock size={16} color={visibility === 'private' ? COLORS.textSubtle : COLORS.textWeak} weight={visibility === 'private' ? 'fill' : 'regular'} />
             <Text style={[styles.visBtnText, visibility === 'private' && styles.visBtnPrivateTextActive]}>
               自分のみ
             </Text>
@@ -436,12 +438,12 @@ export default function PostScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { padding: 24, paddingBottom: 48 },
   entryLoading: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: COLORS.borderSoft,
     borderRadius: 12,
     padding: 14,
     flexDirection: 'row',
@@ -449,12 +451,12 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 4,
   },
-  entryLoadingText: { color: '#888', fontSize: 13 },
-  label: { fontSize: 14, fontWeight: '600', color: '#555', marginBottom: 12, marginTop: 24 },
+  entryLoadingText: { color: COLORS.textMuted, fontSize: 13 },
+  label: { fontSize: 14, fontWeight: '600', color: COLORS.textSubtle, marginBottom: 12, marginTop: 24 },
   messageLabel: { flex: 1 },
   messageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 },
   aiButton: {
-    backgroundColor: '#F3EDFA',
+    backgroundColor: COLORS.aiBg,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -464,7 +466,7 @@ const styles = StyleSheet.create({
     gap: 4,
     flexShrink: 0,
   },
-  aiButtonText: { fontSize: 12, color: '#7C5BB7', fontWeight: '600' },
+  aiButtonText: { fontSize: 12, color: COLORS.ai, fontWeight: '600' },
   moodRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   moodButton: {
     flex: 1,
@@ -472,29 +474,29 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     backgroundColor: '#fff',
   },
   moodEmoji: { fontSize: 24 },
-  moodLabel: { fontSize: 10, color: '#AAA', marginTop: 4 },
-  moodLabelSelected: { color: '#555', fontWeight: '600' },
+  moodLabel: { fontSize: 10, color: COLORS.textWeak, marginTop: 4 },
+  moodLabelSelected: { color: COLORS.textSubtle, fontWeight: '600' },
   quickDateRow: { flexDirection: 'row', gap: 8 },
   quickDateButton: {
     flex: 1,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     borderRadius: 16,
     paddingVertical: 8,
     alignItems: 'center',
   },
-  quickDateButtonText: { fontSize: 12, color: '#7B9E87', fontWeight: '700' },
+  quickDateButtonText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
   dateTimeRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
   pickerButton: {
     flex: 1.4,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -504,15 +506,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   pickerButtonActive: {
-    borderColor: '#7B9E87',
-    backgroundColor: '#EDF4F0',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primarySoft,
   },
   timePickerButton: { flex: 0.8 },
-  pickerButtonText: { fontSize: 14, color: '#2D2D2D', fontWeight: '600' },
+  pickerButtonText: { fontSize: 14, color: COLORS.text, fontWeight: '600' },
   pickerPanel: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     borderRadius: 12,
     marginTop: 10,
     overflow: 'hidden',
@@ -520,11 +522,11 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     borderRadius: 12,
     padding: 16,
     fontSize: 15,
-    color: '#2D2D2D',
+    color: COLORS.text,
     minHeight: 100,
   },
   undoButton: {
@@ -535,16 +537,16 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingVertical: 6,
   },
-  undoButtonText: { color: '#7B9E87', fontSize: 12, fontWeight: '600' },
+  undoButtonText: { color: COLORS.primary, fontSize: 12, fontWeight: '600' },
   aiSuggestionSection: {
     marginTop: 16,
-    backgroundColor: '#F3EDFA',
+    backgroundColor: COLORS.aiBg,
     borderRadius: 12,
     padding: 12,
   },
   aiSuggestionHeader: { gap: 4, marginBottom: 10 },
-  aiSuggestionTitle: { fontSize: 14, fontWeight: '700', color: '#2D2D2D' },
-  aiSuggestionSub: { fontSize: 11, color: '#888' },
+  aiSuggestionTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  aiSuggestionSub: { fontSize: 11, color: COLORS.textMuted },
   inlineLoading: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -559,51 +561,51 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     alignItems: 'center',
     backgroundColor: '#fff',
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 6,
   },
-  visBtnSharedActive: { borderColor: '#7B9E87', backgroundColor: '#EDF4F0' },
-  visBtnPrivateActive: { borderColor: '#888', backgroundColor: '#F0F0F0' },
-  visBtnText: { fontSize: 13, color: '#AAA' },
-  visBtnSharedTextActive: { color: '#7B9E87', fontWeight: '600' },
-  visBtnPrivateTextActive: { color: '#555', fontWeight: '600' },
+  visBtnSharedActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primarySoft },
+  visBtnPrivateActive: { borderColor: COLORS.textMuted, backgroundColor: COLORS.borderSoft },
+  visBtnText: { fontSize: 13, color: COLORS.textWeak },
+  visBtnSharedTextActive: { color: COLORS.primary, fontWeight: '600' },
+  visBtnPrivateTextActive: { color: COLORS.textSubtle, fontWeight: '600' },
   saveButton: {
-    backgroundColor: '#7B9E87',
+    backgroundColor: COLORS.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 32,
   },
-  saveButtonDisabled: { backgroundColor: '#C8D8CC' },
+  saveButtonDisabled: { backgroundColor: COLORS.primaryDim },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   modalTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  modalLoadingText: { fontSize: 13, color: '#888' },
+  modalLoadingText: { fontSize: 13, color: COLORS.textMuted },
   rewriteCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E8E0F2',
+    borderColor: COLORS.aiBorder,
   },
   understandingCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E8E0F2',
+    borderColor: COLORS.aiBorder,
     borderLeftWidth: 4,
-    borderLeftColor: '#7C5BB7',
+    borderLeftColor: COLORS.ai,
     gap: 8,
   },
   understandingItem: { gap: 2 },
-  understandingKey: { fontSize: 11, color: '#888', fontWeight: '700' },
-  understandingText: { fontSize: 13, color: '#444', lineHeight: 19 },
-  rewriteLabel: { fontSize: 11, color: '#7C5BB7', fontWeight: '700', marginBottom: 6 },
-  rewriteText: { fontSize: 14, color: '#2D2D2D', lineHeight: 20 },
+  understandingKey: { fontSize: 11, color: COLORS.textMuted, fontWeight: '700' },
+  understandingText: { fontSize: 13, color: COLORS.textBody, lineHeight: 19 },
+  rewriteLabel: { fontSize: 11, color: COLORS.ai, fontWeight: '700', marginBottom: 6 },
+  rewriteText: { fontSize: 14, color: COLORS.text, lineHeight: 20 },
   applyRewriteButton: {
     alignSelf: 'flex-start',
     marginTop: 12,
@@ -611,7 +613,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#7C5BB7',
+    borderColor: COLORS.ai,
   },
-  applyRewriteButtonText: { color: '#7C5BB7', fontSize: 12, fontWeight: '700' },
+  applyRewriteButtonText: { color: COLORS.ai, fontSize: 12, fontWeight: '700' },
 });

@@ -22,6 +22,8 @@ import {
   toggleFavoriteEntry,
   UserProfile,
 } from '../../lib/db';
+import { firebaseErrorMessage } from '../../lib/errors';
+import { COLORS } from '../../lib/theme';
 
 function formatDate(ts: any): string {
   if (!ts) return '';
@@ -55,7 +57,7 @@ export default function FavoritesScreen() {
         setPartnerProfile(null);
       }
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       if (!isCancelled()) setLoading(false);
     }
@@ -158,9 +160,9 @@ export default function FavoritesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   content: { paddingTop: 12, paddingBottom: 64 },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FAFAF8' },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.background },
   header: {
     marginHorizontal: 24,
     marginBottom: 12,
@@ -168,30 +170,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  title: { fontSize: 18, fontWeight: '700', color: '#2D2D2D' },
+  title: { fontSize: 18, fontWeight: '700', color: COLORS.text },
   empty: { alignItems: 'center', paddingHorizontal: 32, paddingTop: 64 },
-  emptyText: { fontSize: 15, color: '#AAA' },
-  emptyHint: { fontSize: 13, color: '#CCC', marginTop: 8, textAlign: 'center', lineHeight: 19 },
+  emptyText: { fontSize: 15, color: COLORS.textWeak },
+  emptyHint: { fontSize: 13, color: COLORS.disabled, marginTop: 8, textAlign: 'center', lineHeight: 19 },
   missingCard: {
     marginHorizontal: 16,
     marginBottom: 10,
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     padding: 16,
   },
-  missingText: { fontSize: 13, color: '#AAA' },
+  missingText: { fontSize: 13, color: COLORS.textWeak },
   sourceConsultationLink: {
-    backgroundColor: '#F9F7FC',
+    backgroundColor: COLORS.aiBgSoft,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#EBE4F5',
+    borderColor: COLORS.aiBorderSoft,
     paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  sourceConsultationLinkText: { flex: 1, fontSize: 12, color: '#7C5BB7', fontWeight: '700' },
+  sourceConsultationLinkText: { flex: 1, fontSize: 12, color: COLORS.ai, fontWeight: '700' },
 });

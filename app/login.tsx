@@ -15,6 +15,8 @@ import {
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { firebaseErrorMessage } from '../lib/errors';
+import { COLORS } from '../lib/theme';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -32,7 +34,7 @@ export default function LoginScreen() {
         await signInWithEmailAndPassword(auth, email, password);
       }
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -94,7 +96,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAF8',
+    backgroundColor: COLORS.background,
   },
   inner: {
     flex: 1,
@@ -104,14 +106,14 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 40,
     fontWeight: '700',
-    color: '#2D2D2D',
+    color: COLORS.text,
     textAlign: 'center',
     marginBottom: 8,
     letterSpacing: 4,
   },
   tagline: {
     fontSize: 14,
-    color: '#888',
+    color: COLORS.textMuted,
     textAlign: 'center',
     marginBottom: 48,
     letterSpacing: 1,
@@ -119,16 +121,16 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#2D2D2D',
+    color: COLORS.text,
     marginBottom: 12,
   },
   button: {
-    backgroundColor: '#7B9E87',
+    backgroundColor: COLORS.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -141,7 +143,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   toggle: {
-    color: '#7B9E87',
+    color: COLORS.primary,
     fontSize: 13,
     textAlign: 'center',
     textDecorationLine: 'underline',

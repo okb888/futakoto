@@ -11,6 +11,7 @@ import {
   Users,
 } from 'phosphor-react-native';
 import { Entry } from '../lib/db';
+import { COLORS } from '../lib/theme';
 
 type EntryActionPanelProps = {
   entry: Entry;
@@ -70,9 +71,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 18,
     marginTop: -4,
     marginBottom: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: COLORS.borderSoft,
     borderRadius: 12,
     padding: 8,
     flexDirection: 'row',
@@ -91,9 +92,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 9,
-    backgroundColor: '#FAFAF8',
+    backgroundColor: COLORS.background,
   },
-  editButtonText: { fontSize: 12, color: '#555', fontWeight: '700' },
+  editButtonText: { fontSize: 12, color: COLORS.textSubtle, fontWeight: '700' },
   visibilityButton: {
     flex: 1,
     flexDirection: 'row',
@@ -106,24 +107,24 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   sharedButton: {
-    backgroundColor: '#EDF4F0',
-    borderColor: '#C8D8CC',
+    backgroundColor: COLORS.primarySoft,
+    borderColor: COLORS.primaryDim,
   },
   privateButton: {
-    backgroundColor: '#F0F0F0',
-    borderColor: '#E0E0E0',
+    backgroundColor: COLORS.borderSoft,
+    borderColor: COLORS.border,
   },
   visibilityButtonText: { fontSize: 12, fontWeight: '700' },
-  sharedButtonText: { color: '#7B9E87' },
-  privateButtonText: { color: '#555' },
+  sharedButtonText: { color: COLORS.primary },
+  privateButtonText: { color: COLORS.textSubtle },
   deleteButton: {
     width: 38,
     height: 38,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF6F6',
+    backgroundColor: COLORS.errorBg,
     borderWidth: 1,
-    borderColor: '#F4D7D7',
+    borderColor: COLORS.errorBorder,
   },
 });

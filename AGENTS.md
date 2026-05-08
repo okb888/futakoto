@@ -44,8 +44,8 @@ UI実装・スタイル決定・新規画面作成・色やサイズの判断を
 | W6.7 | 通知・日時入力UX改善 | ✅ 実装済み |
 | LP | ランディングページ（futakoto.jp）・Firebase Hosting | ✅ 公開済み |
 | W5 | 課金導線（RevenueCat）・広告（AdMob） | 未着手 |
-| W7 | プライバシーポリシー・利用規約・アカウント削除 | 未着手 |
-| W8 | TestFlight → App Store審査提出 | 未着手 |
+| W7 | プライバシーポリシー・利用規約・アカウント削除 | ✅ 完了（privacy.html / support.html / deleteAccount CF） |
+| W8 | TestFlight → App Store審査提出 | TestFlight実機検証待ち |
 
 ---
 
@@ -530,13 +530,10 @@ AI相談の自分専用記録。相手には見せない。
    - 現在は JS 側フィルタで回避（`getPartnerSharedEntries` 参照）
    - 将来的にスケールしたら適切なインデックスを作る
 
-3. **Firestoreルールは開発中「認証済みなら全部OK」**
-   ```
-   match /{document=**} {
-     allow read, write: if request.auth != null;
-   }
-   ```
-   - **リリース前に必ず厳密化すること**（パートナー以外は読めない等）
+3. **Firestoreルールは2026-05-08に厳密化済み**
+   - `partnerUid` 直書き禁止（create時null強制、update時変更不可）
+   - `inviteCodes` はread only（create/update/delete: if false）
+   - `pairWithCode` / `unpairPartner` / `deleteAccount` / `ensureUserProfile` のCloud Functions（Admin SDK）のみが書き込み可能
 
 4. **React Native + Firebase JS SDK + initializeAuth(AsyncStorage) の型エラーが残っている**
    - `lib/firebase.ts` の `getReactNativePersistence` import が `firebase/auth` から解決できない
@@ -553,97 +550,13 @@ AI相談の自分専用記録。相手には見せない。
 
 ## 次にやるべき具体タスク
 
-### 1. AI機能のUI統合と精度向上（最優先）
+**現在の残課題は `docs/2026-05-08-review-fix-plan-v2.md` を参照すること。**
 
-#### 1-1. 振り返り画面のAI月次要約（`calendar.tsx`）
-
-カレンダー上部またはフィルター行の近くに「今月をAI要約」ボタンを追加。
-- 対象月の自分の投稿（`myEntries` をフィルタ）を `aiSummary` に渡す
-- 結果を展開可能なカードで表示（デフォルト折りたたみ）
-- Phosphor `Sparkle` アイコンを使う（絵文字禁止）
-- 月をまたいだときにリセット
-
-`aiSummary` の入力形式: `{ entries: { mood: number, memo: string }[] }`
-
-#### 1-2. 相談（壁打ち）機能の精度向上（`aiConsult` + `consult.tsx`）
-
-現在の `aiConsult` プロンプトの課題：
-- 入力が短い（「疲れた」だけ等）でも応答してしまう → 最低限の入力量ガード（50文字以下はヒントを表示してUX誘導）
-- パートナー名が渡せていない可能性 → `partnerName` を必ず渡す
-- AIの整理メモが長すぎる場合がある → `reflection` は200文字以内の制約をプロンプトに追加
-- 「相談」という言葉が重く感じる → UIコピーを「気持ちを整理する」「壁打ち」方向に変える
-
-`aiConsult` 出力:
-```typescript
-{ reflection: string; messageDraft: string; }
-```
-- `reflection`: AIの整理メモ（自分だけ見る）→ 200文字以内を目標
-- `messageDraft`: 相手への一言案（投稿に使える）
-
-#### 1-3. ホーム画面の「意図を読み解く」（`index.tsx`）
-
-パートナーの投稿カードに `aiInterpret` の導線を追加。
-- カードをタップで展開→「この気持ちを読み解く（Sparkle）」ボタン
-- 3つの解釈を箇条書きで表示
-- 一度呼んだ結果はそのカードが再描画されるまでキャッシュ（`useState<Record<string,string[]>>`）
-
-### 2. `lib/firebase.ts` の TypeScript エラー修正
-
-`npm exec tsc -- --noEmit` が通る状態にする。
-
-現在のエラー:
-
-```text
-lib/firebase.ts(2,26): error TS2305:
-Module '"firebase/auth"' has no exported member 'getReactNativePersistence'.
-```
-
-### 3. AI使用量管理・課金前のガード
-
-- `users/{uid}.aiCreditsUsed` をインクリメント
-- 月初リセット
-- 無料プランは月10回、課金は無制限
-- Cloud Functions側で制限チェック
-
-### 4. Firestoreルール厳密化（リリース前）
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-      allow read: if request.auth != null && resource.data.partnerUid == request.auth.uid;
-    }
-    match /users/{uid}/entries/{entry} {
-      allow write: if request.auth != null && request.auth.uid == uid;
-      allow read: if request.auth != null && (
-        request.auth.uid == uid ||
-        (resource.data.visibility == 'shared' &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.partnerUid == uid)
-      );
-    }
-    match /inviteCodes/{code} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
-    }
-    match /users/{uid}/consultations/{consultation} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-    }
-    match /users/{uid}/favorites/{favorite} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-    }
-  }
-}
-```
-
-### 5. App Store要件（W7）
-
-- プライバシーポリシー作成（AI処理を含む内容で）
-- 利用規約作成
-- アカウント削除機能（Settings画面に追加）
-- App Tracking Transparency（広告導入時）
-- 年齢レーティング 17+
+優先順位の要約:
+1. P1-2/P1-4/P1-5（Authエラー日本語化・ログアウト確認・COLORSトークン統一）
+2. P0-5（TestFlight実機検証 → App Store提出）
+3. P1-1/P1-3/P1-6/P1-7/P1-9/P1-10/P1-11（品質向上）
+4. W5（RevenueCat課金・AdMob広告）
 
 ---
 

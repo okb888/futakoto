@@ -1,23 +1,24 @@
 import { Tabs } from 'expo-router';
 import { House, CalendarBlank, GearSix, Sparkle } from 'phosphor-react-native';
+import { COLORS } from '../../lib/theme';
 
 export default function AppLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#7B9E87',
-        tabBarInactiveTintColor: '#BBB',
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.placeholder,
         tabBarStyle: {
           backgroundColor: '#fff',
-          borderTopColor: '#F0F0F0',
+          borderTopColor: COLORS.borderSoft,
           height: 84,
           paddingTop: 8,
           paddingBottom: 28,
         },
         tabBarLabelStyle: { fontSize: 11 },
-        headerStyle: { backgroundColor: '#FAFAF8' },
+        headerStyle: { backgroundColor: COLORS.background },
         headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: '600', color: '#2D2D2D', fontSize: 16 },
+        headerTitleStyle: { fontWeight: '600', color: COLORS.text, fontSize: 16 },
       }}
     >
       <Tabs.Screen
@@ -28,7 +29,7 @@ export default function AppLayout() {
           headerTitle: 'ふたこと',
           headerTitleStyle: {
             fontWeight: '700',
-            color: '#2D2D2D',
+            color: COLORS.text,
             fontSize: 18,
             letterSpacing: 3,
           },

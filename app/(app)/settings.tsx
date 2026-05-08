@@ -42,6 +42,8 @@ import {
   registerPushToken,
   scheduleDailyReminder,
 } from '../../lib/notifications';
+import { firebaseErrorMessage } from '../../lib/errors';
+import { COLORS } from '../../lib/theme';
 
 function withDefaults(settings?: NotificationSettings): Required<NotificationSettings> {
   return {
@@ -155,7 +157,7 @@ export default function SettingsScreen() {
               setCopied(false);
               Alert.alert('新しいコードを作りました', '古いコードは使えなくなりました');
             } catch (e: any) {
-              Alert.alert('エラー', e.message);
+              Alert.alert('エラー', firebaseErrorMessage(e));
             } finally {
               setRegeneratingCode(false);
             }
@@ -175,7 +177,7 @@ export default function SettingsScreen() {
       setInputCode('');
       Alert.alert('ペアリング完了', 'パートナーと繋がりました');
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -242,7 +244,7 @@ export default function SettingsScreen() {
       }
       await saveNotificationSettings(next);
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setNotificationLoading(false);
     }
@@ -273,7 +275,7 @@ export default function SettingsScreen() {
       await saveNotificationSettings(next);
       setTimePickerOpen(false);
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setNotificationLoading(false);
     }
@@ -315,7 +317,7 @@ export default function SettingsScreen() {
       await sendPasswordResetEmail(auth, user.email);
       Alert.alert('メールを送信しました', 'パスワード再設定用のメールを確認してください');
     } catch (e: any) {
-      Alert.alert('送信に失敗しました', e.message);
+      Alert.alert('送信に失敗しました', firebaseErrorMessage(e));
     }
   }
 
@@ -333,7 +335,7 @@ export default function SettingsScreen() {
         message: JSON.stringify(payload, null, 2),
       });
     } catch (e: any) {
-      Alert.alert('エクスポートに失敗しました', e.message);
+      Alert.alert('エクスポートに失敗しました', firebaseErrorMessage(e));
     } finally {
       setExporting(false);
     }
@@ -356,7 +358,7 @@ export default function SettingsScreen() {
       }
       await saveNotificationSettings(next);
     } catch (e: any) {
-      Alert.alert('エラー', e.message);
+      Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setNotificationLoading(false);
     }
@@ -522,8 +524,8 @@ export default function SettingsScreen() {
             value={notificationSettings.dailyReminderEnabled}
             onValueChange={toggleDailyReminder}
             disabled={notificationLoading}
-            trackColor={{ false: '#E0E0E0', true: '#C8D8CC' }}
-            thumbColor={notificationSettings.dailyReminderEnabled ? '#7B9E87' : '#fff'}
+            trackColor={{ false: COLORS.border, true: COLORS.primaryDim }}
+            thumbColor={notificationSettings.dailyReminderEnabled ? COLORS.primary : '#fff'}
           />
         </View>
         <TouchableOpacity
@@ -562,8 +564,8 @@ export default function SettingsScreen() {
           value={notificationSettings.sharedPostNotificationsEnabled}
           onValueChange={toggleSharedPostNotifications}
           disabled={notificationLoading}
-          trackColor={{ false: '#E0E0E0', true: '#E8D5D5' }}
-          thumbColor={notificationSettings.sharedPostNotificationsEnabled ? '#E58B8B' : '#fff'}
+          trackColor={{ false: COLORS.border, true: COLORS.partnerBorder }}
+          thumbColor={notificationSettings.sharedPostNotificationsEnabled ? COLORS.partner : '#fff'}
         />
       </View>
 
@@ -591,7 +593,16 @@ export default function SettingsScreen() {
 
       <TouchableOpacity
         style={styles.logoutButton}
-        onPress={() => signOut(auth)}
+        onPress={() =>
+          Alert.alert(
+            'ログアウトしますか？',
+            'もう一度ログインが必要になります',
+            [
+              { text: 'キャンセル', style: 'cancel' },
+              { text: 'ログアウト', style: 'destructive', onPress: () => signOut(auth) },
+            ]
+          )
+        }
       >
         <Text style={styles.logoutText}>ログアウト</Text>
       </TouchableOpacity>
@@ -681,10 +692,10 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: 24, paddingBottom: 64 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#888', marginTop: 28, marginBottom: 8, letterSpacing: 1 },
-  hint: { fontSize: 12, color: '#BBB', marginBottom: 10 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: COLORS.textMuted, marginTop: 28, marginBottom: 8, letterSpacing: 1 },
+  hint: { fontSize: 12, color: COLORS.placeholder, marginBottom: 10 },
   row: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -693,13 +704,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
   },
-  rowValue: { fontSize: 15, color: '#2D2D2D' },
-  editText: { fontSize: 12, color: '#7B9E87', fontWeight: '600' },
+  rowValue: { fontSize: 15, color: COLORS.text },
+  editText: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
   nameEditRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   smallButton: {
-    backgroundColor: '#7B9E87',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 10,
@@ -711,13 +722,13 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
   },
-  codeText: { fontSize: 32, color: '#2D2D2D', fontFamily: 'Courier', letterSpacing: 6, fontWeight: '600' },
+  codeText: { fontSize: 32, color: COLORS.text, fontFamily: 'Courier', letterSpacing: 6, fontWeight: '600' },
   codeButtons: { flexDirection: 'row', gap: 10, marginTop: 10 },
   copyButton: {
     flex: 1,
-    backgroundColor: '#7B9E87',
+    backgroundColor: COLORS.primary,
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
@@ -727,22 +738,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#7B9E87',
+    borderColor: COLORS.primary,
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
   },
-  shareButtonText: { color: '#7B9E87', fontSize: 13, fontWeight: '600' },
+  shareButtonText: { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
   regenerateButton: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 10,
   },
-  regenerateButtonText: { color: '#888', fontSize: 12, fontWeight: '700' },
+  regenerateButtonText: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700' },
   pairedBox: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -750,7 +761,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E8D5D5',
+    borderColor: COLORS.partnerBorder,
     gap: 12,
   },
   notificationBox: {
@@ -760,7 +771,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     gap: 12,
     marginBottom: 10,
   },
@@ -777,13 +788,13 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#EDF4F0',
+    backgroundColor: COLORS.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   notificationContent: { flex: 1 },
-  notificationTitle: { fontSize: 14, fontWeight: '700', color: '#2D2D2D' },
-  notificationSub: { fontSize: 11, color: '#888', marginTop: 3, lineHeight: 16 },
+  notificationTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  notificationSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 3, lineHeight: 16 },
   aiUsageBox: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -791,27 +802,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E8E0F2',
+    borderColor: COLORS.aiBorder,
     gap: 12,
   },
   aiUsageContent: { flex: 1 },
   aiUsageHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  aiUsageCount: { fontSize: 13, color: '#7C5BB7', fontWeight: '700' },
+  aiUsageCount: { fontSize: 13, color: COLORS.ai, fontWeight: '700' },
   aiUsageTrack: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#F3EDFA',
+    backgroundColor: COLORS.aiBg,
     overflow: 'hidden',
     marginTop: 9,
   },
   aiUsageFill: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#7C5BB7',
+    backgroundColor: COLORS.ai,
   },
   reminderTimeArea: {
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    borderTopColor: COLORS.borderSoft,
     paddingTop: 12,
     marginTop: 2,
     flexDirection: 'row',
@@ -824,14 +835,14 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#EDF4F0',
+    backgroundColor: COLORS.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  reminderTimeLabel: { color: '#555', fontSize: 13, fontWeight: '700' },
-  reminderTimeHint: { color: '#AAA', fontSize: 11, marginTop: 2 },
+  reminderTimeLabel: { color: COLORS.textSubtle, fontSize: 13, fontWeight: '700' },
+  reminderTimeHint: { color: COLORS.textWeak, fontSize: 11, marginTop: 2 },
   reminderTimeChip: {
-    backgroundColor: '#EDF4F0',
+    backgroundColor: COLORS.primarySoft,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 7,
@@ -839,7 +850,7 @@ const styles = StyleSheet.create({
   reminderTimeText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#5A7E68',
+    color: COLORS.primaryDeep,
     letterSpacing: 0,
   },
   modalOverlay: {
@@ -851,36 +862,36 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   pairedInfo: { flex: 1 },
-  pairedLabel: { fontSize: 13, fontWeight: '600', color: '#7B9E87' },
-  pairedEmail: { fontSize: 12, color: '#AAA', marginTop: 2 },
-  unpairText: { fontSize: 12, color: '#E57373' },
+  pairedLabel: { fontSize: 13, fontWeight: '600', color: COLORS.primary },
+  pairedEmail: { fontSize: 12, color: COLORS.textWeak, marginTop: 2 },
+  unpairText: { fontSize: 12, color: COLORS.error },
   inputRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   input: {
     flex: 1,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#2D2D2D',
+    color: COLORS.text,
   },
   codeInput: { textAlign: 'center', fontSize: 18, letterSpacing: 4, fontFamily: 'Courier' },
   pairButton: {
-    backgroundColor: '#7B9E87',
+    backgroundColor: COLORS.primary,
     borderRadius: 12,
     paddingHorizontal: 18,
     paddingVertical: 12,
   },
-  pairButtonDisabled: { backgroundColor: '#C8D8CC' },
+  pairButtonDisabled: { backgroundColor: COLORS.primaryDim },
   pairButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  styleCharCount: { fontSize: 11, color: '#BBB', textAlign: 'right', marginTop: 4 },
-  divider: { height: 1, backgroundColor: '#F0F0F0', marginTop: 32, marginBottom: 8 },
+  styleCharCount: { fontSize: 11, color: COLORS.placeholder, textAlign: 'right', marginTop: 4 },
+  divider: { height: 1, backgroundColor: COLORS.borderSoft, marginTop: 32, marginBottom: 8 },
   accountActionButton: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#DCE9E1',
+    borderColor: COLORS.primaryBorder,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
@@ -889,13 +900,13 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 10,
   },
-  accountActionText: { flex: 1, fontSize: 13, color: '#7B9E87', fontWeight: '700' },
+  accountActionText: { flex: 1, fontSize: 13, color: COLORS.primary, fontWeight: '700' },
   logoutButton: { paddingVertical: 16, alignItems: 'center' },
-  logoutText: { fontSize: 14, color: '#AAA' },
+  logoutText: { fontSize: 14, color: COLORS.textWeak },
   deleteButton: { paddingVertical: 12, alignItems: 'center', marginBottom: 8 },
-  deleteButtonText: { fontSize: 13, color: '#E57373' },
+  deleteButtonText: { fontSize: 13, color: COLORS.error },
   deleteSheet: {
-    backgroundColor: '#FAFAF8',
+    backgroundColor: COLORS.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
@@ -903,29 +914,29 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 12,
   },
-  deleteSheetTitle: { fontSize: 17, fontWeight: '700', color: '#2D2D2D' },
-  deleteSheetBody: { fontSize: 13, color: '#888', lineHeight: 20 },
-  deleteSheetLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginTop: 4 },
+  deleteSheetTitle: { fontSize: 17, fontWeight: '700', color: COLORS.text },
+  deleteSheetBody: { fontSize: 13, color: COLORS.textMuted, lineHeight: 20 },
+  deleteSheetLabel: { fontSize: 13, fontWeight: '600', color: COLORS.textSubtle, marginTop: 4 },
   deleteInput: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#2D2D2D',
+    color: COLORS.text,
   },
   deleteProviderNote: {
-    backgroundColor: '#FFF5F5',
+    backgroundColor: COLORS.errorBg,
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#FDDADA',
+    borderColor: COLORS.errorBorder,
   },
-  deleteProviderNoteText: { fontSize: 13, color: '#B25C5C', lineHeight: 19 },
+  deleteProviderNoteText: { fontSize: 13, color: COLORS.errorText, lineHeight: 19 },
   deleteConfirmButton: {
-    backgroundColor: '#E57373',
+    backgroundColor: COLORS.error,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -933,5 +944,5 @@ const styles = StyleSheet.create({
   },
   deleteConfirmText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   deleteCancelButton: { paddingVertical: 10, alignItems: 'center' },
-  deleteCancelText: { fontSize: 14, color: '#AAA' },
+  deleteCancelText: { fontSize: 14, color: COLORS.textWeak },
 });
