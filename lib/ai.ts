@@ -21,6 +21,18 @@ export interface SummaryResult {
 
 export interface ConsultResult {
   reflection: string;
+}
+
+export interface DraftOption {
+  label: string;
+  description: string;
+}
+
+export interface DraftOptionsResult {
+  options: DraftOption[];
+}
+
+export interface DraftResult {
   messageDraft: string;
 }
 
@@ -70,10 +82,26 @@ export async function aiRewrite(text: string, partnerName?: string): Promise<Rew
 export async function aiConsult(
   text: string,
   partnerName?: string,
-  conversationHistory?: { role: 'user' | 'ai'; content: string }[],
+  sessionId?: string | null,
   communicationStyle?: string
 ): Promise<ConsultResult> {
-  return call<ConsultResult>('aiConsult', { text, partnerName, conversationHistory, communicationStyle });
+  return call<ConsultResult>('aiConsult', { text, partnerName, sessionId, communicationStyle });
+}
+
+export async function aiDraftOptions(
+  sessionId: string,
+  partnerName?: string
+): Promise<DraftOptionsResult> {
+  return call<DraftOptionsResult>('aiDraftOptions', { sessionId, partnerName });
+}
+
+export async function aiDraft(
+  sessionId: string,
+  intent: string,
+  partnerName?: string,
+  communicationStyle?: string
+): Promise<DraftResult> {
+  return call<DraftResult>('aiDraft', { sessionId, intent, partnerName, communicationStyle });
 }
 
 export async function aiInterpret(

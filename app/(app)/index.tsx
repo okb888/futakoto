@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Plus, Heart, Sparkle, Star } from 'phosphor-react-native';
+import { Plus, Heart, Sparkle, Star, ArrowRight } from 'phosphor-react-native';
 import { aiInterpret } from '../../lib/ai';
 import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';

@@ -9,12 +9,13 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Modal,
   ScrollView,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowRight, Sparkle, Star } from 'phosphor-react-native';
+import { ArrowRight, Sparkle, Star, X } from 'phosphor-react-native';
 import { useAuth } from '../../lib/auth';
-import { aiConsult, ConsultResult } from '../../lib/ai';
+import { aiConsult, aiDraft, aiDraftOptions, DraftOption } from '../../lib/ai';
 import {
   createConsultationSession,
   addTurnToSession,
@@ -28,11 +29,14 @@ import { firebaseErrorMessage } from '../../lib/errors';
 import { COLORS } from '../../lib/theme';
 
 const MAX_TURNS = 10;
+const MAX_CUSTOM_INTENT = 200;
 
 type ConversationTurn = {
   id: string;
   input: string;
-  result: ConsultResult;
+  reflection: string;
+  /** 旧スキーマの per-turn 文案。新規ターンには付かない */
+  legacyMessageDraft?: string;
   collapsed: boolean;
 };
 
@@ -57,6 +61,15 @@ export default function ConsultScreen() {
   const [recentSessions, setRecentSessions] = useState<ConsultationSession[]>([]);
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [togglingFavorite, setTogglingFavorite] = useState(false);
+
+  // 文案生成（新フロー）
+  const [optionsModalOpen, setOptionsModalOpen] = useState(false);
+  const [draftOptions, setDraftOptions] = useState<DraftOption[] | null>(null);
+  const [draftOptionsLoading, setDraftOptionsLoading] = useState(false);
+  const [customIntent, setCustomIntent] = useState('');
+  const [draftLoading, setDraftLoading] = useState(false);
+  const [draftIntent, setDraftIntent] = useState<string | null>(null);
+  const [generatedDraft, setGeneratedDraft] = useState<string | null>(null);
 
   const tooShort = text.trim().length > 0 && text.trim().length < 50;
 
@@ -88,6 +101,16 @@ export default function ConsultScreen() {
     };
   }, [user, authProfile, focusSessionId]));
 
+  function resetDraftState() {
+    setDraftOptions(null);
+    setDraftOptionsLoading(false);
+    setOptionsModalOpen(false);
+    setCustomIntent('');
+    setDraftLoading(false);
+    setDraftIntent(null);
+    setGeneratedDraft(null);
+  }
+
   async function handleConsult() {
     if (!user || !text.trim() || conversation.length >= MAX_TURNS) return;
 
@@ -95,26 +118,34 @@ export default function ConsultScreen() {
     setLoading(true);
 
     try {
-      const history = conversation.flatMap((t) => [
-        { role: 'user' as const, content: t.input },
-        { role: 'ai' as const, content: `${t.result.reflection}（文案: 「${t.result.messageDraft}」）` },
-      ]);
+      const nextResult = await aiConsult(currentInput, partnerName, sessionId, communicationStyle);
+      const sessionTurn = {
+        input: currentInput,
+        reflection: nextResult.reflection,
+      };
 
-      const nextResult = await aiConsult(currentInput, partnerName, history, communicationStyle);
-      const sessionTurn = { input: currentInput, reflection: nextResult.reflection, messageDraft: nextResult.messageDraft };
-
-      if (!sessionId) {
-        const newId = await createConsultationSession(user.uid, sessionTurn);
-        setSessionId(newId);
+      let activeSessionId = sessionId;
+      if (!activeSessionId) {
+        activeSessionId = await createConsultationSession(user.uid, sessionTurn);
+        setSessionId(activeSessionId);
       } else {
-        await addTurnToSession(user.uid, sessionId, sessionTurn);
+        await addTurnToSession(user.uid, activeSessionId, sessionTurn);
       }
 
       setConversation((prev) => [
         ...prev.map((t) => ({ ...t, collapsed: true })),
-        { id: Date.now().toString(), input: currentInput, result: nextResult, collapsed: false },
+        {
+          id: Date.now().toString(),
+          input: currentInput,
+          reflection: nextResult.reflection,
+          collapsed: false,
+        },
       ]);
       setText('');
+      // 会話に新しいターンが入ったので前回の文案はリセット
+      setGeneratedDraft(null);
+      setDraftIntent(null);
+      setDraftOptions(null);
     } catch (e: any) {
       Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
@@ -127,10 +158,26 @@ export default function ConsultScreen() {
   }
 
   function handleStartNewConversation() {
-    setConversation([]);
-    setSessionId(null);
-    setIsFavorited(false);
-    setText('');
+    const reset = () => {
+      setConversation([]);
+      setSessionId(null);
+      setIsFavorited(false);
+      setText('');
+      resetDraftState();
+    };
+
+    if (conversation.length > 0 && !isFavorited) {
+      Alert.alert(
+        '新しく始めますか？',
+        'いまの会話はお気に入りに保存されていません。新しく始めると消えます',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          { text: '新しく始める', style: 'destructive', onPress: reset },
+        ]
+      );
+    } else {
+      reset();
+    }
   }
 
   function handleResumeSession(session: ConsultationSession) {
@@ -138,13 +185,20 @@ export default function ConsultScreen() {
       const restored: ConversationTurn[] = session.turns.map((turn, i) => ({
         id: `${session.id}-${i}`,
         input: turn.input,
-        result: { reflection: turn.reflection, messageDraft: turn.messageDraft },
+        reflection: turn.reflection,
+        legacyMessageDraft: turn.messageDraft,
         collapsed: true,
       }));
       setConversation(restored);
       setSessionId(session.id ?? null);
       setIsFavorited(session.favored);
       setText('');
+      // セッションに保存された最後の文案があれば復元
+      resetDraftState();
+      if (session.lastDraft) {
+        setDraftIntent(session.lastDraft.intent);
+        setGeneratedDraft(session.lastDraft.messageDraft);
+      }
     };
 
     if (conversation.length > 0) {
@@ -195,6 +249,56 @@ export default function ConsultScreen() {
     });
   }
 
+  async function openDraftOptions() {
+    if (!sessionId || draftOptionsLoading || draftLoading) return;
+    setOptionsModalOpen(true);
+    if (draftOptions) return; // 同じ会話のままなら使い回し
+
+    setDraftOptionsLoading(true);
+    try {
+      const res = await aiDraftOptions(sessionId, partnerName);
+      setDraftOptions(res.options);
+    } catch (e: any) {
+      setOptionsModalOpen(false);
+      Alert.alert('エラー', firebaseErrorMessage(e));
+    } finally {
+      setDraftOptionsLoading(false);
+    }
+  }
+
+  async function generateDraft(intent: string) {
+    if (!sessionId) return;
+    const trimmed = intent.trim();
+    if (!trimmed) return;
+    setOptionsModalOpen(false);
+    setDraftIntent(trimmed);
+    setDraftLoading(true);
+    try {
+      const res = await aiDraft(sessionId, trimmed, partnerName, communicationStyle);
+      setGeneratedDraft(res.messageDraft);
+    } catch (e: any) {
+      Alert.alert('エラー', firebaseErrorMessage(e));
+    } finally {
+      setDraftLoading(false);
+    }
+  }
+
+  function handleSelectOption(option: DraftOption) {
+    generateDraft(`${option.label}：${option.description}`);
+  }
+
+  function handleSubmitCustomIntent() {
+    if (!customIntent.trim()) return;
+    const intent = customIntent.trim();
+    setCustomIntent('');
+    generateDraft(intent);
+  }
+
+  function handleRegenerateDraft() {
+    if (!draftIntent) return;
+    generateDraft(draftIntent);
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -203,7 +307,7 @@ export default function ConsultScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>壁打ち</Text>
 
-        {/* 今の会話: 過去ターン（折りたたみ）*/}
+        {/* 今の会話 */}
         {conversation.length > 0 && (
           <View style={styles.conversationArea}>
             {conversation.map((turn, i) => (
@@ -226,25 +330,81 @@ export default function ConsultScreen() {
                   <View style={styles.turnBody}>
                     <View style={styles.aiCard}>
                       <Text style={styles.aiCardLabel}>整理メモ</Text>
-                      <Text style={styles.cardText}>{turn.result.reflection}</Text>
+                      <Text style={styles.cardText}>{turn.reflection}</Text>
                     </View>
-                    <View style={styles.partnerDraftCard}>
-                      <Text style={styles.partnerDraftLabel}>{partnerName}に伝える文</Text>
-                      <Text style={styles.cardText}>{turn.result.messageDraft}</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.usePostButton}
-                      onPress={() => useAsPost(turn.result.messageDraft, sessionId ?? undefined)}
-                    >
-                      <ArrowRight size={13} color="#7B9E87" weight="bold" />
-                      <Text style={styles.usePostButtonText}>投稿に使う</Text>
-                    </TouchableOpacity>
+                    {turn.legacyMessageDraft ? (
+                      <View style={styles.partnerDraftCard}>
+                        <Text style={styles.partnerDraftLabel}>{partnerName}に伝える文（旧）</Text>
+                        <Text style={styles.cardText}>{turn.legacyMessageDraft}</Text>
+                        <TouchableOpacity
+                          style={styles.usePostButton}
+                          onPress={() => useAsPost(turn.legacyMessageDraft!, sessionId ?? undefined)}
+                        >
+                          <ArrowRight size={13} color="#7B9E87" weight="bold" />
+                          <Text style={styles.usePostButtonText}>投稿に使う</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
                   </View>
                 )}
               </View>
             ))}
 
-            {/* お気に入りボタン（セッション全体） */}
+            {/* セッション全体に対する文案セクション */}
+            <View style={styles.draftSection}>
+              {generatedDraft ? (
+                <>
+                  <View style={styles.partnerDraftCard}>
+                    {draftIntent ? (
+                      <Text style={styles.partnerDraftLabel}>{draftIntent}</Text>
+                    ) : null}
+                    <Text style={styles.cardText}>{generatedDraft}</Text>
+                  </View>
+                  <View style={styles.draftActions}>
+                    <TouchableOpacity
+                      style={styles.secondaryActionButton}
+                      onPress={openDraftOptions}
+                      disabled={draftLoading}
+                    >
+                      <Text style={styles.secondaryActionText}>別の伝え方</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.secondaryActionButton}
+                      onPress={handleRegenerateDraft}
+                      disabled={draftLoading}
+                    >
+                      <Text style={styles.secondaryActionText}>もう一度作る</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.primaryActionButton}
+                      onPress={() => useAsPost(generatedDraft, sessionId ?? undefined)}
+                      disabled={draftLoading}
+                    >
+                      <ArrowRight size={13} color="#fff" weight="bold" />
+                      <Text style={styles.primaryActionText}>投稿に使う</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              ) : draftLoading ? (
+                <View style={styles.inlineLoading}>
+                  <ActivityIndicator color="#7B9E87" />
+                  <Text style={styles.loadingText}>{partnerName}に伝える文を作っています...</Text>
+                </View>
+              ) : sessionId ? (
+                <TouchableOpacity
+                  style={styles.makeDraftButton}
+                  onPress={openDraftOptions}
+                  disabled={draftOptionsLoading}
+                >
+                  <Sparkle size={14} color="#7C5BB7" weight="fill" />
+                  <Text style={styles.makeDraftButtonText}>
+                    この会話を{partnerName}に伝える文にする
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {/* お気に入り＋新しく始める */}
             <View style={styles.sessionFavoriteRow}>
               <Text style={styles.sessionFavoriteHint}>この会話を保存</Text>
               <TouchableOpacity
@@ -382,19 +542,36 @@ export default function ConsultScreen() {
                             <Text style={styles.aiCardLabel}>整理メモ</Text>
                             <Text style={styles.cardText}>{turn.reflection}</Text>
                           </View>
-                          <View style={styles.partnerDraftCard}>
-                            <Text style={styles.partnerDraftLabel}>{partnerName}に伝える文</Text>
-                            <Text style={styles.cardText}>{turn.messageDraft}</Text>
-                          </View>
+                          {turn.messageDraft ? (
+                            <View style={styles.partnerDraftCard}>
+                              <Text style={styles.partnerDraftLabel}>{partnerName}に伝える文（旧）</Text>
+                              <Text style={styles.cardText}>{turn.messageDraft}</Text>
+                              <TouchableOpacity
+                                style={styles.usePostButton}
+                                onPress={() => useAsPost(turn.messageDraft!, session.id)}
+                              >
+                                <ArrowRight size={13} color="#7B9E87" weight="bold" />
+                                <Text style={styles.usePostButtonText}>投稿に使う</Text>
+                              </TouchableOpacity>
+                            </View>
+                          ) : null}
+                        </View>
+                      ))}
+                      {session.lastDraft ? (
+                        <View style={styles.sessionLastDraft}>
+                          <Text style={styles.partnerDraftLabel}>
+                            最新の文案（{session.lastDraft.intent}）
+                          </Text>
+                          <Text style={styles.cardText}>{session.lastDraft.messageDraft}</Text>
                           <TouchableOpacity
                             style={styles.usePostButton}
-                            onPress={() => useAsPost(turn.messageDraft, session.id)}
+                            onPress={() => useAsPost(session.lastDraft!.messageDraft, session.id)}
                           >
                             <ArrowRight size={13} color="#7B9E87" weight="bold" />
                             <Text style={styles.usePostButtonText}>投稿に使う</Text>
                           </TouchableOpacity>
                         </View>
-                      ))}
+                      ) : null}
                     </View>
                   )}
                 </View>
@@ -403,6 +580,80 @@ export default function ConsultScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* 伝え方の選択モーダル */}
+      <Modal
+        visible={optionsModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOptionsModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setOptionsModalOpen(false)}
+          />
+          <View style={styles.optionsSheet}>
+            <View style={styles.optionsHeader}>
+              <View style={styles.modalTitleRow}>
+                <Sparkle size={16} color="#7C5BB7" weight="fill" />
+                <Text style={styles.optionsTitle}>伝え方を選ぶ</Text>
+              </View>
+              <TouchableOpacity onPress={() => setOptionsModalOpen(false)} hitSlop={8}>
+                <X size={18} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.optionsSub}>
+              会話を踏まえて、AIが3つの伝え方を提案します。自由記述もできます。
+            </Text>
+
+            {draftOptionsLoading ? (
+              <View style={styles.optionsLoading}>
+                <ActivityIndicator color="#7B9E87" />
+                <Text style={styles.loadingText}>選択肢を考えています...</Text>
+              </View>
+            ) : (
+              <>
+                {draftOptions?.map((option, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.optionCard}
+                    onPress={() => handleSelectOption(option)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.optionLabel}>{option.label}</Text>
+                    <Text style={styles.optionDescription}>{option.description}</Text>
+                  </TouchableOpacity>
+                ))}
+
+                <View style={styles.customIntentArea}>
+                  <Text style={styles.customIntentLabel}>または自由に指定</Text>
+                  <TextInput
+                    style={styles.customIntentInput}
+                    placeholder="例: 仕事で疲れていることを伝えたい"
+                    placeholderTextColor="#BBB"
+                    value={customIntent}
+                    onChangeText={setCustomIntent}
+                    maxLength={MAX_CUSTOM_INTENT}
+                    multiline
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.customIntentButton,
+                      !customIntent.trim() && styles.customIntentButtonDisabled,
+                    ]}
+                    onPress={handleSubmitCustomIntent}
+                    disabled={!customIntent.trim()}
+                  >
+                    <Text style={styles.customIntentButtonText}>この内容で文を作る</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -442,12 +693,49 @@ const styles = StyleSheet.create({
   turnPreview: { flex: 1, fontSize: 13, color: COLORS.textSubtle, lineHeight: 19 },
   collapseToggle: { fontSize: 10, color: COLORS.textMuted },
   turnBody: { paddingHorizontal: 14, paddingBottom: 14, borderTopWidth: 1, borderTopColor: COLORS.aiDivider },
+
+  // 文案セクション
+  draftSection: { gap: 10, marginTop: 4 },
+  makeDraftButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: COLORS.aiBg,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  makeDraftButtonText: { fontSize: 13, color: COLORS.ai, fontWeight: '700' },
+  draftActions: { flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' },
+  primaryActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginLeft: 'auto',
+  },
+  primaryActionText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  secondaryActionButton: {
+    borderWidth: 1,
+    borderColor: COLORS.primaryBorder,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: '#fff',
+  },
+  secondaryActionText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
+
   sessionFavoriteRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: 8,
     paddingVertical: 4,
+    marginTop: 8,
   },
   sessionFavoriteHint: { fontSize: 12, color: COLORS.textWeak },
   newConversationButton: {
@@ -493,6 +781,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginTop: 12,
+    borderWidth: 1,
+    borderColor: COLORS.aiDivider,
+  },
+  inlineLoading: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 20,
+    alignItems: 'center',
+    gap: 10,
     borderWidth: 1,
     borderColor: COLORS.aiDivider,
   },
@@ -578,4 +875,78 @@ const styles = StyleSheet.create({
   sessionTurnItem: { marginTop: 14 },
   sessionTurnHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 4 },
   sessionTurnInput: { flex: 1, fontSize: 13, color: COLORS.textSubtle, lineHeight: 19 },
+  sessionLastDraft: {
+    marginTop: 14,
+    backgroundColor: COLORS.primarySoft,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.primaryBorder,
+    padding: 14,
+  },
+
+  // 選択モーダル
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(45,45,45,0.24)',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  optionsSheet: {
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 36,
+    gap: 12,
+  },
+  optionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  optionsTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
+  optionsSub: { fontSize: 12, color: COLORS.textMuted, lineHeight: 17 },
+  optionsLoading: {
+    paddingVertical: 28,
+    alignItems: 'center',
+    gap: 10,
+  },
+  optionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.aiBorder,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 4,
+  },
+  optionLabel: { fontSize: 13, color: COLORS.ai, fontWeight: '700' },
+  optionDescription: { fontSize: 12, color: COLORS.textBody, lineHeight: 17 },
+  customIntentArea: { marginTop: 8, gap: 8 },
+  customIntentLabel: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
+  customIntentInput: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: COLORS.text,
+    minHeight: 60,
+  },
+  customIntentButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  customIntentButtonDisabled: {
+    backgroundColor: COLORS.primaryDim,
+  },
+  customIntentButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 });

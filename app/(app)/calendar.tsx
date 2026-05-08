@@ -580,6 +580,7 @@ export default function CalendarScreen() {
             const session = record.consultation;
             const firstTurn = session.turns?.[0];
             if (!firstTurn) return null;
+            const draftText = session.lastDraft?.messageDraft ?? firstTurn.messageDraft;
             return (
               <View
                 key={`consultation-${session.id}`}
@@ -593,12 +594,27 @@ export default function CalendarScreen() {
                   </View>
                 </View>
                 <Text style={styles.cardMemo}>{firstTurn.reflection}</Text>
-                <TouchableOpacity
-                  style={styles.usePostButton}
-                  onPress={() => router.push({ pathname: '/(app)/post', params: { memo: firstTurn.messageDraft } })}
-                >
-                  <Text style={styles.usePostButtonText}>投稿に使う</Text>
-                </TouchableOpacity>
+                {draftText ? (
+                  <TouchableOpacity
+                    style={styles.usePostButton}
+                    onPress={() => router.push({
+                      pathname: '/(app)/post',
+                      params: { memo: draftText, sourceConsultationSessionId: session.id ?? '' },
+                    })}
+                  >
+                    <Text style={styles.usePostButtonText}>投稿に使う</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.usePostButton}
+                    onPress={() => router.push({
+                      pathname: '/(app)/consult',
+                      params: { sessionId: session.id ?? '' },
+                    })}
+                  >
+                    <Text style={styles.usePostButtonText}>セッションを開く</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             );
           }

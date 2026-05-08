@@ -1,5 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentDeleted, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
 import {
@@ -33,9 +33,11 @@ const AI_MONTHLY_CREDIT_LIMIT = 500;
 const AI_SUMMARY_MAX_ENTRIES = 500;
 const AI_SUMMARY_MAX_TOTAL_CHARS = 50000;
 const AI_SUMMARY_MAX_MEMO_CHARS = 500;
+const MAX_CONSULTATION_TURNS = 10;
+const MAX_DRAFT_INTENT_CHARS = 200;
 
 type AiFeature = keyof typeof AI_DAILY_LIMITS;
-type AiModelKey = 'rewrite' | 'consult' | 'interpret' | 'summary';
+type AiModelKey = 'rewrite' | 'consult' | 'interpret' | 'summary' | 'draftOptions' | 'draft';
 
 let genAiClient: GoogleGenerativeAI | null = null;
 const modelCache = new Map<AiModelKey, GenerativeModel>();
@@ -74,9 +76,32 @@ const REWRITE_SCHEMA: ResponseSchema = {
 };
 const CONSULT_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
-  required: ['reflection', 'messageDraft'],
+  required: ['reflection'],
   properties: {
     reflection: STRING_SCHEMA,
+  },
+};
+const DRAFT_OPTIONS_SCHEMA: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  required: ['options'],
+  properties: {
+    options: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        required: ['label', 'description'],
+        properties: {
+          label: STRING_SCHEMA,
+          description: STRING_SCHEMA,
+        },
+      },
+    },
+  },
+};
+const DRAFT_SCHEMA: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  required: ['messageDraft'],
+  properties: {
     messageDraft: STRING_SCHEMA,
   },
 };
@@ -103,6 +128,8 @@ const RESPONSE_SCHEMAS: Record<AiModelKey, ResponseSchema> = {
   consult: CONSULT_SCHEMA,
   interpret: INTERPRET_SCHEMA,
   summary: SUMMARY_SCHEMA,
+  draftOptions: DRAFT_OPTIONS_SCHEMA,
+  draft: DRAFT_SCHEMA,
 };
 
 function getAiClient() {
@@ -590,15 +617,37 @@ ${wrapUserData(text)}
   }
 );
 
-// ---- AI 相談: 気持ちの整理 → 伝える文の下書き ----
+// ---- AI 相談: 気持ちの整理（reflection のみ。messageDraft は aiDraft で別途生成） ----
+type ConsultationTurnRecord = {
+  input?: string;
+  reflection?: string;
+  messageDraft?: string;
+};
+
+async function loadOwnedSessionTurns(
+  uid: string,
+  sessionId: string
+): Promise<{ ref: admin.firestore.DocumentReference; turns: ConsultationTurnRecord[] }> {
+  const ref = db.doc(`users/${uid}/consultationSessions/${sessionId}`);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    throw new HttpsError('not-found', 'セッションが見つかりません');
+  }
+  const data = snap.data()!;
+  if (data.uid !== uid) {
+    throw new HttpsError('permission-denied', 'このセッションを編集する権限がありません');
+  }
+  return { ref, turns: (data.turns ?? []) as ConsultationTurnRecord[] };
+}
+
 export const aiConsult = onCall(
   AI_FUNCTION_OPTIONS,
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
-    const { text, partnerName, conversationHistory, communicationStyle } = request.data as {
+    const { text, partnerName, sessionId, communicationStyle } = request.data as {
       text?: string;
       partnerName?: string;
-      conversationHistory?: { role: 'user' | 'ai'; content: string }[];
+      sessionId?: string | null;
       communicationStyle?: string;
     };
     if (!text || text.trim().length === 0) {
@@ -607,12 +656,31 @@ export const aiConsult = onCall(
     if (text.length > 2000) {
       throw new HttpsError('invalid-argument', '相談内容が長すぎます（2000文字以内）');
     }
-    await consumeAiQuota(request.auth.uid, 'aiConsult');
+
+    const uid = request.auth.uid;
+
+    // セッションが指定されていれば履歴をサーバ側で取得
+    let conversationHistory: { role: 'user' | 'ai'; content: string }[] = [];
+    if (sessionId) {
+      const { turns } = await loadOwnedSessionTurns(uid, sessionId);
+      if (turns.length >= MAX_CONSULTATION_TURNS) {
+        throw new HttpsError(
+          'failed-precondition',
+          `会話の上限に達しました（最大${MAX_CONSULTATION_TURNS}往復）`
+        );
+      }
+      conversationHistory = turns.flatMap((t) => [
+        { role: 'user' as const, content: t.input ?? '' },
+        { role: 'ai' as const, content: t.reflection ?? '' },
+      ]);
+    }
+
+    await consumeAiQuota(uid, 'aiConsult');
 
     const partner = partnerName || 'パートナー';
 
     let historySection = '';
-    if (conversationHistory && conversationHistory.length > 0) {
+    if (conversationHistory.length > 0) {
       historySection = '\n\n## これまでの会話\n' + conversationHistory
         .map((h) => `${h.role === 'user' ? 'ユーザー' : 'AI'}:\n${wrapUserData(h.content)}`)
         .join('\n');
@@ -622,7 +690,7 @@ export const aiConsult = onCall(
       ? `文体の指定: ${communicationStyle}`
       : '話し言葉で、やわらかく、ふだん使いのトーンで書いてください。堅い文語体・敬語体は避けること。';
 
-    const hasPastTurns = conversationHistory && conversationHistory.length > 0;
+    const hasPastTurns = conversationHistory.length > 0;
 
     const prompt = `あなたは夫婦のコミュニケーション支援AIです。
 ユーザーは、${partner}との関係の中で今困っていること・思っていること・伝えたいことを整理しようとしています。
@@ -633,20 +701,156 @@ ${DATA_HANDLING_INSTRUCTION}${historySection}
 ## 今回のメッセージ
 ${wrapUserData(text)}
 
-上記をもとに、次の2つを出力してください。${hasPastTurns ? '前の会話の流れを踏まえてさらに深掘りしてください。' : ''}
-1. reflection: ユーザーが自分の気持ちを整理できる短いメモ。200文字以内で、箇条書きではなく自然な文章で。
-   さらに深掘りすると気持ちが整理できる余地がある場合は、文末に「〜はどう感じていますか？」「〜が気になっているのはなぜでしょう？」のような問いかけを1つだけ添えること。十分に整理できている・答えが出ている場合は問いかけ不要。
-2. messageDraft: ${hasPastTurns ? 'これまでの会話全体を通じてユーザーが伝えたいことをひとつにまとめて、' : ''}${partner}に伝えるなら使えそうな文章。120文字以内。${styleInstruction}押し付けがましくない自然な表現で。
+上記をもとに、ユーザーが自分の気持ちを整理できる短いメモを出力してください。
+- 200文字以内、箇条書きではなく自然な文章で
+- ${hasPastTurns ? '前の会話の流れを踏まえてさらに深掘りしてください。' : ''}
+- さらに深掘りすると気持ちが整理できる余地がある場合は、文末に「〜はどう感じていますか？」「〜が気になっているのはなぜでしょう？」のような問いかけを1つだけ添えること。十分に整理できている場合は問いかけ不要。
+- ${styleInstruction}
 
 出力形式（JSON）:
 {
-  "reflection": "...",
-  "messageDraft": "..."
+  "reflection": "..."
 }`;
 
     try {
       const result = await getModel('consult').generateContent(prompt);
       const json = JSON.parse(result.response.text());
+      return { reflection: json.reflection };
+    } catch (e: any) {
+      throw new HttpsError('internal', `AI処理に失敗しました: ${e.message}`);
+    }
+  }
+);
+
+// ---- AI 伝え方の選択肢: 会話を踏まえた3パターンを動的生成 ----
+export const aiDraftOptions = onCall(
+  AI_FUNCTION_OPTIONS,
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
+    const { sessionId, partnerName } = request.data as {
+      sessionId?: string;
+      partnerName?: string;
+    };
+    if (!sessionId) throw new HttpsError('invalid-argument', 'sessionId が必要です');
+
+    const uid = request.auth.uid;
+    const { turns } = await loadOwnedSessionTurns(uid, sessionId);
+    if (turns.length === 0) {
+      throw new HttpsError('failed-precondition', '会話がまだありません');
+    }
+
+    await consumeAiQuota(uid, 'aiConsult');
+
+    const partner = partnerName || 'パートナー';
+    const conversation = turns
+      .map((t, i) => `[ターン${i + 1}]\nユーザー: ${wrapUserData(t.input ?? '')}\n整理メモ: ${t.reflection ?? ''}`)
+      .join('\n\n');
+
+    const prompt = `あなたは夫婦のコミュニケーション支援AIです。
+以下はユーザーが${partner}に関して気持ちを整理した会話の記録です。
+このやり取りを踏まえて、${partner}に伝えるなら、どんな伝え方の選択肢があるかを3つ提案してください。
+
+${DATA_HANDLING_INSTRUCTION}
+
+## 会話の記録
+${conversation}
+
+伝え方の選択肢を3つ、それぞれ:
+- label: 短いラベル（例「気持ちを伝える」「お願いを共有する」「事実だけ共有」）8文字以内
+- description: その伝え方の概要（30文字以内）
+
+押し付けがましくなく、ユーザーの状況に即した3つを提案してください。
+3つは方向性が異なるよう、重複させないでください。
+
+出力形式（JSON）:
+{
+  "options": [
+    { "label": "...", "description": "..." },
+    { "label": "...", "description": "..." },
+    { "label": "...", "description": "..." }
+  ]
+}`;
+
+    try {
+      const result = await getModel('draftOptions').generateContent(prompt);
+      const json = JSON.parse(result.response.text());
+      return json;
+    } catch (e: any) {
+      throw new HttpsError('internal', `AI処理に失敗しました: ${e.message}`);
+    }
+  }
+);
+
+// ---- AI 文案生成: 選んだ伝え方 + 会話履歴 → messageDraft ----
+export const aiDraft = onCall(
+  AI_FUNCTION_OPTIONS,
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
+    const { sessionId, intent, partnerName, communicationStyle } = request.data as {
+      sessionId?: string;
+      intent?: string;
+      partnerName?: string;
+      communicationStyle?: string;
+    };
+    if (!sessionId) throw new HttpsError('invalid-argument', 'sessionId が必要です');
+    if (!intent || intent.trim().length === 0) {
+      throw new HttpsError('invalid-argument', '伝え方の指定が必要です');
+    }
+    if (intent.length > MAX_DRAFT_INTENT_CHARS) {
+      throw new HttpsError('invalid-argument', `伝え方の指定が長すぎます（${MAX_DRAFT_INTENT_CHARS}文字以内）`);
+    }
+
+    const uid = request.auth.uid;
+    const { ref, turns } = await loadOwnedSessionTurns(uid, sessionId);
+    if (turns.length === 0) {
+      throw new HttpsError('failed-precondition', '会話がまだありません');
+    }
+
+    await consumeAiQuota(uid, 'aiConsult');
+
+    const partner = partnerName || 'パートナー';
+    const conversation = turns
+      .map((t, i) => `[ターン${i + 1}] ユーザー: ${wrapUserData(t.input ?? '')}\n整理: ${t.reflection ?? ''}`)
+      .join('\n');
+
+    const styleInstruction = communicationStyle
+      ? `文体の指定: ${communicationStyle}`
+      : '話し言葉で、やわらかく、ふだん使いのトーンで書いてください。堅い文語体・敬語体は避けること。';
+
+    const prompt = `あなたは夫婦のコミュニケーション支援AIです。
+ユーザーが${partner}との関係について気持ちを整理した会話を踏まえて、${partner}に実際に伝える文章を作ってください。
+
+${DATA_HANDLING_INSTRUCTION}
+
+## 会話の記録
+${conversation}
+
+## 伝え方の指定
+${wrapUserData(intent)}
+
+上記の指定とトーンで、${partner}に伝える文章を120文字以内で1つだけ作成してください。
+- 押し付けがましくない
+- ユーザーの本音や葛藤を薄めすぎない
+- 相手を責めない
+- ${styleInstruction}
+
+出力形式（JSON）:
+{
+  "messageDraft": "..."
+}`;
+
+    try {
+      const result = await getModel('draft').generateContent(prompt);
+      const json = JSON.parse(result.response.text());
+
+      await ref.update({
+        lastDraft: {
+          intent,
+          messageDraft: json.messageDraft,
+          createdAt: admin.firestore.Timestamp.now(),
+        },
+      });
+
       return json;
     } catch (e: any) {
       throw new HttpsError('internal', `AI処理に失敗しました: ${e.message}`);
@@ -669,6 +873,9 @@ export const aiInterpret = onCall(
     if (!text || text.trim().length === 0) {
       throw new HttpsError('invalid-argument', 'テキストが必要です');
     }
+    if (text.length > 2000) {
+      throw new HttpsError('invalid-argument', 'テキストが長すぎます（2000文字以内）');
+    }
 
     const viewerUid = request.auth.uid;
     const cacheKey = entryId && entryOwnerId ? `${entryOwnerId}_${entryId}` : null;
@@ -679,6 +886,26 @@ export const aiInterpret = onCall(
         return { interpretations: cacheSnap.data()!.interpretations };
       }
     }
+
+    // 投稿が存在し、自分 or パートナーの投稿であることを確認
+    if (entryId && entryOwnerId) {
+      if (entryOwnerId !== viewerUid) {
+        const viewerSnap = await db.doc(`users/${viewerUid}`).get();
+        const viewerPartnerUid = viewerSnap.data()?.partnerUid;
+        if (viewerPartnerUid !== entryOwnerId) {
+          throw new HttpsError('permission-denied', 'この投稿を読み解く権限がありません');
+        }
+      }
+      const entrySnap = await db.doc(`users/${entryOwnerId}/entries/${entryId}`).get();
+      if (!entrySnap.exists) {
+        throw new HttpsError('not-found', '投稿が見つかりません');
+      }
+      // パートナーの投稿なら shared であること
+      if (entryOwnerId !== viewerUid && entrySnap.data()?.visibility !== 'shared') {
+        throw new HttpsError('permission-denied', 'この投稿は共有されていません');
+      }
+    }
+
     await consumeAiQuota(viewerUid, 'aiInterpret');
 
     const partner = partnerName || 'パートナー';
@@ -815,6 +1042,33 @@ ${wrapUserData(summary)}
   }
 );
 
+// ---- 投稿削除時クリーンアップ: favorites / interpretationCache の孤児を掃除 ----
+export const cleanupOnEntryDelete = onDocumentDeleted(
+  { document: 'users/{uid}/entries/{entryId}', region: REGION },
+  async (event) => {
+    const uid = event.params.uid;
+    const entryId = event.params.entryId;
+    const cacheKey = `${uid}_${entryId}`;
+
+    const ownerSnap = await db.doc(`users/${uid}`).get();
+    const partnerUid = ownerSnap.data()?.partnerUid as string | undefined;
+
+    const tasks: Promise<unknown>[] = [];
+    // 自分自身のお気に入り
+    tasks.push(
+      db.doc(`users/${uid}/favorites/${cacheKey}`).delete().catch(() => {}),
+    );
+    // パートナー側のお気に入り・解釈キャッシュ
+    if (partnerUid) {
+      tasks.push(
+        db.doc(`users/${partnerUid}/favorites/${cacheKey}`).delete().catch(() => {}),
+        db.doc(`users/${partnerUid}/interpretationCache/${cacheKey}`).delete().catch(() => {}),
+      );
+    }
+    await Promise.all(tasks);
+  }
+);
+
 // ---- 解釈キャッシュ invalidate: 投稿編集時に古いキャッシュを削除 ----
 export const invalidateInterpretationCacheOnEntryUpdate = onDocumentUpdated(
   { document: 'users/{uid}/entries/{entryId}', region: REGION },
@@ -830,12 +1084,10 @@ export const invalidateInterpretationCacheOnEntryUpdate = onDocumentUpdated(
     const entryId = event.params.entryId;
     const cacheKey = `${uid}_${entryId}`;
 
-    // 全ユーザーの interpretationCache から該当キーを削除
-    // パートナーのみが持つはずだが、uid 単位で広めに検索
-    const usersSnap = await db.collection('users').get();
-    const deletes = usersSnap.docs.map((userDoc) =>
-      db.doc(`users/${userDoc.id}/interpretationCache/${cacheKey}`).delete()
-    );
-    await Promise.all(deletes);
+    // 解釈キャッシュを持つのは投稿者のパートナーのみ
+    const ownerSnap = await db.doc(`users/${uid}`).get();
+    const partnerUid = ownerSnap.data()?.partnerUid;
+    if (!partnerUid) return;
+    await db.doc(`users/${partnerUid}/interpretationCache/${cacheKey}`).delete().catch(() => {});
   }
 );

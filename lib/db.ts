@@ -42,7 +42,14 @@ export interface Consultation {
 export interface ConsultationSessionTurn {
   input: string;
   reflection: string;
+  /** 旧スキーマ。新規ターンには保存しない（aiDraft で session.lastDraft に集約） */
+  messageDraft?: string;
+}
+
+export interface ConsultationSessionDraft {
+  intent: string;
   messageDraft: string;
+  createdAt: any;
 }
 
 export interface ConsultationSession {
@@ -51,6 +58,7 @@ export interface ConsultationSession {
   turns: ConsultationSessionTurn[];
   favored: boolean;
   createdAt: any;
+  lastDraft?: ConsultationSessionDraft;
 }
 
 export interface FavoriteEntry {
