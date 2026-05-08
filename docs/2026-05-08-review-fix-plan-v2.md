@@ -7,9 +7,33 @@ v1（[2026-05-08-review-fix-plan.md](./2026-05-08-review-fix-plan.md)）の P0�
 
 ---
 
+## 📊 進捗サマリー（2026-05-08 更新）
+
+| タスク | タイトル | 状態 |
+|--------|---------|------|
+| P0-1 | Firestore `partnerUid` 直書き禁止 | ✅ 完了 |
+| P0-2 | `inviteCodes` 直書き禁止 + `createUserProfile` CF化 | ✅ 完了 |
+| P0-3 | `aiSummary` 入力サイズ上限 | ✅ 完了 |
+| P0-4 | プライバシーポリシー・サポートURL | ✅ 完了 |
+| P0-5 | TestFlight 実機検証 | ⏳ 未着手 |
+| P1-1 | 解釈キャッシュ invalidate | ⏳ 未着手 |
+| P1-2 | Firebase Auth エラー日本語化 | ✅ 完了（2026-05-08） |
+| P1-3 | メール認証 `sendEmailVerification` | ⏳ 未着手 |
+| P1-4 | ログアウト確認ダイアログ | ✅ 完了（2026-05-08） |
+| P1-5 | `COLORS`トークン全画面適用 | ✅ 完了（2026-05-08） |
+| P1-6 | 重複コンポーネント抽出 | ⏳ 未着手 |
+| P1-7 | デッドコード削除 | ⏳ 未着手 |
+| P1-8 | AGENTS.md 更新 | ✅ 完了（2026-05-08） |
+| P1-9 | 通知タップ時のディープリンク | ⏳ 未着手 |
+| P1-10 | アクセシビリティラベル最低限付与 | ⏳ 未着手 |
+| P1-11 | 利用規約 | ⏳ 未着手 |
+| P2-1〜P2-5 | こなれたら対応 | 💤 保留 |
+
+---
+
 ## P0: リリース前必須
 
-### P0-1. Firestore ルール `partnerUid` 直書き禁止 🔴 セキュリティ
+### ✅ P0-1. Firestore ルール `partnerUid` 直書き禁止 🔴 セキュリティ
 
 - **問題**: [firestore.rules:19](../firestore.rules#L19) `users/{uid}` の write は `request.auth.uid == uid` のみで `partnerUid` フィールドの値を制限していない。攻撃者が自分の `partnerUid` を被害者UIDに直接書き換えると、ルール上 `users/{被害者uid}/entries` の `visibility == 'shared'` を全件読めてしまう。
 - **対応**:
@@ -39,7 +63,7 @@ match /users/{uid} {
 }
 ```
 
-### P0-2. `inviteCodes` 直書き禁止＋`createUserProfile` 関数化 🔴 セキュリティ
+### ✅ P0-2. `inviteCodes` 直書き禁止＋`createUserProfile` 関数化 🔴 セキュリティ
 
 - **問題**:
   - [firestore.rules:8](../firestore.rules#L8) `allow create: if request.auth.uid == request.resource.data.uid`。任意の6桁コードを攻撃者が事前占有可能。`regenerateInviteCode` のトランザクションを衝突させ続ける DoS、または将来コードを先取りして相手の招待コード採番を妨害できる。
@@ -56,7 +80,7 @@ match /users/{uid} {
   - 既存ユーザーで inviteCode が無いケースもバックフィルで補える
 - **工数**: 0.5日
 
-### P0-3. `aiSummary` 入力サイズ上限 🟠 コスト
+### ✅ P0-3. `aiSummary` 入力サイズ上限 🟠 コスト
 
 - **問題**: [functions/src/index.ts:660](../functions/src/index.ts#L660) `aiSummary` は `entries` 配列の長さ・各 memo の長さ・合計文字数チェックがない。callable に直接巨大データを投げると Gemini 課金が膨らむ。
 - **対応**:
@@ -66,7 +90,7 @@ match /users/{uid} {
 - **受け入れ条件**: 上記超過で 400系エラーが返る。通常の月内投稿（200件以内）では従来通り動作。
 - **工数**: 0.1日
 
-### P0-4. プライバシーポリシー・サポートURL・App Privacy 申告
+### ✅ P0-4. プライバシーポリシー・サポートURL・App Privacy 申告
 
 - **問題**: App Store Connect 提出に必須。
 - **対応**:
@@ -88,7 +112,7 @@ match /users/{uid} {
   - App Store Connect の App Privacy が「No Issues」表示
 - **工数**: 1日
 
-### P0-5. TestFlight 実機検証
+### ⏳ P0-5. TestFlight 実機検証
 
 - **問題**: 開発中は Expo Go ベースで実機特有の挙動（push token 発行、通知タップディープリンク、Apple ID連携時の Firebase 挙動など）が未検証。
 - **対応**:
@@ -113,7 +137,7 @@ match /users/{uid} {
 
 ## P1: 近いスプリント
 
-### P1-1. 解釈キャッシュ invalidate
+### ⏳ P1-1. 解釈キャッシュ invalidate
 
 - **問題**: パートナーが投稿を編集（`updateEntry`）しても、自分側の `interpretationCache/${entryOwnerId}_${entryId}` は古い解釈テキストのまま残る。「気持ちを読み解く」が古い意図を返し続ける。
 - **対応**:
@@ -123,7 +147,7 @@ match /users/{uid} {
 - **受け入れ条件**: パートナーが投稿を編集→自分の画面で「気持ちを読み解く」を再タップ→新しい解釈が返る。
 - **工数**: 0.3日
 
-### P1-2. Firebase Auth エラー日本語化
+### ✅ P1-2. Firebase Auth エラー日本語化
 
 - **問題**: `Alert.alert('エラー', e.message)` で `Firebase: Error (auth/email-already-in-use).` のような英文がそのまま表示される。リリース後の体験品質を直接下げる。
 - **対応**:
@@ -141,7 +165,7 @@ match /users/{uid} {
 - **受け入れ条件**: ログイン画面・設定画面・各AI画面で英文エラーが出ない。
 - **工数**: 0.5日
 
-### P1-3. メール認証 `sendEmailVerification`
+### ⏳ P1-3. メール認証 `sendEmailVerification`
 
 - **問題**: 新規登録後すぐにアプリに入れる。パスワード再設定は所有メール宛に届くので、登録時のメール所有確認をしないと「赤の他人のメールで作り捨て」が可能。
 - **対応**:
@@ -151,13 +175,13 @@ match /users/{uid} {
 - **受け入れ条件**: 新規登録時に確認メールが届く。設定画面で再送できる。
 - **工数**: 0.3日
 
-### P1-4. ログアウト確認ダイアログ
+### ✅ P1-4. ログアウト確認ダイアログ
 
 - **問題**: [settings.tsx:594](../app/(app)/settings.tsx#L594) `signOut(auth)` を直で呼ぶ。誤タップで再ログインの摩擦。
 - **対応**: `Alert.alert('ログアウトしますか？', 'もう一度ログインが必要になります', [...])` を1段挟む。
 - **工数**: 0.1日
 
-### P1-5. `COLORS` / `MOODS` トークンの全画面適用
+### ✅ P1-5. `COLORS` / `MOODS` トークンの全画面適用
 
 - **問題**: P1-1 v1 で `lib/theme.ts` を作ったが、import しているのは `TimePickerSheet.tsx` のみ。他は依然 `'#7B9E87'` `'#FAFAF8'` `'#E0E0E0'` のリテラル散在。
 - **対応**:
@@ -168,7 +192,7 @@ match /users/{uid} {
 - **受け入れ条件**: `grep -rn "#[0-9A-Fa-f]\{6\}" app components | grep -v 'theme.ts\|mood.ts'` の件数が大幅減（目安: 50件以下）。
 - **工数**: 1〜1.5日
 
-### P1-6. 重複コンポーネントの抽出
+### ⏳ P1-6. 重複コンポーネントの抽出
 
 - **問題**: 同一実装の散在
   - `sourceConsultationLink` × 3（`index.tsx:372` `calendar.tsx:738` `favorites.tsx:185`）
@@ -180,7 +204,7 @@ match /users/{uid} {
   - `lib/profile.ts` に `getPartnerDisplayName(profile)` を集約
 - **工数**: 0.3日
 
-### P1-7. デッドコード削除
+### ⏳ P1-7. デッドコード削除
 
 - **対応**:
   - `App.tsx`（Expo Router 採用後の残骸）削除
@@ -190,7 +214,7 @@ match /users/{uid} {
 - **受け入れ条件**: `tsc --noEmit` がこれまで以上にクリーン。
 - **工数**: 0.2日
 
-### P1-8. AGENTS.md 更新
+### ✅ P1-8. AGENTS.md 更新
 
 - **問題**: [AGENTS.md:534-540](../AGENTS.md#L534-L540) に「Firestoreルールは開発中認証済みなら全部OK」「リリース前に必ず厳密化すること」と書かれているが実際は厳密化済み。未来の自分や別エージェントを誤誘導する。
 - **対応**:
@@ -199,7 +223,7 @@ match /users/{uid} {
   - 「次にやるべき具体タスク」を v2 の本ファイルへのリンクに置換
 - **工数**: 0.2日
 
-### P1-9. 通知タップ時のディープリンク
+### ⏳ P1-9. 通知タップ時のディープリンク
 
 - **問題**: [notifications.ts:53](../lib/notifications.ts#L53) で `data.screen='post'`、Cloud Function の push に `data.kind='sharedEntry'` を含むが、タップハンドラがない。タップしてもアプリ起動するだけで該当画面に飛ばない。
 - **対応**:
@@ -210,7 +234,7 @@ match /users/{uid} {
 - **受け入れ条件**: バックグラウンド／キル状態の双方で、通知タップから該当画面に遷移。
 - **工数**: 0.3日
 
-### P1-10. アクセシビリティラベル最低限付与
+### ⏳ P1-10. アクセシビリティラベル最低限付与
 
 - **問題**: 全画面で `accessibilityLabel` `accessibilityRole` がゼロ。VoiceOver で絵文字や Phosphor アイコンが読み上げられない。
 - **対応**:
@@ -225,7 +249,7 @@ match /users/{uid} {
 - **受け入れ条件**: VoiceOver 起動状態で主要操作が音声で完結する。
 - **工数**: 0.5〜1日
 
-### P1-11. 利用規約
+### ⏳ P1-11. 利用規約
 
 - **問題**: App Store 提出は必須ではないが、AI生成コンテンツの責任分界・年齢制限・禁止事項を明示しておくと審査・運用ともに安心。
 - **対応**:
@@ -238,26 +262,26 @@ match /users/{uid} {
 
 ## P2: こなれたら
 
-### P2-1. `consultations` collection の整理
+### 💤 P2-1. `consultations` collection の整理
 
 - 現状 `consultations` （旧）と `consultationSessions` （新）が二重存在。`addConsultation` 削除後も `getRecentConsultations` を `calendar.tsx` で使い続けるかを判断。
 - 新データはすべて `consultationSessions` に入っているので、`consultations` 表示を `consultationSessions` の最初のターンで代用するように `calendar.tsx` を書き換えれば、`getRecentConsultations` を完全廃止できる。
 - 工数: 0.3日
 
-### P2-2. TimePickerSheet → spinner 置換 or スクロール追従
+### 💤 P2-2. TimePickerSheet → spinner 置換 or スクロール追従
 
 - v1 P1-2 で共通化したが UX は引き続き劣る。値変更時に `ScrollView` が追従しない。
 - 案A: `@react-native-community/datetimepicker` の `display="spinner"` に置換
 - 案B: 値変更時に `scrollTo({ y: value * ITEM_HEIGHT - 100 })` を呼ぶ ref ベース実装
 - 工数: 0.5日
 
-### P2-3. 壁打ちセッション「続きから再開」導線
+### 💤 P2-3. 壁打ちセッション「続きから再開」導線
 
 - 現状: 過去セッションは展開表示のみ。続きから話したい場合は新規開始するしかない。
 - 対応: セッションヘッダーに「続きから話す」ボタン → 進行中の `conversation` を上書き確認 → セッションの turns を `conversation` に復元
 - 工数: 0.3日
 
-### P2-4. オンボーディング/初回パートナー連携CTAの強化
+### 💤 P2-4. オンボーディング/初回パートナー連携CTAの強化
 
 - 現状: 初回ログイン後ホームの空状態は「右下の＋ボタンで記録してみよう」のみ。
 - 対応:
@@ -266,7 +290,7 @@ match /users/{uid} {
   - パートナー連携後、最初の共有投稿前に「最初のひとことを送ってみよう」プロンプト
 - 工数: 0.5〜1日
 
-### P2-5. 17+ レーティング・通報機能
+### 💤 P2-5. 17+ レーティング・通報機能
 
 - App Store のレーティング設定で「ユーザー生成コンテンツ・無制限のWebアクセス」を Yes にすると 17+ になる。ふたことは「相互フォロー型のクローズドコンテンツ」のみで第三者には公開されないため、12+ で出せる可能性が高い。判断と申告を整える。
 - それでも保険として「ペアからのコンテンツ報告」導線（パートナー投稿カードに通報メニュー）を入れておくと将来安全。
@@ -309,7 +333,8 @@ firebase deploy
 
 ## 進捗ログ
 
-- **2026-05-08**: v2 起票。v1 で塞ぎ切れていなかった `partnerUid` 改竄経路 / `inviteCodes` 直書き経路 / `aiSummary` 入力サイズの3点を P0 として識別。Apple 提出に必要な privacy/support 公開と TestFlight 実機検証も P0 化。
+- **2026-05-08 AM**: v2 起票。v1 で塞ぎ切れていなかった `partnerUid` 改竄経路 / `inviteCodes` 直書き経路 / `aiSummary` 入力サイズの3点を P0 として識別。Apple 提出に必要な privacy/support 公開と TestFlight 実機検証も P0 化。
+- **2026-05-08 PM**: P0-1/P0-2/P0-3/P0-4 は前セッションで実装済みと判明。P1-8（AGENTS.md更新）→ P1-2（`lib/errors.ts`新設・全画面Authエラー日本語化）→ P1-4（ログアウト確認ダイアログ）→ P1-5（COLORSトークン全画面統一、202件→3件）を完了。git push 済み。
 
 ## メモ
 
