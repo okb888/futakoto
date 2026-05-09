@@ -259,6 +259,10 @@ export async function addTurnToSession(
   });
 }
 
+export async function deleteConsultationSession(uid: string, sessionId: string): Promise<void> {
+  await deleteDoc(doc(db, 'users', uid, 'consultationSessions', sessionId));
+}
+
 export async function toggleSessionFavorite(
   uid: string,
   sessionId: string,

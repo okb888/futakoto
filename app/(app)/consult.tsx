@@ -13,12 +13,13 @@ import {
   ScrollView,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowRight, Sparkle, Star, X } from 'phosphor-react-native';
+import { ArrowRight, Sparkle, Star, Trash, X } from 'phosphor-react-native';
 import { useAuth } from '../../lib/auth';
 import { aiConsult, aiDraft, aiDraftOptions, DraftOption } from '../../lib/ai';
 import {
   createConsultationSession,
   addTurnToSession,
+  deleteConsultationSession,
   toggleSessionFavorite,
   getConsultationSession,
   getRecentConsultationSessions,
@@ -64,12 +65,15 @@ export default function ConsultScreen() {
   const [optionsModalOpen, setOptionsModalOpen] = useState(false);
   const [draftOptions, setDraftOptions] = useState<DraftOption[] | null>(null);
   const [draftOptionsLoading, setDraftOptionsLoading] = useState(false);
+  const [draftSummary, setDraftSummary] = useState<string | null>(null);
   const [customIntent, setCustomIntent] = useState('');
   const [draftLoading, setDraftLoading] = useState(false);
   const [draftIntent, setDraftIntent] = useState<string | null>(null);
   const [generatedDraft, setGeneratedDraft] = useState<string | null>(null);
 
-  const tooShort = text.trim().length > 0 && text.trim().length < 50;
+  const isBlank = (s: string) => /^[\s　 ]*$/.test(s);
+  const contentLength = text.replace(/[\s　 ]+/g, ' ').trim().length;
+  const tooShort = contentLength > 0 && contentLength < 50;
 
   async function load(isCancelled: () => boolean = () => false) {
     if (!user) return;
@@ -103,6 +107,7 @@ export default function ConsultScreen() {
     setDraftOptions(null);
     setDraftOptionsLoading(false);
     setOptionsModalOpen(false);
+    setDraftSummary(null);
     setCustomIntent('');
     setDraftLoading(false);
     setDraftIntent(null);
@@ -111,7 +116,7 @@ export default function ConsultScreen() {
   }
 
   async function handleConsult() {
-    if (!user || !text.trim() || conversation.length >= MAX_TURNS) return;
+    if (!user || isBlank(text) || conversation.length >= MAX_TURNS) return;
 
     const currentInput = text.trim();
     setLoading(true);
@@ -247,6 +252,29 @@ export default function ConsultScreen() {
     }
   }
 
+  function handleDeleteSession(session: ConsultationSession) {
+    if (!user || !session.id) return;
+    Alert.alert(
+      'この記録を削除しますか？',
+      '削除すると元に戻せません。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '削除',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteConsultationSession(user.uid, session.id!);
+              setRecentSessions((prev) => prev.filter((s) => s.id !== session.id));
+            } catch (e: any) {
+              Alert.alert('エラー', firebaseErrorMessage(e));
+            }
+          },
+        },
+      ]
+    );
+  }
+
   function useAsPost(messageDraft: string, sourceSessionId?: string) {
     router.push({
       pathname: '/(app)/post',
@@ -266,6 +294,8 @@ export default function ConsultScreen() {
     try {
       const res = await aiDraftOptions(sessionId, partnerName);
       setDraftOptions(res.options);
+      setDraftSummary(res.summary ?? null);
+      if (!customIntent && res.summary) setCustomIntent(res.summary);
     } catch (e: any) {
       setOptionsModalOpen(false);
       Alert.alert('エラー', firebaseErrorMessage(e));
@@ -475,9 +505,9 @@ export default function ConsultScreen() {
               <Text style={styles.shortHint}>もう少し詳しく書くと、AIがより深く整理できます（目安50文字〜）</Text>
             ) : null}
             <TouchableOpacity
-              style={[styles.aiButton, (!text.trim() || loading) && styles.aiButtonDisabled]}
+              style={[styles.aiButton, (isBlank(text) || loading) && styles.aiButtonDisabled]}
               onPress={handleConsult}
-              disabled={!text.trim() || loading}
+              disabled={isBlank(text) || loading}
             >
               {loading ? (
                 <ActivityIndicator color={COLORS.ai} />
@@ -538,6 +568,12 @@ export default function ConsultScreen() {
                           color={session.favored ? COLORS.primary : COLORS.disabled}
                           weight={session.favored ? 'fill' : 'regular'}
                         />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteSession(session)}
+                        hitSlop={8}
+                      >
+                        <Trash size={15} color={COLORS.textMuted} />
                       </TouchableOpacity>
                       <Text style={styles.collapseToggle}>{isExpanded ? '▲' : '▼'}</Text>
                     </View>
@@ -643,7 +679,9 @@ export default function ConsultScreen() {
                 ))}
 
                 <View style={styles.customIntentArea}>
-                  <Text style={styles.customIntentLabel}>または自由に指定</Text>
+                  <Text style={styles.customIntentLabel}>
+                    {draftSummary ? 'AIがまとめた内容を確認・編集' : '伝えたいことを自由に指定'}
+                  </Text>
                   <TextInput
                     style={styles.customIntentInput}
                     placeholder="例: 仕事で疲れていることを伝えたい"
@@ -656,10 +694,10 @@ export default function ConsultScreen() {
                   <TouchableOpacity
                     style={[
                       styles.customIntentButton,
-                      !customIntent.trim() && styles.customIntentButtonDisabled,
+                      isBlank(customIntent) && styles.customIntentButtonDisabled,
                     ]}
                     onPress={handleSubmitCustomIntent}
-                    disabled={!customIntent.trim()}
+                    disabled={isBlank(customIntent)}
                   >
                     <Text style={styles.customIntentButtonText}>この内容で文を作る</Text>
                   </TouchableOpacity>

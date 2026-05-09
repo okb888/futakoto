@@ -1,0 +1,62 @@
+[
+  {
+    "variant": "C",
+    "caseId": "case-08",
+    "sampleId": "c08-s01",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "先週から口数が減った。",
+    "reflection": "先週からご主人の口数が減ったのですね。そのことで、どんな気持ちが募っていますか？",
+    "meta": {
+      "reflectionLength": 40,
+      "timestamp": "2026-05-08T21:16:53.668Z"
+    }
+  },
+  {
+    "variant": "C",
+    "caseId": "case-08",
+    "sampleId": "c08-s02",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "最近帰りが遅い。",
+    "reflection": "最近、夫の帰りが遅い状況なのですね。そのことで、あなたの中でどんなことが気になっていますか？",
+    "meta": {
+      "reflectionLength": 46,
+      "timestamp": "2026-05-08T21:17:02.546Z"
+    }
+  },
+  {
+    "variant": "C",
+    "caseId": "case-08",
+    "sampleId": "c08-s03",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "夕飯、また一人で食べた。",
+    "reflection": "夕飯をまた一人で食べられたのですね。そのとき、どんな気持ちになりましたか？",
+    "meta": {
+      "reflectionLength": 37,
+      "timestamp": "2026-05-08T21:17:09.493Z"
+    }
+  },
+  {
+    "variant": "C",
+    "caseId": "case-08",
+    "sampleId": "c08-s04",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "子供の参観日、来なかった。",
+    "reflection": "お子さんの参観日に旦那さんがいらっしゃらなかったのですね。そのとき、どんな気持ちになったかな？",
+    "meta": {
+      "reflectionLength": 47,
+      "timestamp": "2026-05-08T21:17:17.140Z"
+    }
+  },
+  {
+    "variant": "C",
+    "caseId": "case-08",
+    "sampleId": "c08-s05",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "ここ最近、スマホをよく見てる。",
+    "reflection": "ここ最近、奥様がスマホをよく見ていると感じているのですね。そのとき、ご自身はどんな気持ちになりますか？",
+    "meta": {
+      "reflectionLength": 51,
+      "timestamp": "2026-05-08T21:17:21.830Z"
+    }
+  }
+]

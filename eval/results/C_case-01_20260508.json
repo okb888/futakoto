@@ -1,0 +1,62 @@
+[
+  {
+    "variant": "C",
+    "caseId": "case-01",
+    "sampleId": "c01-s01",
+    "caseLabel": "短文・曖昧",
+    "input": "なんかしんどい",
+    "reflection": "なんかしんどいと感じているのですね。その『しんどい』の奥には、どんな気持ちが隠れているように感じますか？",
+    "meta": {
+      "reflectionLength": 52,
+      "timestamp": "2026-05-08T21:16:53.847Z"
+    }
+  },
+  {
+    "variant": "C",
+    "caseId": "case-01",
+    "sampleId": "c01-s02",
+    "caseLabel": "短文・曖昧",
+    "input": "なんか最近モヤモヤしてる",
+    "reflection": "なんか最近モヤモヤしているのですね。そのモヤモヤの奥には、どんな気持ちが隠れているのでしょうか？",
+    "meta": {
+      "reflectionLength": 48,
+      "timestamp": "2026-05-08T21:16:59.769Z"
+    }
+  },
+  {
+    "variant": "C",
+    "caseId": "case-01",
+    "sampleId": "c01-s03",
+    "caseLabel": "短文・曖昧",
+    "input": "疲れた",
+    "reflection": "疲れているのですね。その疲れの奥にはどんな気持ちが重なっていますか？",
+    "meta": {
+      "reflectionLength": 34,
+      "timestamp": "2026-05-08T21:17:06.237Z"
+    }
+  },
+  {
+    "variant": "C",
+    "caseId": "case-01",
+    "sampleId": "c01-s04",
+    "caseLabel": "短文・曖昧",
+    "input": "うまくいかない",
+    "reflection": "うまくいかないと感じているのですね。その中で、どんな気持ちが一番重くなっていますか？",
+    "meta": {
+      "reflectionLength": 42,
+      "timestamp": "2026-05-08T21:17:11.552Z"
+    }
+  },
+  {
+    "variant": "C",
+    "caseId": "case-01",
+    "sampleId": "c01-s05",
+    "caseLabel": "短文・曖昧",
+    "input": "なんか気持ちがついていかない",
+    "reflection": "気持ちがついていかないと感じているのですね。そのとき、どんな気持ちが重なっていますか？",
+    "meta": {
+      "reflectionLength": 43,
+      "timestamp": "2026-05-08T21:17:18.264Z"
+    }
+  }
+]

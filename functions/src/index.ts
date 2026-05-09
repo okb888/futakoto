@@ -62,6 +62,10 @@ function detectCrisis(text: string): boolean {
   return CRISIS_PATTERNS.some((p) => p.test(text));
 }
 
+function isBlank(text: string): boolean {
+  return /^[\s　 ]*$/.test(text);
+}
+
 const STRING_SCHEMA: ResponseSchema = { type: SchemaType.STRING };
 const REWRITE_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
@@ -99,8 +103,9 @@ const CONSULT_SCHEMA: ResponseSchema = {
 };
 const DRAFT_OPTIONS_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
-  required: ['options'],
+  required: ['summary', 'options'],
   properties: {
+    summary: STRING_SCHEMA,
     options: {
       type: SchemaType.ARRAY,
       items: {
@@ -581,7 +586,7 @@ export const aiRewrite = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
     const { text, partnerName } = request.data as { text?: string; partnerName?: string };
-    if (!text || text.trim().length === 0) {
+    if (!text || isBlank(text)) {
       throw new HttpsError('invalid-argument', 'テキストが必要です');
     }
     if (text.length > 1000) {
@@ -670,7 +675,7 @@ export const aiConsult = onCall(
       sessionId?: string | null;
       communicationStyle?: string;
     };
-    if (!text || text.trim().length === 0) {
+    if (!text || isBlank(text)) {
       throw new HttpsError('invalid-argument', '相談内容が必要です');
     }
     if (text.length > 2000) {
@@ -787,28 +792,33 @@ export const aiDraftOptions = onCall(
     await consumeAiQuota(uid, 'aiConsult');
 
     const partner = partnerName || 'パートナー';
-    const conversation = turns
-      .map((t, i) => `[ターン${i + 1}]\nユーザー: ${wrapUserData(t.input ?? '')}\n整理メモ: ${t.reflection ?? ''}`)
-      .join('\n\n');
+    const userInputs = turns
+      .map((t, i) => `[turn${i + 1}] ${wrapUserData(t.input ?? '')}`)
+      .join('\n');
 
     const prompt = `あなたは夫婦のコミュニケーション支援AIです。
-以下はユーザーが${partner}に関して気持ちを整理した会話の記録です。
-このやり取りを踏まえて、${partner}に伝えるなら、どんな伝え方の選択肢があるかを3つ提案してください。
+以下はユーザーが${partner}に関して気持ちを整理した発話の記録です。
 
 ${DATA_HANDLING_INSTRUCTION}
 
-## 会話の記録
-${conversation}
+## ユーザーの発話履歴
+${userInputs}
 
-伝え方の選択肢を3つ、それぞれ:
-- label: 短いラベル（例「気持ちを伝える」「お願いを共有する」「事実だけ共有」）8文字以内
-- description: その伝え方の概要（30文字以内）
+この会話から、以下を出力してください。
 
-押し付けがましくなく、ユーザーの状況に即した3つを提案してください。
-3つは方向性が異なるよう、重複させないでください。
+1. summary: ユーザーが${partner}に伝えたいことを60文字以内で1〜2文にまとめる。
+   - ユーザーの本音・葛藤を薄めすぎない
+   - 相手を責める表現にしない
+   - 「〜ということを伝えたい」という形に集約
+
+2. options: 伝え方の選択肢を3つ。それぞれ:
+   - label: 短いラベル（8文字以内）
+   - description: その伝え方の概要（30文字以内）
+   - 方向性が異なるよう重複させない（例: 気持ちを伝える・お願いを共有する・事実だけ共有）
 
 出力形式（JSON）:
 {
+  "summary": "...",
   "options": [
     { "label": "...", "description": "..." },
     { "label": "...", "description": "..." },

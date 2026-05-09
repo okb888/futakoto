@@ -1,0 +1,62 @@
+[
+  {
+    "variant": "B",
+    "caseId": "case-01",
+    "sampleId": "c01-s01",
+    "caseLabel": "短文・曖昧",
+    "input": "なんかしんどい",
+    "reflection": "「なんかしんどい」と感じているのですね。そのしんどさの裏には、どんな気持ちが重なっているのでしょうか？",
+    "meta": {
+      "reflectionLength": 51,
+      "timestamp": "2026-05-08T21:05:53.201Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-01",
+    "sampleId": "c01-s02",
+    "caseLabel": "短文・曖昧",
+    "input": "なんか最近モヤモヤしてる",
+    "reflection": "最近モヤモヤとした気持ちを抱えているのですね。そのモヤモヤの奥には、どんな気持ちが隠れていそうですか？",
+    "meta": {
+      "reflectionLength": 51,
+      "timestamp": "2026-05-08T21:05:59.792Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-01",
+    "sampleId": "c01-s03",
+    "caseLabel": "短文・曖昧",
+    "input": "疲れた",
+    "reflection": "今、とてもお疲れのようですね。この「疲れた」の奥には、どんな気持ちが重なっているでしょうか？",
+    "meta": {
+      "reflectionLength": 46,
+      "timestamp": "2026-05-08T21:06:04.779Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-01",
+    "sampleId": "c01-s04",
+    "caseLabel": "短文・曖昧",
+    "input": "うまくいかない",
+    "reflection": "うまくいかないと感じているんですね。その「うまくいかない」と感じる時、どんな気持ちが一番重くのしかかりますか？",
+    "meta": {
+      "reflectionLength": 55,
+      "timestamp": "2026-05-08T21:06:10.587Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-01",
+    "sampleId": "c01-s05",
+    "caseLabel": "短文・曖昧",
+    "input": "なんか気持ちがついていかない",
+    "reflection": "なんか気持ちが追いつかないと感じていらっしゃるのですね。その中で、特に何がしんどいと感じますか？",
+    "meta": {
+      "reflectionLength": 48,
+      "timestamp": "2026-05-08T21:06:16.820Z"
+    }
+  }
+]

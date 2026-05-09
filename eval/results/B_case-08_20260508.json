@@ -1,0 +1,62 @@
+[
+  {
+    "variant": "B",
+    "caseId": "case-08",
+    "sampleId": "c08-s01",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "先週から口数が減った。",
+    "reflection": "夫の口数が減ったことで、あなたは何か変化を感じているのですね。その変化が、あなたにとってどんな気持ちに繋がっているのか、少し考えてみませんか？",
+    "meta": {
+      "reflectionLength": 71,
+      "timestamp": "2026-05-08T21:11:34.549Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-08",
+    "sampleId": "c08-s02",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "最近帰りが遅い。",
+    "reflection": "旦那さんの帰りが最近遅いことについて、心の中で色々思うことがあるのですね。その状況で、具体的にどんな気持ちが一番気になっていますか？",
+    "meta": {
+      "reflectionLength": 66,
+      "timestamp": "2026-05-08T21:11:42.381Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-08",
+    "sampleId": "c08-s03",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "夕飯、また一人で食べた。",
+    "reflection": "夕飯をまた一人で食べることになって、寂しさやちょっとした虚しさのようなものを感じているのですね。そのとき、どんな気持ちが一番つらかったですか？",
+    "meta": {
+      "reflectionLength": 71,
+      "timestamp": "2026-05-08T21:11:49.126Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-08",
+    "sampleId": "c08-s04",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "子供の参観日、来なかった。",
+    "reflection": "お子さんの参観日に旦那さんが来られなくて、がっかりした気持ちでいらっしゃるのですね。そのとき、どんな気持ちが一番つらかったですか？",
+    "meta": {
+      "reflectionLength": 65,
+      "timestamp": "2026-05-08T21:11:56.016Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-08",
+    "sampleId": "c08-s05",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "ここ最近、スマホをよく見てる。",
+    "reflection": "奥さんがスマホをよく見ていることが、気になっているのですね。そのとき、どんな気持ちになりますか？",
+    "meta": {
+      "reflectionLength": 48,
+      "timestamp": "2026-05-08T21:12:04.620Z"
+    }
+  }
+]

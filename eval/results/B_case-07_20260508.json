@@ -1,0 +1,62 @@
+[
+  {
+    "variant": "B",
+    "caseId": "case-07",
+    "sampleId": "c07-s01",
+    "caseLabel": "超短文・50文字未満",
+    "input": "怒ってない",
+    "reflection": "あなたは今、『怒っていない』という気持ちを伝えたいのですね。怒りではないとすると、どんな気持ちが一番近いですか？",
+    "meta": {
+      "reflectionLength": 56,
+      "timestamp": "2026-05-08T21:11:00.132Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-07",
+    "sampleId": "c07-s02",
+    "caseLabel": "超短文・50文字未満",
+    "input": "別にいい",
+    "reflection": "今、何かに対して「もういいや、別にいい」と諦めや疲弊を感じているのですね。その「別にいい」という気持ちの奥には、どんな疲れや諦めが隠れているのでしょうか？",
+    "meta": {
+      "reflectionLength": 77,
+      "timestamp": "2026-05-08T21:11:07.850Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-07",
+    "sampleId": "c07-s03",
+    "caseLabel": "超短文・50文字未満",
+    "input": "疲れた",
+    "reflection": "今、心から「疲れた」と感じているのですね。この「疲れた」の奥には、どんな気持ちが重なっているでしょうか？",
+    "meta": {
+      "reflectionLength": 52,
+      "timestamp": "2026-05-08T21:11:12.423Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-07",
+    "sampleId": "c07-s04",
+    "caseLabel": "超短文・50文字未満",
+    "input": "なんでもない",
+    "reflection": "今、自分の気持ちを言葉にするのが難しい、あるいは「なんでもない」と感じてしまう状況なのですね。もし、あえて言葉にしてみるとしたら、その時どんな気持ちが一番近いでしょうか？",
+    "meta": {
+      "reflectionLength": 85,
+      "timestamp": "2026-05-08T21:11:19.116Z"
+    }
+  },
+  {
+    "variant": "B",
+    "caseId": "case-07",
+    "sampleId": "c07-s05",
+    "caseLabel": "超短文・50文字未満",
+    "input": "ありがとう",
+    "reflection": "素直に「ありがとう」と感じているんですね。",
+    "meta": {
+      "reflectionLength": 21,
+      "timestamp": "2026-05-08T21:11:26.811Z"
+    }
+  }
+]

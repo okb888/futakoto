@@ -30,6 +30,7 @@ export interface DraftOption {
 }
 
 export interface DraftOptionsResult {
+  summary: string;
   options: DraftOption[];
 }
 

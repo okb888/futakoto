@@ -48,7 +48,7 @@ service cloud.firestore {
         allow read, write: if request.auth.uid == uid;
       }
       match /interpretationCache/{cacheId} {
-        allow read: if request.auth.uid == uid;
+        allow read: if request.auth != null && request.auth.uid == uid;
         allow write: if false;
       }
     }

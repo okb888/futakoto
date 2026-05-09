@@ -52,34 +52,53 @@ export default function HomeScreen() {
 
   async function load(isCancelled: () => boolean = () => false) {
     if (!user) return;
-    const [p, favorites, caches] = await Promise.all([
-      authProfile ?? refreshProfile(),
-      getFavoriteEntryIds(user.uid),
-      getAllInterpretationCaches(user.uid),
-    ]);
-    if (isCancelled() || !p) return;
-    setProfile(p);
-    setFavoriteIds(favorites);
-    setInterpretationsCache(caches);
+    try {
+      const p = authProfile ?? await refreshProfile();
+      if (isCancelled() || !p) return;
+      setProfile(p);
 
-    const myEntries = await getRecentEntries(user.uid);
-    if (isCancelled()) return;
+      let favorites = new Set<string>();
+      try {
+        favorites = await getFavoriteEntryIds(user.uid);
+      } catch (e: any) {
+        console.error('[Home] favorites取得エラー:', e?.code, e?.message);
+      }
+      setFavoriteIds(favorites);
 
-    let allEntries = myEntries;
-    if (p?.partnerUid) {
-      const pp = await getUserProfile(p.partnerUid);
+      let caches: Record<string, string[]> = {};
+      try {
+        caches = await getAllInterpretationCaches(user.uid);
+      } catch (e: any) {
+        console.error('[Home] interpretationCache取得エラー:', e?.code, e?.message);
+      }
+      setInterpretationsCache(caches);
+
+      const myEntries = await getRecentEntries(user.uid);
       if (isCancelled()) return;
-      setPartnerProfile(pp);
-      const partnerEntries = await getPartnerSharedEntries(p.partnerUid);
-      if (isCancelled()) return;
-      allEntries = [...myEntries, ...partnerEntries].sort(
-        (a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
-      );
-    } else {
-      setPartnerProfile(null);
+
+      let allEntries = myEntries;
+      if (p?.partnerUid) {
+        try {
+          const pp = await getUserProfile(p.partnerUid);
+          if (isCancelled()) return;
+          setPartnerProfile(pp);
+          const partnerEntries = await getPartnerSharedEntries(p.partnerUid);
+          if (isCancelled()) return;
+          allEntries = [...myEntries, ...partnerEntries].sort(
+            (a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
+          );
+        } catch (e: any) {
+          console.error('[Home] パートナーデータ取得エラー:', e?.code, e?.message);
+          allEntries = myEntries;
+        }
+      } else {
+        setPartnerProfile(null);
+      }
+
+      setEntries(allEntries);
+    } catch (e: any) {
+      console.error('[Home] load全体エラー:', e?.code, e?.message);
     }
-
-    setEntries(allEntries);
   }
 
   useFocusEffect(useCallback(() => {
