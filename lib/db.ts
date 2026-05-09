@@ -84,6 +84,7 @@ export interface UserProfile {
   createdAt: any;
   aiCreditsUsed?: number;
   aiCreditsLimit?: number;
+  lastVisibility?: Visibility;
 }
 
 export interface NotificationSettings {
@@ -110,6 +111,10 @@ export async function updateDisplayName(uid: string, displayName: string): Promi
 
 export async function updateCommunicationStyle(uid: string, style: string): Promise<void> {
   await updateDoc(doc(db, 'users', uid), { communicationStyle: style });
+}
+
+export async function updateLastVisibility(uid: string, visibility: Visibility): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), { lastVisibility: visibility });
 }
 
 export async function updateNotificationSettings(

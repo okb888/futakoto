@@ -30,16 +30,9 @@ import {
   UserProfile,
 } from '../../lib/db';
 import { firebaseErrorMessage } from '../../lib/errors';
+import { formatEntryDate } from '../../lib/format';
+import { getPartnerDisplayName } from '../../lib/profile';
 import { COLORS } from '../../lib/theme';
-
-function formatDate(ts: any): string {
-  if (!ts) return '';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  const today = new Date();
-  const isToday = d.toDateString() === today.toDateString();
-  const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
-  return isToday ? `今日 ${time}` : `${d.getMonth() + 1}/${d.getDate()} ${time}`;
-}
 
 export default function HomeScreen() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
@@ -152,12 +145,12 @@ export default function HomeScreen() {
     });
   }
 
-  async function handleInterpret(entry: Entry) {
+  async function handleInterpret(entry: Entry, force = false) {
     if (!entry.id || !entry.memo) return;
     const cacheKey = favoriteKey(entry.uid, entry.id);
     setInterpretLoadingIds((prev) => new Set([...prev, cacheKey]));
     try {
-      const res = await aiInterpret(entry.memo, entry.mood, partnerName, entry.id, entry.uid);
+      const res = await aiInterpret(entry.memo, entry.mood, partnerName, entry.id, entry.uid, force);
       setInterpretationsCache((prev) => ({ ...prev, [cacheKey]: res.interpretations }));
     } catch (e: any) {
       Alert.alert('エラー', firebaseErrorMessage(e));
@@ -179,7 +172,7 @@ export default function HomeScreen() {
   }
 
   const isPaired = !!profile?.partnerUid;
-  const partnerName = partnerProfile?.displayName ?? partnerProfile?.email?.split('@')[0] ?? 'パートナー';
+  const partnerName = getPartnerDisplayName(partnerProfile);
 
   return (
     <View style={styles.container}>
@@ -192,7 +185,7 @@ export default function HomeScreen() {
           <View style={styles.connectionHeader}>
             {isPaired ? (
               <View style={styles.connectionPill}>
-                <Heart size={14} color="#E58B8B" weight="fill" />
+                <Heart size={14} color={COLORS.partner} weight="fill" />
                 <Text style={styles.connectionText}>{partnerName} と繋がっています</Text>
               </View>
             ) : (
@@ -205,9 +198,9 @@ export default function HomeScreen() {
               onPress={() => router.push('/(app)/favorites')}
               activeOpacity={0.7}
             >
-              <Star size={14} color="#7B9E87" weight="fill" />
+              <Star size={14} color={COLORS.primary} weight="fill" />
               <Text style={styles.favoriteShortcutText}>お気に入り</Text>
-              <ArrowRight size={13} color="#7B9E87" weight="bold" />
+              <ArrowRight size={13} color={COLORS.primary} weight="bold" />
             </TouchableOpacity>
           </View>
         }
@@ -230,14 +223,27 @@ export default function HomeScreen() {
           ) : !isOwn && item.memo ? (
             <View style={styles.interpretArea}>
               {cachedInterps ? (
-                <View style={styles.interpretResult}>
-                  {cachedInterps.map((interp, i) => (
-                    <View key={i} style={styles.interpretItem}>
-                      <Text style={styles.interpretBullet}>·</Text>
-                      <Text style={styles.interpretText}>{interp}</Text>
-                    </View>
-                  ))}
-                </View>
+                <>
+                  <View style={styles.interpretResult}>
+                    {cachedInterps.map((interp, i) => (
+                      <View key={i} style={styles.interpretItem}>
+                        <Text style={styles.interpretBullet}>·</Text>
+                        <Text style={styles.interpretText}>{interp}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <TouchableOpacity
+                    style={styles.reInterpretButton}
+                    onPress={() => handleInterpret(item, true)}
+                    disabled={isInterpreting}
+                  >
+                    {isInterpreting ? (
+                      <ActivityIndicator color={COLORS.ai} size="small" />
+                    ) : (
+                      <Text style={styles.reInterpretButtonText}>もう一度読み解く</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
               ) : (
                 <TouchableOpacity
                   style={styles.interpretButton}
@@ -245,10 +251,10 @@ export default function HomeScreen() {
                   disabled={isInterpreting}
                 >
                   {isInterpreting ? (
-                    <ActivityIndicator color="#7C5BB7" size="small" />
+                    <ActivityIndicator color={COLORS.ai} size="small" />
                   ) : (
                     <>
-                      <Sparkle size={13} color="#7C5BB7" weight="fill" />
+                      <Sparkle size={13} color={COLORS.ai} weight="fill" />
                       <Text style={styles.interpretButtonText}>気持ちを読み解く</Text>
                     </>
                   )}
@@ -263,7 +269,7 @@ export default function HomeScreen() {
                 authorName={authorName}
                 isOwn={isOwn}
                 isFavorite={isFavorite}
-                timeLabel={formatDate(item.createdAt)}
+                timeLabel={formatEntryDate(item.createdAt)}
                 onPressActions={isOwn ? () => showActions(item) : undefined}
                 onToggleFavorite={() => handleToggleFavorite(item)}
                 footer={footer}
@@ -366,4 +372,14 @@ const styles = StyleSheet.create({
   interpretItem: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
   interpretBullet: { fontSize: 13, color: COLORS.ai, lineHeight: 20, fontWeight: '700' },
   interpretText: { flex: 1, fontSize: 13, color: COLORS.textBody, lineHeight: 20 },
+  reInterpretButton: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.aiBorderSoft,
+  },
+  reInterpretButtonText: { fontSize: 11, color: COLORS.ai, fontWeight: '600' },
 });

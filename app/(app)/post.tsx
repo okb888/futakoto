@@ -16,7 +16,8 @@ import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { ArrowCounterClockwise, CalendarBlank, Clock, Users, Lock, Sparkle } from 'phosphor-react-native';
 import { TimePickerSheet } from '../../components/TimePickerSheet';
 import { useAuth } from '../../lib/auth';
-import { addEntry, getEntry, getUserProfile, updateEntry, Visibility } from '../../lib/db';
+import { addEntry, getEntry, getUserProfile, updateEntry, updateLastVisibility, Visibility } from '../../lib/db';
+import { getPartnerDisplayName } from '../../lib/profile';
 import { aiRewrite, RewriteResult } from '../../lib/ai';
 import { MOODS } from '../../lib/mood';
 import { firebaseErrorMessage } from '../../lib/errors';
@@ -113,12 +114,16 @@ export default function PostScreen() {
     if (!user) return;
     (async () => {
       const p = await getUserProfile(user.uid);
+      // 新規投稿時のみ、直前に選んだ共有範囲を初期値に反映
+      if (!isEditing && p?.lastVisibility) {
+        setVisibility(p.lastVisibility);
+      }
       if (p?.partnerUid) {
         const pp = await getUserProfile(p.partnerUid);
-        if (pp) setPartnerName(pp.displayName ?? pp.email?.split('@')[0] ?? 'パートナー');
+        if (pp) setPartnerName(getPartnerDisplayName(pp));
       }
     })();
-  }, [user]);
+  }, [user, isEditing]);
 
   async function handleSave() {
     if (!user || mood === null) {
@@ -135,6 +140,8 @@ export default function PostScreen() {
         await updateEntry(user.uid, entryId, mood, memo, visibility, recordDate);
       } else {
         await addEntry(user.uid, mood, memo, visibility, recordDate, sourceConsultationSessionId);
+        // 新規投稿時のみ、選んだ共有範囲を「次回のデフォルト」として保存
+        updateLastVisibility(user.uid, visibility).catch(() => {});
       }
       router.back();
     } catch (e: any) {
@@ -222,7 +229,7 @@ export default function PostScreen() {
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         {entryLoading ? (
           <View style={styles.entryLoading}>
-            <ActivityIndicator color="#7B9E87" />
+            <ActivityIndicator color={COLORS.primary} />
             <Text style={styles.entryLoadingText}>投稿を読み込んでいます</Text>
           </View>
         ) : null}
@@ -314,7 +321,7 @@ export default function PostScreen() {
             onPress={handleAiRewrite}
             disabled={aiLoading}
           >
-            <Sparkle size={14} color="#7C5BB7" weight="fill" />
+            <Sparkle size={14} color={COLORS.ai} weight="fill" />
             <Text style={styles.aiButtonText}>AIで整える</Text>
           </TouchableOpacity>
         </View>
@@ -331,7 +338,7 @@ export default function PostScreen() {
 
         {previousMemo ? (
           <TouchableOpacity style={styles.undoButton} onPress={restorePreviousMemo}>
-            <ArrowCounterClockwise size={14} color="#7B9E87" />
+            <ArrowCounterClockwise size={14} color={COLORS.primary} />
             <Text style={styles.undoButtonText}>置き換える前の文章に戻す</Text>
           </TouchableOpacity>
         ) : null}
@@ -340,7 +347,7 @@ export default function PostScreen() {
           <View style={styles.aiSuggestionSection}>
             <View style={styles.aiSuggestionHeader}>
               <View style={styles.modalTitleRow}>
-                <Sparkle size={16} color="#7C5BB7" weight="fill" />
+                <Sparkle size={16} color={COLORS.ai} weight="fill" />
                 <Text style={styles.aiSuggestionTitle}>AIの提案</Text>
               </View>
               <Text style={styles.aiSuggestionSub}>元の文章と見比べて選べます</Text>
@@ -348,7 +355,7 @@ export default function PostScreen() {
 
             {aiLoading ? (
               <View style={styles.inlineLoading}>
-                <ActivityIndicator color="#7B9E87" />
+                <ActivityIndicator color={COLORS.primary} />
                 <Text style={styles.modalLoadingText}>AIが言葉を整えています...</Text>
               </View>
             ) : aiResult ? (

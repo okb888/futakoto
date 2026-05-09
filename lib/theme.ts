@@ -30,4 +30,7 @@ export const COLORS = {
   errorBg: '#FFF5F5',
   errorBorder: '#FDDADA',
   errorText: '#B25C5C',
+  warningBg: '#FFFBEB',
+  warningBorder: '#F5D67A',
+  warningText: '#7A5C00',
 } as const;

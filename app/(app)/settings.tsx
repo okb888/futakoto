@@ -436,7 +436,7 @@ export default function SettingsScreen() {
         disabled={!profile?.inviteCode || regeneratingCode}
       >
         {regeneratingCode ? (
-          <ActivityIndicator color="#7B9E87" size="small" />
+          <ActivityIndicator color={COLORS.primary} size="small" />
         ) : (
           <Text style={styles.regenerateButtonText}>コードを作り直す</Text>
         )}
@@ -445,7 +445,7 @@ export default function SettingsScreen() {
       <Text style={styles.sectionTitle}>パートナー</Text>
       {profile?.partnerUid ? (
         <View style={styles.pairedBox}>
-          <Heart size={24} color="#E58B8B" weight="fill" />
+          <Heart size={24} color={COLORS.partner} weight="fill" />
           <View style={styles.pairedInfo}>
             <Text style={styles.pairedLabel}>連携中</Text>
             <Text style={styles.pairedEmail}>
@@ -509,7 +509,7 @@ export default function SettingsScreen() {
       <Text style={styles.sectionTitle}>AI利用量</Text>
       <View style={styles.aiUsageBox}>
         <View style={styles.notificationIconBox}>
-          <Sparkle size={22} color="#7C5BB7" weight="fill" />
+          <Sparkle size={22} color={COLORS.ai} weight="fill" />
         </View>
         <View style={styles.aiUsageContent}>
           <View style={styles.aiUsageHeader}>
@@ -541,7 +541,7 @@ export default function SettingsScreen() {
       <View style={[styles.notificationBox, styles.notificationBoxStack]}>
         <View style={styles.notificationHeaderRow}>
           <View style={styles.notificationIconBox}>
-            <Bell size={22} color="#7B9E87" weight="fill" />
+            <Bell size={22} color={COLORS.primary} weight="fill" />
           </View>
           <View style={styles.notificationContent}>
             <Text style={styles.notificationTitle}>毎日の記録リマインダー</Text>
@@ -562,7 +562,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.reminderTimeLabelRow}>
             <View style={styles.reminderTimeIcon}>
-              <Clock size={14} color="#7B9E87" weight="bold" />
+              <Clock size={14} color={COLORS.primary} weight="bold" />
             </View>
             <View>
               <Text style={styles.reminderTimeLabel}>リマインダー時刻</Text>
@@ -581,7 +581,7 @@ export default function SettingsScreen() {
       </View>
       <View style={styles.notificationBox}>
         <View style={styles.notificationIconBox}>
-          <Heart size={22} color="#E58B8B" weight="fill" />
+          <Heart size={22} color={COLORS.partner} weight="fill" />
         </View>
         <View style={styles.notificationContent}>
           <Text style={styles.notificationTitle}>相手の共有投稿</Text>
@@ -617,7 +617,7 @@ export default function SettingsScreen() {
       )}
       {user?.providerData[0]?.providerId === 'password' ? (
         <TouchableOpacity style={styles.accountActionButton} onPress={handleSendPasswordReset}>
-          <EnvelopeSimple size={17} color="#7B9E87" weight="bold" />
+          <EnvelopeSimple size={17} color={COLORS.primary} weight="bold" />
           <Text style={styles.accountActionText}>パスワード再設定メールを送る</Text>
         </TouchableOpacity>
       ) : null}
@@ -627,9 +627,9 @@ export default function SettingsScreen() {
         disabled={exporting}
       >
         {exporting ? (
-          <ActivityIndicator color="#7B9E87" size="small" />
+          <ActivityIndicator color={COLORS.primary} size="small" />
         ) : (
-          <DownloadSimple size={17} color="#7B9E87" weight="bold" />
+          <DownloadSimple size={17} color={COLORS.primary} weight="bold" />
         )}
         <Text style={styles.accountActionText}>データを書き出す</Text>
       </TouchableOpacity>
@@ -1008,15 +1008,15 @@ const styles = StyleSheet.create({
   legalLinkText: { fontSize: 12, color: COLORS.textMuted, textDecorationLine: 'underline' },
   legalSep: { fontSize: 12, color: COLORS.disabled },
   verificationBanner: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: COLORS.warningBg,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#F5D67A',
+    borderColor: COLORS.warningBorder,
     padding: 12,
     marginBottom: 8,
     gap: 8,
   },
-  verificationBannerText: { fontSize: 13, color: '#7A5C00' },
+  verificationBannerText: { fontSize: 13, color: COLORS.warningText },
   verificationResendButton: {
     alignSelf: 'flex-start',
     backgroundColor: COLORS.primarySoft,

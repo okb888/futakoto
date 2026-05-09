@@ -24,13 +24,9 @@ import {
   UserProfile,
 } from '../../lib/db';
 import { firebaseErrorMessage } from '../../lib/errors';
+import { formatShortDate } from '../../lib/format';
+import { getPartnerDisplayName } from '../../lib/profile';
 import { COLORS } from '../../lib/theme';
-
-function formatDate(ts: any): string {
-  if (!ts) return '';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
 
 export default function FavoritesScreen() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
@@ -92,12 +88,12 @@ export default function FavoritesScreen() {
     });
   }
 
-  const partnerName = partnerProfile?.displayName ?? partnerProfile?.email?.split('@')[0] ?? 'パートナー';
+  const partnerName = getPartnerDisplayName(partnerProfile);
 
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color="#7B9E87" />
+        <ActivityIndicator color={COLORS.primary} />
       </View>
     );
   }
@@ -109,7 +105,7 @@ export default function FavoritesScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <View style={styles.header}>
-        <Star size={18} color="#7B9E87" weight="fill" />
+        <Star size={18} color={COLORS.primary} weight="fill" />
         <Text style={styles.title}>お気に入り</Text>
       </View>
 
@@ -141,7 +137,7 @@ export default function FavoritesScreen() {
               authorName={isOwn ? '自分' : partnerName}
               isOwn={isOwn}
               isFavorite
-              timeLabel={formatDate(entry.createdAt)}
+              timeLabel={formatShortDate(entry.createdAt)}
               onToggleFavorite={() => handleRemoveFavorite(entry)}
               footer={footer}
             />

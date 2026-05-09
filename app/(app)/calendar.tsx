@@ -32,6 +32,8 @@ import {
   UserProfile,
 } from '../../lib/db';
 import { firebaseErrorMessage } from '../../lib/errors';
+import { dateKey, formatTime, sortMillis, todayKey } from '../../lib/format';
+import { getPartnerDisplayName } from '../../lib/profile';
 import { COLORS } from '../../lib/theme';
 
 LocaleConfig.locales['ja'] = {
@@ -45,38 +47,12 @@ LocaleConfig.defaultLocale = 'ja';
 type FilterType = 'all' | 'me' | 'partner' | 'favorite' | 'consultation';
 type SortOrder = 'desc' | 'asc';
 
-function dateKey(ts: any): string {
-  if (!ts) return '';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function todayKey(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function formatTime(ts: any): string {
-  if (!ts) return '';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function sortMillis(ts: any): number {
-  if (!ts) return 0;
-  if (typeof ts.seconds === 'number') {
-    return ts.seconds * 1000 + Math.floor((ts.nanoseconds ?? 0) / 1000000);
-  }
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.getTime();
-}
-
 function latestByDate(entries: Entry[]): Record<string, Entry> {
   const map: Record<string, Entry> = {};
   entries.forEach((entry) => {
     const key = dateKey(entry.createdAt);
     if (!key) return;
-    if (!map[key] || sortMillis(entry.createdAt) >= sortMillis(map[key].createdAt)) {
+    if (!map[key] || sortMillis(entry.createdAt) > sortMillis(map[key].createdAt)) {
       map[key] = entry;
     }
   });
@@ -270,7 +246,7 @@ export default function CalendarScreen() {
     markedDates[selected] = { ...(markedDates[selected] ?? {}), selected: true, selectedColor: COLORS.primary };
   }
 
-  const partnerName = partnerProfile?.displayName ?? partnerProfile?.email?.split('@')[0] ?? 'パートナー';
+  const partnerName = getPartnerDisplayName(partnerProfile);
   const selectedDayRecords = useMemo(() => [
     ...(myByDate[selected] ?? []).map((entry) => ({
       kind: 'entry' as const,
@@ -278,7 +254,7 @@ export default function CalendarScreen() {
       authorType: 'me' as const,
       authorName: '自分',
       isFavorite: entry.id ? favoriteIds.has(favoriteKey(entry.uid, entry.id)) : false,
-      sortSeconds: entry.createdAt?.seconds ?? 0,
+      sortMs: sortMillis(entry.createdAt),
     })),
     ...(partnerByDate[selected] ?? []).map((entry) => ({
       kind: 'entry' as const,
@@ -286,12 +262,12 @@ export default function CalendarScreen() {
       authorType: 'partner' as const,
       authorName: partnerName,
       isFavorite: entry.id ? favoriteIds.has(favoriteKey(entry.uid, entry.id)) : false,
-      sortSeconds: entry.createdAt?.seconds ?? 0,
+      sortMs: sortMillis(entry.createdAt),
     })),
     ...(consultationsByDate[selected] ?? []).map((consultation) => ({
       kind: 'consultation' as const,
       consultation,
-      sortSeconds: consultation.createdAt?.seconds ?? 0,
+      sortMs: sortMillis(consultation.createdAt),
     })),
   ]
     .filter((record) => {
@@ -303,7 +279,7 @@ export default function CalendarScreen() {
       if (filter === 'favorite') return record.isFavorite;
       return true;
     })
-    .sort((a, b) => sortOrder === 'desc' ? b.sortSeconds - a.sortSeconds : a.sortSeconds - b.sortSeconds), [
+    .sort((a, b) => sortOrder === 'desc' ? b.sortMs - a.sortMs : a.sortMs - b.sortMs), [
     consultationsByDate,
     favoriteIds,
     filter,
@@ -416,7 +392,7 @@ export default function CalendarScreen() {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color="#7B9E87" />
+        <ActivityIndicator color={COLORS.primary} />
       </View>
     );
   }
@@ -499,10 +475,10 @@ export default function CalendarScreen() {
           disabled={aiSummaryLoading}
         >
           {aiSummaryLoading ? (
-            <ActivityIndicator color="#7C5BB7" size="small" />
+            <ActivityIndicator color={COLORS.ai} size="small" />
           ) : (
             <>
-              <Sparkle size={14} color="#7C5BB7" weight="fill" />
+              <Sparkle size={14} color={COLORS.ai} weight="fill" />
               <Text style={styles.summaryButtonText}>
                 {aiSummaryCache[`${currentMonth}-${summaryTarget}`] ? 'もう一度見る' : '今月をAI要約'}
               </Text>
@@ -518,7 +494,7 @@ export default function CalendarScreen() {
             onPress={() => setSummaryExpanded(!summaryExpanded)}
             activeOpacity={0.7}
           >
-            <Sparkle size={13} color="#7C5BB7" weight="fill" />
+            <Sparkle size={13} color={COLORS.ai} weight="fill" />
             <Text style={styles.summaryCardTitle}>
               {currentMonth.replace(/^(\d{4})-(\d{2})$/, '$1年$2月')}の記録
             </Text>
@@ -587,7 +563,7 @@ export default function CalendarScreen() {
                 style={[styles.card, styles.consultationCard]}
               >
                 <View style={styles.cardTop}>
-                  <Sparkle size={22} color="#7C5BB7" weight="fill" />
+                  <Sparkle size={22} color={COLORS.ai} weight="fill" />
                   <View style={styles.cardMeta}>
                     <Text style={styles.cardAuthor}>相談 / 自分だけ</Text>
                     <Text style={styles.cardTime}>{formatTime(session.createdAt)}</Text>
@@ -682,7 +658,7 @@ const styles = StyleSheet.create({
   },
   dayText: { fontSize: 13, color: COLORS.text, fontWeight: '600' },
   dayTextDisabled: { color: COLORS.disabled },
-  dayTextSelected: { color: '#5F856B', fontWeight: '700' },
+  dayTextSelected: { color: COLORS.primaryDeep, fontWeight: '700' },
   partnerStrip: {
     position: 'absolute',
     bottom: 0,

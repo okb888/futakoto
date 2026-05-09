@@ -55,9 +55,9 @@ export function EntryCard({
               </View>
               <View style={[styles.visibilityBadge, entry.visibility === 'private' && styles.privateBadge]}>
                 {entry.visibility === 'private' ? (
-                  <Lock size={11} color="#888" weight="regular" />
+                  <Lock size={11} color={COLORS.textMuted} weight="regular" />
                 ) : (
-                  <Users size={11} color="#7B9E87" weight="regular" />
+                  <Users size={11} color={COLORS.primary} weight="regular" />
                 )}
                 <Text
                   style={[
@@ -90,7 +90,7 @@ export function EntryCard({
             </TouchableOpacity>
           ) : isFavorite ? (
             <View style={styles.favoriteStatic}>
-              <Star size={16} color="#7B9E87" weight="fill" />
+              <Star size={16} color={COLORS.primary} weight="fill" />
             </View>
           ) : null}
         </View>
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   ownBadge: { backgroundColor: COLORS.primarySoft },
   partnerBadge: { backgroundColor: COLORS.partnerBgSoft },
   authorBadgeText: { fontSize: 12, fontWeight: '700' },
-  ownBadgeText: { color: '#5F856B' },
+  ownBadgeText: { color: COLORS.primaryDeep },
   partnerBadgeText: { color: COLORS.partnerText },
   visibilityBadge: {
     flexDirection: 'row',

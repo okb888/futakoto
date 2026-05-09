@@ -26,6 +26,8 @@ import {
   getUserProfile,
 } from '../../lib/db';
 import { firebaseErrorMessage } from '../../lib/errors';
+import { formatShortDate } from '../../lib/format';
+import { getPartnerDisplayName } from '../../lib/profile';
 import { COLORS } from '../../lib/theme';
 
 const MAX_TURNS = 10;
@@ -39,12 +41,6 @@ type ConversationTurn = {
   legacyMessageDraft?: string;
   collapsed: boolean;
 };
-
-function formatDate(ts: any): string {
-  if (!ts) return '';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
 
 export default function ConsultScreen() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
@@ -61,6 +57,8 @@ export default function ConsultScreen() {
   const [recentSessions, setRecentSessions] = useState<ConsultationSession[]>([]);
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [togglingFavorite, setTogglingFavorite] = useState(false);
+
+  const [readyForDraft, setReadyForDraft] = useState(false);
 
   // 文案生成（新フロー）
   const [optionsModalOpen, setOptionsModalOpen] = useState(false);
@@ -81,7 +79,7 @@ export default function ConsultScreen() {
     if (profile.partnerUid) {
       const partner = await getUserProfile(profile.partnerUid);
       if (isCancelled()) return;
-      if (partner) setPartnerName(partner.displayName ?? partner.email?.split('@')[0] ?? 'パートナー');
+      if (partner) setPartnerName(getPartnerDisplayName(partner));
     }
     let sessions = await getRecentConsultationSessions(user.uid, 10);
     if (focusSessionId && !sessions.some((session) => session.id === focusSessionId)) {
@@ -109,6 +107,7 @@ export default function ConsultScreen() {
     setDraftLoading(false);
     setDraftIntent(null);
     setGeneratedDraft(null);
+    setReadyForDraft(false);
   }
 
   async function handleConsult() {
@@ -146,8 +145,17 @@ export default function ConsultScreen() {
       setGeneratedDraft(null);
       setDraftIntent(null);
       setDraftOptions(null);
+      if (nextResult.readyForDraft) setReadyForDraft(true);
     } catch (e: any) {
-      Alert.alert('エラー', firebaseErrorMessage(e));
+      if ((e as any)?.details?.type === 'crisis') {
+        Alert.alert(
+          '話を聞いてもらえる場所があります',
+          'いまとても辛い状況かもしれません。\n\nよりそいホットライン\n0120-279-338（24時間・無料）\n\nかかりつけの人や信頼できる人に話すことも一つの方法です。',
+          [{ text: '閉じる' }]
+        );
+      } else {
+        Alert.alert('エラー', firebaseErrorMessage(e));
+      }
     } finally {
       setLoading(false);
     }
@@ -340,7 +348,7 @@ export default function ConsultScreen() {
                           style={styles.usePostButton}
                           onPress={() => useAsPost(turn.legacyMessageDraft!, sessionId ?? undefined)}
                         >
-                          <ArrowRight size={13} color="#7B9E87" weight="bold" />
+                          <ArrowRight size={13} color={COLORS.primary} weight="bold" />
                           <Text style={styles.usePostButtonText}>投稿に使う</Text>
                         </TouchableOpacity>
                       </View>
@@ -387,20 +395,27 @@ export default function ConsultScreen() {
                 </>
               ) : draftLoading ? (
                 <View style={styles.inlineLoading}>
-                  <ActivityIndicator color="#7B9E87" />
+                  <ActivityIndicator color={COLORS.primary} />
                   <Text style={styles.loadingText}>{partnerName}に伝える文を作っています...</Text>
                 </View>
               ) : sessionId ? (
-                <TouchableOpacity
-                  style={styles.makeDraftButton}
-                  onPress={openDraftOptions}
-                  disabled={draftOptionsLoading}
-                >
-                  <Sparkle size={14} color="#7C5BB7" weight="fill" />
-                  <Text style={styles.makeDraftButtonText}>
-                    この会話を{partnerName}に伝える文にする
-                  </Text>
-                </TouchableOpacity>
+                <>
+                  {readyForDraft && (
+                    <Text style={styles.readyForDraftHint}>
+                      気持ちが整理できてきました。メッセージにしてみませんか？
+                    </Text>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.makeDraftButton, readyForDraft && styles.makeDraftButtonReady]}
+                    onPress={openDraftOptions}
+                    disabled={draftOptionsLoading}
+                  >
+                    <Sparkle size={14} color={COLORS.ai} weight="fill" />
+                    <Text style={styles.makeDraftButtonText}>
+                      この会話を{partnerName}に伝える文にする
+                    </Text>
+                  </TouchableOpacity>
+                </>
               ) : null}
             </View>
 
@@ -432,7 +447,7 @@ export default function ConsultScreen() {
         {/* 入力エリアまたは上限メッセージ */}
         {conversation.length >= MAX_TURNS ? (
           <View style={styles.limitCard}>
-            <Sparkle size={16} color="#7C5BB7" weight="fill" />
+            <Sparkle size={16} color={COLORS.ai} weight="fill" />
             <Text style={styles.limitText}>
               十分に話し合えました。会話をお気に入りに保存して、気持ちをふたりの記録に残しましょう。
             </Text>
@@ -465,10 +480,10 @@ export default function ConsultScreen() {
               disabled={!text.trim() || loading}
             >
               {loading ? (
-                <ActivityIndicator color="#7C5BB7" />
+                <ActivityIndicator color={COLORS.ai} />
               ) : (
                 <>
-                  <Sparkle size={16} color="#7C5BB7" weight="fill" />
+                  <Sparkle size={16} color={COLORS.ai} weight="fill" />
                   <Text style={styles.aiButtonText}>
                     {conversation.length === 0 ? 'AIと壁打ちする' : 'さらに深める'}
                   </Text>
@@ -477,7 +492,7 @@ export default function ConsultScreen() {
             </TouchableOpacity>
             {loading && (
               <View style={styles.loadingCard}>
-                <ActivityIndicator color="#7B9E87" />
+                <ActivityIndicator color={COLORS.primary} />
                 <Text style={styles.loadingText}>気持ちを整理しています...</Text>
               </View>
             )}
@@ -502,7 +517,7 @@ export default function ConsultScreen() {
                     activeOpacity={0.7}
                   >
                     <View style={styles.sessionHeaderLeft}>
-                      <Text style={styles.sessionDate}>{formatDate(session.createdAt)}</Text>
+                      <Text style={styles.sessionDate}>{formatShortDate(session.createdAt)}</Text>
                       <Text style={styles.sessionPreview} numberOfLines={1}>{firstInput}</Text>
                     </View>
                     <View style={styles.sessionHeaderRight}>
@@ -550,7 +565,7 @@ export default function ConsultScreen() {
                                 style={styles.usePostButton}
                                 onPress={() => useAsPost(turn.messageDraft!, session.id)}
                               >
-                                <ArrowRight size={13} color="#7B9E87" weight="bold" />
+                                <ArrowRight size={13} color={COLORS.primary} weight="bold" />
                                 <Text style={styles.usePostButtonText}>投稿に使う</Text>
                               </TouchableOpacity>
                             </View>
@@ -567,7 +582,7 @@ export default function ConsultScreen() {
                             style={styles.usePostButton}
                             onPress={() => useAsPost(session.lastDraft!.messageDraft, session.id)}
                           >
-                            <ArrowRight size={13} color="#7B9E87" weight="bold" />
+                            <ArrowRight size={13} color={COLORS.primary} weight="bold" />
                             <Text style={styles.usePostButtonText}>投稿に使う</Text>
                           </TouchableOpacity>
                         </View>
@@ -597,7 +612,7 @@ export default function ConsultScreen() {
           <View style={styles.optionsSheet}>
             <View style={styles.optionsHeader}>
               <View style={styles.modalTitleRow}>
-                <Sparkle size={16} color="#7C5BB7" weight="fill" />
+                <Sparkle size={16} color={COLORS.ai} weight="fill" />
                 <Text style={styles.optionsTitle}>伝え方を選ぶ</Text>
               </View>
               <TouchableOpacity onPress={() => setOptionsModalOpen(false)} hitSlop={8}>
@@ -610,7 +625,7 @@ export default function ConsultScreen() {
 
             {draftOptionsLoading ? (
               <View style={styles.optionsLoading}>
-                <ActivityIndicator color="#7B9E87" />
+                <ActivityIndicator color={COLORS.primary} />
                 <Text style={styles.loadingText}>選択肢を考えています...</Text>
               </View>
             ) : (
@@ -696,6 +711,7 @@ const styles = StyleSheet.create({
 
   // 文案セクション
   draftSection: { gap: 10, marginTop: 4 },
+  readyForDraftHint: { fontSize: 12, color: COLORS.ai, lineHeight: 17, marginBottom: 2 },
   makeDraftButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -705,6 +721,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
+  },
+  makeDraftButtonReady: {
+    borderWidth: 1.5,
+    borderColor: COLORS.ai,
   },
   makeDraftButtonText: { fontSize: 13, color: COLORS.ai, fontWeight: '700' },
   draftActions: { flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' },

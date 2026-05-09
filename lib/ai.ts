@@ -21,6 +21,7 @@ export interface SummaryResult {
 
 export interface ConsultResult {
   reflection: string;
+  readyForDraft?: boolean;
 }
 
 export interface DraftOption {
@@ -110,8 +111,9 @@ export async function aiInterpret(
   partnerName?: string,
   entryId?: string,
   entryOwnerId?: string,
+  force?: boolean,
 ): Promise<InterpretResult> {
-  return call<InterpretResult>('aiInterpret', { text, mood, partnerName, entryId, entryOwnerId });
+  return call<InterpretResult>('aiInterpret', { text, mood, partnerName, entryId, entryOwnerId, force });
 }
 
 export async function aiSummary(
