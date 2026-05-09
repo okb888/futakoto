@@ -18,6 +18,7 @@ export const app = initializeApp(firebaseConfig);
 export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(ReactNativeAsyncStorage),
 });
+auth.languageCode = 'ja';
 
 export const db = getFirestore(app);
 export const functions = getFunctions(app, 'asia-northeast1');
