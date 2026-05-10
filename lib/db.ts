@@ -72,6 +72,8 @@ export interface FavoriteEntryWithEntry extends FavoriteEntry {
   entry: Entry | null;
 }
 
+export type AiPersona = 'soft' | 'friendly' | 'logical';
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -80,6 +82,7 @@ export interface UserProfile {
   partnerUid?: string;
   notificationSettings?: NotificationSettings;
   communicationStyle?: string;
+  aiPersona?: AiPersona;
   aiCreditsMonth?: string;
   createdAt: any;
   aiCreditsUsed?: number;
@@ -111,6 +114,10 @@ export async function updateDisplayName(uid: string, displayName: string): Promi
 
 export async function updateCommunicationStyle(uid: string, style: string): Promise<void> {
   await updateDoc(doc(db, 'users', uid), { communicationStyle: style });
+}
+
+export async function updateAiPersona(uid: string, persona: AiPersona): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), { aiPersona: persona });
 }
 
 export async function updateLastVisibility(uid: string, visibility: Visibility): Promise<void> {

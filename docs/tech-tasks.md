@@ -74,3 +74,4 @@
 | 日付 | タスク |
 |---|---|
 | 2026-05-09 | functions/src/index.ts を6ファイルに分割 |
+| 2026-05-10 | Gemini APIキーを有料→無料枠（Google AI Studio）に切り替え。`firebase functions:secrets:set GEMINI_API_KEY --project futakoto` で更新・動作確認済み。モデル（gemini-2.5-flash）・品質に変化なし、レート制限のみ異なる（無料: 10 RPM / 500 RPD） |

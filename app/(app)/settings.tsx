@@ -31,6 +31,8 @@ import {
   updateDisplayName,
   updateNotificationSettings,
   updateCommunicationStyle,
+  updateAiPersona,
+  type AiPersona,
   type NotificationSettings,
 } from '../../lib/db';
 import { pairWithCode, unpairPartner, deleteAccount, regenerateInviteCode } from '../../lib/ai';
@@ -207,6 +209,12 @@ export default function SettingsScreen() {
     await updateCommunicationStyle(user.uid, styleInput.trim());
     setStyleSaved(true);
     setTimeout(() => setStyleSaved(false), 2000);
+  }
+
+  async function handleSelectPersona(persona: AiPersona) {
+    if (!user) return;
+    setProfile(current => current ? { ...current, aiPersona: persona } : current);
+    await updateAiPersona(user.uid, persona);
   }
 
   async function handleSaveName() {
@@ -483,6 +491,34 @@ export default function SettingsScreen() {
           </View>
         </View>
       )}
+
+      <Text style={styles.sectionTitle}>壁打ちAIの話し方</Text>
+      <Text style={styles.hint}>壁打ち中のAIがどんなスタイルで話すかを選べます</Text>
+      {(
+        [
+          { key: 'soft', label: 'ソフト', desc: 'そっと聞く・問いかけは必要なときだけ' },
+          { key: 'friendly', label: 'フレンドリー', desc: 'タメ口で、気の置けない友人のように' },
+          { key: 'logical', label: 'ロジカル', desc: '感情と事実を分けて、状況を構造化する' },
+        ] as { key: AiPersona; label: string; desc: string }[]
+      ).map(({ key, label, desc }) => {
+        const selected = (profile?.aiPersona ?? 'soft') === key;
+        return (
+          <TouchableOpacity
+            key={key}
+            style={[styles.personaOption, selected && styles.personaOptionSelected]}
+            onPress={() => handleSelectPersona(key)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.personaRadio, selected && styles.personaRadioSelected]}>
+              {selected && <View style={styles.personaRadioDot} />}
+            </View>
+            <View style={styles.personaTextBlock}>
+              <Text style={[styles.personaLabel, selected && styles.personaLabelSelected]}>{label}</Text>
+              <Text style={styles.personaDesc}>{desc}</Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
 
       <Text style={styles.sectionTitle}>パートナーへの伝え方</Text>
       <Text style={styles.hint}>AIが文案を作るときの文体や雰囲気を指定できます（例: タメ口でやわらかく）</Text>
@@ -939,6 +975,45 @@ const styles = StyleSheet.create({
   pairButtonDisabled: { backgroundColor: COLORS.primaryDim },
   pairButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   styleCharCount: { fontSize: 11, color: COLORS.placeholder, textAlign: 'right', marginTop: 4 },
+  personaOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  personaOptionSelected: {
+    borderColor: COLORS.ai,
+    backgroundColor: COLORS.aiBg,
+  },
+  personaRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: COLORS.disabled,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  personaRadioSelected: {
+    borderColor: COLORS.ai,
+  },
+  personaRadioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.ai,
+  },
+  personaTextBlock: { flex: 1 },
+  personaLabel: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  personaLabelSelected: { color: COLORS.ai },
+  personaDesc: { fontSize: 12, color: COLORS.textMuted, marginTop: 2, lineHeight: 17 },
   divider: { height: 1, backgroundColor: COLORS.borderSoft, marginTop: 32, marginBottom: 8 },
   accountActionButton: {
     backgroundColor: '#fff',

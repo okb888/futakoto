@@ -50,7 +50,7 @@ export default function ConsultScreen() {
   const focusSessionId = typeof params.sessionId === 'string' ? params.sessionId : undefined;
   const [text, setText] = useState('');
   const [partnerName, setPartnerName] = useState('パートナー');
-  const [communicationStyle, setCommunicationStyle] = useState<string | undefined>(undefined);
+  const [aiPersona, setAiPersona] = useState<string | undefined>(undefined);
   const [conversation, setConversation] = useState<ConversationTurn[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -58,8 +58,6 @@ export default function ConsultScreen() {
   const [recentSessions, setRecentSessions] = useState<ConsultationSession[]>([]);
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [togglingFavorite, setTogglingFavorite] = useState(false);
-
-  const [readyForDraft, setReadyForDraft] = useState(false);
 
   // 文案生成（新フロー）
   const [optionsModalOpen, setOptionsModalOpen] = useState(false);
@@ -79,7 +77,7 @@ export default function ConsultScreen() {
     if (!user) return;
     const profile = authProfile ?? await refreshProfile();
     if (isCancelled() || !profile) return;
-    setCommunicationStyle(profile.communicationStyle ?? undefined);
+    setAiPersona(profile.aiPersona ?? 'soft');
     if (profile.partnerUid) {
       const partner = await getUserProfile(profile.partnerUid);
       if (isCancelled()) return;
@@ -112,7 +110,6 @@ export default function ConsultScreen() {
     setDraftLoading(false);
     setDraftIntent(null);
     setGeneratedDraft(null);
-    setReadyForDraft(false);
   }
 
   async function handleConsult() {
@@ -122,10 +119,10 @@ export default function ConsultScreen() {
     setLoading(true);
 
     try {
-      const nextResult = await aiConsult(currentInput, partnerName, sessionId, communicationStyle);
+      const nextResult = await aiConsult(currentInput, partnerName, sessionId, aiPersona);
       const sessionTurn = {
         input: currentInput,
-        reflection: nextResult.reflection,
+        reflection: nextResult.reply,
       };
 
       let activeSessionId = sessionId;
@@ -141,7 +138,7 @@ export default function ConsultScreen() {
         {
           id: Date.now().toString(),
           input: currentInput,
-          reflection: nextResult.reflection,
+          reflection: nextResult.reply,
           collapsed: false,
         },
       ]);
@@ -150,7 +147,6 @@ export default function ConsultScreen() {
       setGeneratedDraft(null);
       setDraftIntent(null);
       setDraftOptions(null);
-      if (nextResult.readyForDraft) setReadyForDraft(true);
     } catch (e: any) {
       if ((e as any)?.details?.type === 'crisis') {
         Alert.alert(
@@ -312,7 +308,7 @@ export default function ConsultScreen() {
     setDraftIntent(trimmed);
     setDraftLoading(true);
     try {
-      const res = await aiDraft(sessionId, trimmed, partnerName, communicationStyle);
+      const res = await aiDraft(sessionId, trimmed, partnerName);
       setGeneratedDraft(res.messageDraft);
     } catch (e: any) {
       Alert.alert('エラー', firebaseErrorMessage(e));
@@ -430,13 +426,8 @@ export default function ConsultScreen() {
                 </View>
               ) : sessionId ? (
                 <>
-                  {readyForDraft && (
-                    <Text style={styles.readyForDraftHint}>
-                      気持ちが整理できてきました。メッセージにしてみませんか？
-                    </Text>
-                  )}
                   <TouchableOpacity
-                    style={[styles.makeDraftButton, readyForDraft && styles.makeDraftButtonReady]}
+                    style={styles.makeDraftButton}
                     onPress={openDraftOptions}
                     disabled={draftOptionsLoading}
                   >
@@ -749,7 +740,6 @@ const styles = StyleSheet.create({
 
   // 文案セクション
   draftSection: { gap: 10, marginTop: 4 },
-  readyForDraftHint: { fontSize: 12, color: COLORS.ai, lineHeight: 17, marginBottom: 2 },
   makeDraftButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -759,10 +749,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
-  },
-  makeDraftButtonReady: {
-    borderWidth: 1.5,
-    borderColor: COLORS.ai,
   },
   makeDraftButtonText: { fontSize: 13, color: COLORS.ai, fontWeight: '700' },
   draftActions: { flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' },

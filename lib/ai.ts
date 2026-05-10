@@ -20,8 +20,7 @@ export interface SummaryResult {
 }
 
 export interface ConsultResult {
-  reflection: string;
-  readyForDraft?: boolean;
+  reply: string;
 }
 
 export interface DraftOption {
@@ -85,9 +84,9 @@ export async function aiConsult(
   text: string,
   partnerName?: string,
   sessionId?: string | null,
-  communicationStyle?: string
+  aiPersona?: string
 ): Promise<ConsultResult> {
-  return call<ConsultResult>('aiConsult', { text, partnerName, sessionId, communicationStyle });
+  return call<ConsultResult>('aiConsult', { text, partnerName, sessionId, aiPersona });
 }
 
 export async function aiDraftOptions(
