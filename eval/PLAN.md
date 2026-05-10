@@ -236,6 +236,8 @@ eval/
 
 ✅ **C案を `functions/src/index.ts` の `aiConsult` プロンプトに反映する**
 
-- [ ] `functions/src/index.ts` の `aiConsult` プロンプトをC案（`eval/prompt-c.ts`）に差し替え
-- [ ] Cloud Functionsをデプロイして本番検証
-- [ ] messageDraft廃止・aiDraftOptions/aiDraft新関数の設計（docs/2026-05-08-review-fix-plan-v2.md参照）
+- [x] `functions/src/index.ts` の `aiConsult` プロンプトをC案に差し替え → 2026-05-09 V3-FN-1で完了
+- [x] Cloud Functionsをデプロイして本番検証 → 2026-05-09 デプロイ済み
+- [x] messageDraft廃止・aiDraftOptions/aiDraft新関数の設計 → 2026-05-09 V3-FN-1で完了
+
+**eval フェーズ全完了（2026-05-09）**

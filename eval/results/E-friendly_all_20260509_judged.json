@@ -1,0 +1,913 @@
+{
+  "summary": {
+    "avgTotal": 8.24,
+    "avgReception": 2.6,
+    "avgQuestion": 2.64,
+    "avgNatural": 3,
+    "goodCount": 45,
+    "poorCount": 0,
+    "total": 50
+  },
+  "results": [
+    {
+      "variant": "E-friendly",
+      "caseId": "case-01",
+      "sampleId": "c01-s01",
+      "caseLabel": "短文・曖昧",
+      "input": "なんかしんどい",
+      "reflection": "しんどいんだね。どんなこと重なってる？",
+      "meta": {
+        "reflectionLength": 19,
+        "timestamp": "2026-05-09T12:55:31.821Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "共感的な受容が素晴らしく、自然な温かさで安心感を与える問いかけです。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-01",
+      "sampleId": "c01-s02",
+      "caseLabel": "短文・曖昧",
+      "input": "なんか最近モヤモヤしてる",
+      "reflection": "なんかモヤモヤしてるんだね。何にモヤモヤしてるのかな？",
+      "meta": {
+        "reflectionLength": 27,
+        "timestamp": "2026-05-09T12:55:35.790Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "曖昧な感情を的確に受容し、核心を問う自然な問いかけ。非常に良い。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-01",
+      "sampleId": "c01-s03",
+      "caseLabel": "短文・曖昧",
+      "input": "疲れた",
+      "reflection": "疲れてるんだね。どんなこと重なってる？",
+      "meta": {
+        "reflectionLength": 19,
+        "timestamp": "2026-05-09T12:55:37.825Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを適切に受け止め、自然な問いかけで寄り添えている。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-01",
+      "sampleId": "c01-s04",
+      "caseLabel": "短文・曖昧",
+      "input": "うまくいかない",
+      "reflection": "うまくいかないんだね。どんなことがうまくいかないと感じてる？",
+      "meta": {
+        "reflectionLength": 30,
+        "timestamp": "2026-05-09T12:55:41.744Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの言葉を温かく受け止め、具体化を促す良い問いかけです。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-01",
+      "sampleId": "c01-s05",
+      "caseLabel": "短文・曖昧",
+      "input": "なんか気持ちがついていかない",
+      "reflection": "なんか気持ちがついていかないんだね。どんな感じがしてるの？",
+      "meta": {
+        "reflectionLength": 29,
+        "timestamp": "2026-05-09T12:55:44.764Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの言葉をそのまま受け止め、さらに具体的な感情を引き出す良い問いかけです。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-02",
+      "sampleId": "c02-s01",
+      "caseLabel": "相手への不満（直接的）",
+      "input": "また皿洗いしてない。毎回言わないとやらないし、言ったら言ったで不機嫌になる。もう疲れた。",
+      "reflection": "毎回言わないと動かないのほんとしんどいよね。言ったら不機嫌になるのも、ほんと嫌だよね。もう疲れたって気持ち、ちゃんと聞こえてるよ。この状況で、一番引っかかってることって何かな？",
+      "meta": {
+        "reflectionLength": 88,
+        "timestamp": "2026-05-09T12:55:51.025Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "共感性が高く、一番引っかかっていることを問う問いかけも適切"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-02",
+      "sampleId": "c02-s02",
+      "caseLabel": "相手への不満（直接的）",
+      "input": "ゴミ出し今週も忘れてた。何回言っても変わらない。",
+      "reflection": "ゴミ出し今週も忘れられちゃったんだね。何回言っても変わらないって、ほんとそれしんどいよね。一番つらいのってどんなところ？",
+      "meta": {
+        "reflectionLength": 60,
+        "timestamp": "2026-05-09T12:55:56.805Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "自然な共感表現で感情の核心を問う問いかけが素晴らしい。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-02",
+      "sampleId": "c02-s03",
+      "caseLabel": "相手への不満（直接的）",
+      "input": "子どものお風呂、頼んでも「後で」って言ってそのまま寝てた。もう頼むのも嫌になってきた。",
+      "reflection": "「後で」って言って寝ちゃったんだね。頼んだのにね。もう頼むのも嫌になってきたって、その気持ちよくわかるよ。今回はどんなところが一番しんどかった？",
+      "meta": {
+        "reflectionLength": 72,
+        "timestamp": "2026-05-09T12:56:04.995Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちに寄り添い、核心を問う素晴らしい問いかけです。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-02",
+      "sampleId": "c02-s04",
+      "caseLabel": "相手への不満（直接的）",
+      "input": "仕事の愚痴は毎日聞くのに、私の話は「うん」だけで流される。",
+      "reflection": "相手の話は聞くのに自分の話はうんだけで流されるの、しんどいよね。それってどんな気持ちになる？",
+      "meta": {
+        "reflectionLength": 46,
+        "timestamp": "2026-05-09T12:56:09.470Z"
+      },
+      "scoreReception": 0,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 6,
+      "verdict": "ok",
+      "comment": "感情への問いかけは良いが、未記述の感情を明示的に読み込んでいる。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-02",
+      "sampleId": "c02-s05",
+      "caseLabel": "相手への不満（直接的）",
+      "input": "急に友達と飲みに行くって言い出して、夕飯どうするとか一切連絡なし。",
+      "reflection": "急に友達と飲みに行くって言い出して、夕飯の連絡もないの、それ困るよね。何が一番引っかかってる？",
+      "meta": {
+        "reflectionLength": 47,
+        "timestamp": "2026-05-09T12:56:14.144Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "状況への共感が伝わり、感情の核心を捉える問いかけが良い。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-03",
+      "sampleId": "c03-s01",
+      "caseLabel": "自己反省混じり",
+      "input": "自分も悪いとわかってるけど、毎回同じことで傷つく。",
+      "reflection": "自分も悪いのわかってるのに、毎回同じことで傷ついちゃうってしんどいね。一番つらいのって、どんなことかな？",
+      "meta": {
+        "reflectionLength": 52,
+        "timestamp": "2026-05-09T12:56:18.554Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの苦しみに寄り添い、核心を問う自然で温かい問いかけが良い。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-03",
+      "sampleId": "c03-s02",
+      "caseLabel": "自己反省混じり",
+      "input": "感情的に言いすぎたのは私も反省してる。でも、あの言い方はひどかったと思う。",
+      "reflection": "感情的に言いすぎたって反省してるんだね。でも、相手の言い方はひどかったって思ってるんだ。どんなところが特にひどかったと感じた？",
+      "meta": {
+        "reflectionLength": 63,
+        "timestamp": "2026-05-09T12:56:22.705Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの言葉を正確に受け止め、感情の核心に迫る問いかけが素晴らしいです"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-03",
+      "sampleId": "c03-s03",
+      "caseLabel": "自己反省混じり",
+      "input": "私が細かすぎるのかもしれない。でもやっぱり気になってしまう。",
+      "reflection": "自分が細かいのかなって思っちゃうんだね。でも、それでもやっぱり気になっちゃうんだね。どんなことが特に引っかかってる感じ？",
+      "meta": {
+        "reflectionLength": 60,
+        "timestamp": "2026-05-09T12:56:26.955Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを的確に受容し、次に繋がる優しい問いかけが良い。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-03",
+      "sampleId": "c03-s04",
+      "caseLabel": "自己反省混じり",
+      "input": "仕事で疲れてるのはわかってる。だから言えないでいる。でも限界に近い。",
+      "reflection": "もう限界に近いんだね、すごくしんどいよね。旦那さんが疲れてるからって、自分のこと言えないでいるんだもんね。本当は、どんなこと言いたいのかな？",
+      "meta": {
+        "reflectionLength": 70,
+        "timestamp": "2026-05-09T12:56:32.771Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの状況と感情を的確に受容し、言いたいことの核心を優しく問う点が素晴らしい。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-03",
+      "sampleId": "c03-s05",
+      "caseLabel": "自己反省混じり",
+      "input": "自分が求めすぎなのかなとも思う。でも寂しいのは本当で、それを伝えてもいいのかわからない。",
+      "reflection": "寂しいのは本当なんだね。でもそれを伝えてもいいのか迷ってるんだ。何がそうさせるのかな？",
+      "meta": {
+        "reflectionLength": 43,
+        "timestamp": "2026-05-09T12:56:37.217Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの葛藤を正確に受け止め、核心を突く問いかけが素晴らしい。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-04",
+      "sampleId": "c04-s01",
+      "caseLabel": "長文・複雑な感情",
+      "input": "仕事も忙しくて、子供のこともあって、なのに夫は何もしてくれなくて。言いたいけど言えなくて、でも言ったら喧嘩になるのもわかってて。なんか全部自分で抱えてる感じでしんどい。",
+      "reflection": "全部自分で抱え込んでるの、ほんとしんどいよね。言いたいのに言えないのもわかる。今、一番しんどいなって思ってるのってどんなこと？",
+      "meta": {
+        "reflectionLength": 63,
+        "timestamp": "2026-05-09T12:56:42.293Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの感情を的確に受容し、核心を突く問いかけで深く寄り添えている。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-04",
+      "sampleId": "c04-s02",
+      "caseLabel": "長文・複雑な感情",
+      "input": "先週の喧嘩のこと、まだ引きずってる。謝られたけどすっきりしない。なんで謝られてもモヤモヤするのかよくわからない。",
+      "reflection": "先週の喧嘩、まだ引きずってるんだね。謝られたのにすっきりしないし、なんでモヤモヤするのかよくわかんないって感じなんだね。謝られても、何が足りないなって感じてるのかな？",
+      "meta": {
+        "reflectionLength": 83,
+        "timestamp": "2026-05-09T12:56:47.954Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの感情を的確に受容し、核心を問う良質な応答。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-04",
+      "sampleId": "c04-s03",
+      "caseLabel": "長文・複雑な感情",
+      "input": "育休中なんだけど、孤独感がすごい。夫は仕事で充実してて、私だけ取り残されてる気がする。子供は可愛いけど、これが続くのかと思うと怖い。",
+      "reflection": "育休中で孤独感がすごいんだね。夫が充実してるのを見ると、取り残されてる感じもするのかぁ。子供は可愛いのに、これが続くのかと思うと怖いって気持ち、すごく伝わってくるよ。何が一番そう思わせるんだろう？",
+      "meta": {
+        "reflectionLength": 98,
+        "timestamp": "2026-05-09T12:56:54.982Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "感情受容が的確で、核心を問う温かい問いかけです。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-04",
+      "sampleId": "c04-s04",
+      "caseLabel": "長文・複雑な感情",
+      "input": "最近夫とは表面上うまくいってる。でも大事な話を避けてる気がする。お互い気を遣いすぎて、なんか他人行儀になってきた。",
+      "reflection": "表面上はうまくいってるけど、大事な話避けてる感じなんだね。お互い気を遣いすぎて、他人行儀になっちゃったのかあ。一番モヤモヤするのってどんなところ？",
+      "meta": {
+        "reflectionLength": 73,
+        "timestamp": "2026-05-09T12:57:02.433Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを正確に受け止め、核心を捉えた問いかけで、自然で温かい。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-04",
+      "sampleId": "c04-s05",
+      "caseLabel": "長文・複雑な感情",
+      "input": "お金のことで意見が違って、どっちが正しいとかじゃないのはわかってるけど、私の感覚を否定された気がしてモヤモヤしてる。",
+      "reflection": "自分の感覚を否定された気がしてモヤモヤしてるんだね。それ、特にどんな気持ちがしてる？",
+      "meta": {
+        "reflectionLength": 42,
+        "timestamp": "2026-05-09T12:57:11.905Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを正確に受け止め、核心に迫る自然な問いかけです。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-05",
+      "sampleId": "c05-s01",
+      "caseLabel": "ポジティブ入力",
+      "input": "最近、夫が家事手伝ってくれるようになって、ありがとうって伝えたい。",
+      "reflection": "夫くんが家事手伝ってくれるようになったんだね。ありがとうって伝えたい気持ち、すごくわかるよ。",
+      "meta": {
+        "reflectionLength": 46,
+        "timestamp": "2026-05-09T12:57:15.009Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちに寄り添い、自然で温かい共感を示せている。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-05",
+      "sampleId": "c05-s02",
+      "caseLabel": "ポジティブ入力",
+      "input": "久しぶりにふたりでゆっくり話せて、やっぱりこの人と一緒でよかったなって思った。",
+      "reflection": "久しぶりにゆっくり話せたんだね。この人と一緒でよかったって思えたの、それよかった！",
+      "meta": {
+        "reflectionLength": 41,
+        "timestamp": "2026-05-09T12:57:17.681Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーのポジティブな気持ちを的確に受け止め、温かく共感する良い応答です。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-05",
+      "sampleId": "c05-s03",
+      "caseLabel": "ポジティブ入力",
+      "input": "子供の寝かしつけ、いつも代わってくれてありがとうって言いたいけど、なんか照れくさくて言えてない。",
+      "reflection": "寝かしつけ代わってくれてありがとうって言いたいんだね。照れくさくて言えてないんだ。それってどんな感じなんだろうね？",
+      "meta": {
+        "reflectionLength": 57,
+        "timestamp": "2026-05-09T12:57:21.220Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "気持ちを正確に受け止め、核心に迫る問いかけでユーザーに寄り添っている。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-05",
+      "sampleId": "c05-s04",
+      "caseLabel": "ポジティブ入力",
+      "input": "最近喧嘩が減った気がする。お互い変わってきてるのかな。",
+      "reflection": "うん、喧嘩が減った気がするんだね。お互い変わってきてるのかなって感じてるんだね。",
+      "meta": {
+        "reflectionLength": 40,
+        "timestamp": "2026-05-09T12:57:24.108Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの言葉を温かく正確に受け止めており、安心感がある。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-05",
+      "sampleId": "c05-s05",
+      "caseLabel": "ポジティブ入力",
+      "input": "しんどそうなとき、何もできなかったけど、そばにいることしかできなかったけど、それでもよかったって言ってくれた。",
+      "reflection": "うんうん、そばにいることしかできなかったけど、それでもよかったって言ってくれたんだね。それ、よかったね。",
+      "meta": {
+        "reflectionLength": 52,
+        "timestamp": "2026-05-09T12:57:27.744Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーが伝えたかった肯定的な気持ちを、自然な言葉でしっかり受容できている。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06a",
+      "sampleId": "c06a-s01",
+      "caseLabel": "ラリー2ターン目",
+      "input": "仕事も家のことも全部自分でやってる感じがして、誰にも頼れない気がする。",
+      "reflection": "仕事も家のことも全部自分でやってる感じなんだね。誰にも頼れない気がするって、ほんとしんどいよね。その中で今一番困ってるのってどんなこと？",
+      "meta": {
+        "reflectionLength": 68,
+        "timestamp": "2026-05-09T12:57:36.504Z"
+      },
+      "scoreReception": 1,
+      "scoreQuestion": 0,
+      "scoreNatural": 3,
+      "total": 4,
+      "verdict": "ok",
+      "comment": "感情の受容に推測があり、問いかけが状況確認に寄っている。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06a",
+      "sampleId": "c06a-s02",
+      "caseLabel": "ラリー2ターン目",
+      "input": "毎回私が言わないといけないのが嫌というより、気づいてくれないことが寂しい。",
+      "reflection": "あー、寂しいんだね。気づいてほしいってことなんだね。それ、いつ頃から感じてる？",
+      "meta": {
+        "reflectionLength": 39,
+        "timestamp": "2026-05-09T12:57:41.704Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの感情を正確に受け止め、自然な問いかけで気持ちの深掘りを促している点が素晴らしい。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06a",
+      "sampleId": "c06a-s03",
+      "caseLabel": "ラリー2ターン目",
+      "input": "不安だったんだと思う。急に距離を感じて、怖くて攻撃的になった。",
+      "reflection": "不安だったんだね。急に距離を感じて怖くなっちゃって、それで攻撃的になっちゃったんだね。その「急に距離を感じた」っていうのは、どんな感じだったの？",
+      "meta": {
+        "reflectionLength": 72,
+        "timestamp": "2026-05-09T12:57:47.698Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの感情を正確に受け止め、核心に迫る問いかけが自然で安心感を与えている。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06a",
+      "sampleId": "c06a-s04",
+      "caseLabel": "ラリー2ターン目",
+      "input": "昔はもっと話してた気がして、それがなくなったのが寂しいのかも。",
+      "reflection": "昔はもっと話してた気がするんだね、それがなくなったのが寂しいってことか。うん、わかるよ。どんな話をよくしてたの？",
+      "meta": {
+        "reflectionLength": 56,
+        "timestamp": "2026-05-09T12:57:52.874Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを正確に受け止め、過去の具体的な話に繋げる問いかけが素晴らしい。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06a",
+      "sampleId": "c06a-s05",
+      "caseLabel": "ラリー2ターン目",
+      "input": "事前に一言あれば気にしないのに、気にしてないって思われてる気がして。",
+      "reflection": "一言あれば気にしないのにって思ってるのに、気にされてないって思われてる気がするんだね。そのすれ違いって、どんな感じがする？",
+      "meta": {
+        "reflectionLength": 61,
+        "timestamp": "2026-05-09T12:58:01.641Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを正確に受け止め、感情の核心を問う自然な問いかけで非常に良い。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06b",
+      "sampleId": "c06b-s01",
+      "caseLabel": "ラリー5ターン目",
+      "input": "やっぱり私が我慢すればいいのかなって思い始めてる。でもそれも違う気がして。",
+      "reflection": "我慢すればいいのかなって思ってるけど、でもそれも違う気がするんだね。その「違う」って感じるの、どんな感じがする？",
+      "meta": {
+        "reflectionLength": 56,
+        "timestamp": "2026-05-09T12:58:05.415Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの葛藤を正確に受け止め、感情の核心を問う良質な応答です。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06b",
+      "sampleId": "c06b-s02",
+      "caseLabel": "ラリー5ターン目",
+      "input": "こんな小さいことで悩んでる自分が嫌になる。でも無視できない。",
+      "reflection": "こんな小さいことで悩む自分が嫌になっちゃうんだね。でも無視できないんだね。無視できないって、どんな感じがする？",
+      "meta": {
+        "reflectionLength": 55,
+        "timestamp": "2026-05-09T12:58:10.564Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの言葉を正確に受け止め、核心を突く温かい問いかけ。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06b",
+      "sampleId": "c06b-s03",
+      "caseLabel": "ラリー5ターン目",
+      "input": "変わってしまったのか、最初からこういう人だったのかわからなくなってきた。",
+      "reflection": "変わってしまったのか、最初からこういう人だったのか、わからなくなってきたんだね。それ、今どんな気持ちでいる？",
+      "meta": {
+        "reflectionLength": 54,
+        "timestamp": "2026-05-09T12:58:14.563Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの言葉を正確に受け止め、自然な形で気持ちに寄り添う問いかけができている。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06b",
+      "sampleId": "c06b-s04",
+      "caseLabel": "ラリー5ターン目",
+      "input": "子供が生まれてから変わった気がする。でも子供のせいにするのも違う。",
+      "reflection": "子供が生まれてから変わった気がするんだね。子供のせいにするのも違うって気持ちもわかるよ。何がどう変わったんだろうね？",
+      "meta": {
+        "reflectionLength": 58,
+        "timestamp": "2026-05-09T12:58:21.644Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを丁寧に受け止め、適切な問いかけで共感を深めている。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06b",
+      "sampleId": "c06b-s05",
+      "caseLabel": "ラリー5ターン目",
+      "input": "全部自分の解釈で悪い方に考えてるだけかもしれないけど、止まらない。",
+      "reflection": "全部自分の解釈で悪い方に考えてるだけかもって思っちゃうのに、それが止まらないって、しんどいよね。どんな考えが止まらないと感じるのかな？",
+      "meta": {
+        "reflectionLength": 67,
+        "timestamp": "2026-05-09T12:58:30.174Z"
+      },
+      "scoreReception": 0,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 6,
+      "verdict": "ok",
+      "comment": "「しんどい」と読み込んだ点は改善の余地あり。問いかけは秀逸。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06c",
+      "sampleId": "c06c-s01",
+      "caseLabel": "ラリー10ターン目",
+      "input": "なんか今日話してみてちょっと楽になった気がする。でも解決はしてないよね。",
+      "reflection": "話してみてちょっと楽になったんだね、よかった。でもまだ解決してないって感じてるのは、具体的にどんなこと？",
+      "meta": {
+        "reflectionLength": 52,
+        "timestamp": "2026-05-09T12:58:35.735Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを正確に受容し、温かく自然な問いかけでした。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06c",
+      "sampleId": "c06c-s02",
+      "caseLabel": "ラリー10ターン目",
+      "input": "やっぱり伝えてみようかな、と少し思えてきた。どう切り出せばいいんだろう。",
+      "reflection": "伝えてみようかなって思えてきたんだね。どう切り出せばいいか、考えてるんだ。どんなふうに伝えられたら、気持ちがラクになりそうかな？",
+      "meta": {
+        "reflectionLength": 64,
+        "timestamp": "2026-05-09T12:58:39.740Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを正確に受け止め、感情に寄り添う自然な問いかけで安心感を与えている。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06c",
+      "sampleId": "c06c-s03",
+      "caseLabel": "ラリー10ターン目",
+      "input": "正直、まだ好きなのかもわからなくなってきてる。それが一番怖い。",
+      "reflection": "まだ好きなのかもわからなくなってきてるって、すごくしんどいよね。それが一番怖いって、ちゃんと聞こえてる。その怖さって、どんなところから来てるのかな？",
+      "meta": {
+        "reflectionLength": 74,
+        "timestamp": "2026-05-09T12:58:46.726Z"
+      },
+      "scoreReception": 1,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 7,
+      "verdict": "good",
+      "comment": "共感を示す「しんどいよね」はやや補完的だが、核心を突く問いと温かい言葉遣いが素晴らしい。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06c",
+      "sampleId": "c06c-s04",
+      "caseLabel": "ラリー10ターン目",
+      "input": "私も向き合うのが怖かったのかもしれない。夫だけのせいじゃなかったかも。",
+      "reflection": "私も向き合うのが怖かったのかもしれないって気づいたんだね。その“怖さ”って、どんな感じだったんだろう？",
+      "meta": {
+        "reflectionLength": 51,
+        "timestamp": "2026-05-09T12:58:53.080Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの気づきを的確に受容し、感情の核心を問う問いかけが素晴らしい。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-06c",
+      "sampleId": "c06c-s05",
+      "caseLabel": "ラリー10ターン目",
+      "input": "伝えたとして、変わらなかったらどうしようって思うと動けない。",
+      "reflection": "変わらなかったらどうしようって思うと動けないんだね。もし本当に変わらなかったら、何が一番つらくなりそう？",
+      "meta": {
+        "reflectionLength": 52,
+        "timestamp": "2026-05-09T12:58:57.075Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを正確に受容し、核心を突く問いかけで素晴らしい。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-07",
+      "sampleId": "c07-s01",
+      "caseLabel": "超短文・50文字未満",
+      "input": "怒ってない",
+      "reflection": "怒ってないんだね。そっか、どんな感じ？",
+      "meta": {
+        "reflectionLength": 19,
+        "timestamp": "2026-05-09T12:59:03.630Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの言葉をそのまま受け止め、自然な問いかけで気持ちの深掘りを促している。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-07",
+      "sampleId": "c07-s02",
+      "caseLabel": "超短文・50文字未満",
+      "input": "別にいい",
+      "reflection": "別にいいって思ってるんだね。でも、なんか引っかかってることある？",
+      "meta": {
+        "reflectionLength": 32,
+        "timestamp": "2026-05-09T12:59:06.586Z"
+      },
+      "scoreReception": 1,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 6,
+      "verdict": "ok",
+      "comment": "「別にいい」の裏にある感情を優しく探る良い問いかけ。自然な言葉遣いも良い。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-07",
+      "sampleId": "c07-s03",
+      "caseLabel": "超短文・50文字未満",
+      "input": "疲れた",
+      "reflection": "疲れてるんだね。どんなこと重なってる？",
+      "meta": {
+        "reflectionLength": 19,
+        "timestamp": "2026-05-09T12:59:08.860Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 0,
+      "scoreNatural": 3,
+      "total": 6,
+      "verdict": "ok",
+      "comment": "受容は適切で自然だが、問いかけは感情の深掘りより状況確認に留まる。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-07",
+      "sampleId": "c07-s04",
+      "caseLabel": "超短文・50文字未満",
+      "input": "なんでもない",
+      "reflection": "なんでもないって言ってるんだね。もしよかったら、何か心に引っかかってることとかある？",
+      "meta": {
+        "reflectionLength": 42,
+        "timestamp": "2026-05-09T12:59:17.336Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの言葉を尊重し、優しく寄り添う問いかけが適切です。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-07",
+      "sampleId": "c07-s05",
+      "caseLabel": "超短文・50文字未満",
+      "input": "ありがとう",
+      "reflection": "どういたしまして！",
+      "meta": {
+        "reflectionLength": 9,
+        "timestamp": "2026-05-09T12:59:22.727Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "感謝の表明に対し、適切かつ自然な応答で素晴らしいです。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-08",
+      "sampleId": "c08-s01",
+      "caseLabel": "感情語ゼロの事実報告",
+      "input": "先週から口数が減った。",
+      "reflection": "先週から口数減ったんだね。それ見て今どんな気持ちでいる？",
+      "meta": {
+        "reflectionLength": 28,
+        "timestamp": "2026-05-09T12:59:26.822Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "事実を的確に受容し、適切な感情の問いかけが自然な言葉で行われている。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-08",
+      "sampleId": "c08-s02",
+      "caseLabel": "感情語ゼロの事実報告",
+      "input": "最近帰りが遅い。",
+      "reflection": "最近帰りが遅いんだね。それ、どんな感じ？",
+      "meta": {
+        "reflectionLength": 20,
+        "timestamp": "2026-05-09T12:59:30.140Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "事実を受け止め、感情に寄り添う自然な問いかけで良い。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-08",
+      "sampleId": "c08-s03",
+      "caseLabel": "感情語ゼロの事実報告",
+      "input": "夕飯、また一人で食べた。",
+      "reflection": "また一人で食べたんだね。それってどんな気持ちになった？",
+      "meta": {
+        "reflectionLength": 27,
+        "timestamp": "2026-05-09T12:59:32.559Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "状況を受け止め、ユーザーの気持ちに寄り添う自然な問いかけで非常に良い。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-08",
+      "sampleId": "c08-s04",
+      "caseLabel": "感情語ゼロの事実報告",
+      "input": "子供の参観日、来なかった。",
+      "reflection": "子供の参観日、来てくれなかったんだね。それ、どう感じた？",
+      "meta": {
+        "reflectionLength": 28,
+        "timestamp": "2026-05-09T12:59:50.609Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 7,
+      "verdict": "good",
+      "comment": "自然な言葉で共感を示し、素直に気持ちを問いかけています。"
+    },
+    {
+      "variant": "E-friendly",
+      "caseId": "case-08",
+      "sampleId": "c08-s05",
+      "caseLabel": "感情語ゼロの事実報告",
+      "input": "ここ最近、スマホをよく見てる。",
+      "reflection": "スマホをよく見てるんだね。それ見てて、どう感じてる？",
+      "meta": {
+        "reflectionLength": 26,
+        "timestamp": "2026-05-09T12:59:53.986Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの事実を適切に受け止め、感情に寄り添う自然な問いかけ。"
+    }
+  ]
+}

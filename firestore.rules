@@ -1,27 +1,33 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function partnerUidOrNull(data) {
-      return data.keys().hasAny(['partnerUid']) ? data.partnerUid : null;
-    }
 
-    // 招待コード: 認証済みなら読める。採番・更新はCloud Functionsのみ
+    // 招待コード: 認証済みなら読める（findUidByCode で使用）。書き込みはCloud Functionsのみ
     match /inviteCodes/{code} {
       allow read: if request.auth != null;
       allow create, update, delete: if false;
     }
 
     match /users/{uid} {
-      // 自分または自分がパートナーとして登録されている相手のみ読める
+      // 自分、またはパートナーとして登録されている相手のみ読める
       allow read: if request.auth != null && (
         request.auth.uid == uid ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.partnerUid == uid
       );
-      // 自分のプロフィールのみ更新可。partnerUid はCloud Functions以外から変更不可
+
+      // 新規作成: 自分のドキュメントのみ。サーバー管理フィールドは設定不可
       allow create: if request.auth.uid == uid
-        && partnerUidOrNull(request.resource.data) == null;
+        && !request.resource.data.keys().hasAny([
+          'partnerUid', 'notificationMeta', 'aiCreditsUsed',
+          'aiCreditsLimit', 'aiCreditsUpdatedAt', 'aiCreditsMonth'
+        ]);
+
+      // 更新: クライアントが変更できるフィールドを明示的に制限
+      // partnerUid / notificationMeta / aiCredits系 はCloud Functionsのみ変更可
       allow update: if request.auth.uid == uid
-        && partnerUidOrNull(request.resource.data) == partnerUidOrNull(resource.data);
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['displayName', 'communicationStyle', 'lastVisibility', 'notificationSettings']);
+
       allow delete: if false;
 
       // 投稿: 自分は全件、パートナーはsharedのみ読める
@@ -47,9 +53,19 @@ service cloud.firestore {
       match /consultationSessions/{sessionId} {
         allow read, write: if request.auth.uid == uid;
       }
+
+      // 解釈キャッシュ: 読みは自分のみ、書きはCloud Functionsのみ
       match /interpretationCache/{cacheId} {
-        allow read: if request.auth != null && request.auth.uid == uid;
+        allow read: if request.auth.uid == uid;
         allow write: if false;
+      }
+
+      // AI使用量: Cloud Functionsのみ書き込む。クライアントからのアクセス不可
+      match /aiUsage/{dateKey} {
+        allow read, write: if false;
+      }
+      match /aiMonthlyUsage/{monthKey} {
+        allow read, write: if false;
       }
     }
   }

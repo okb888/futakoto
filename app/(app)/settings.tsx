@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -23,18 +23,15 @@ import {
   sendEmailVerification,
   reload,
 } from 'firebase/auth';
-import { useFocusEffect } from 'expo-router';
 import { TimePickerSheet } from '../../components/TimePickerSheet';
 import { auth } from '../../lib/firebase';
 import { useAuth } from '../../lib/auth';
 import {
-  getUserProfile,
   getUserExportData,
   updateDisplayName,
   updateNotificationSettings,
   updateCommunicationStyle,
-  NotificationSettings,
-  UserProfile,
+  type NotificationSettings,
 } from '../../lib/db';
 import { pairWithCode, unpairPartner, deleteAccount, regenerateInviteCode } from '../../lib/ai';
 import {
@@ -47,6 +44,7 @@ import {
 } from '../../lib/notifications';
 import { firebaseErrorMessage } from '../../lib/errors';
 import { COLORS } from '../../lib/theme';
+import { useSettingsProfile } from '../../hooks/useSettingsProfile';
 
 function withDefaults(settings?: NotificationSettings): Required<NotificationSettings> {
   return {
@@ -76,57 +74,60 @@ function normalizeForExport(value: any): any {
   return value;
 }
 
+// ローディング状態を1オブジェクトにまとめる
+type LoadingState = {
+  pair: boolean;
+  notification: boolean;
+  regenerate: boolean;
+  delete: boolean;
+  export: boolean;
+  verification: boolean;
+};
+
+const LOADING_INITIAL: LoadingState = {
+  pair: false, notification: false, regenerate: false,
+  delete: false, export: false, verification: false,
+};
+
 export default function SettingsScreen() {
-  const { user, profile: authProfile, refreshProfile } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [partnerProfile, setPartnerProfile] = useState<UserProfile | null>(null);
-  const [inputCode, setInputCode] = useState('');
-  const [editingName, setEditingName] = useState(false);
+  const { user } = useAuth();
+
+  // プロフィール・パートナー取得（カスタムhookに分離）
+  const { profile, setProfile, partnerProfile, load } = useSettingsProfile();
+
+  // フォーム入力値
   const [nameInput, setNameInput] = useState('');
-  const [notificationSettings, setNotificationSettings] = useState(withDefaults());
-  const [loading, setLoading] = useState(false);
-  const [notificationLoading, setNotificationLoading] = useState(false);
-  const [timePickerOpen, setTimePickerOpen] = useState(false);
-  const [pickerHour, setPickerHour] = useState(DEFAULT_REMINDER_HOUR);
-  const [pickerMinute, setPickerMinute] = useState(DEFAULT_REMINDER_MINUTE);
-  const [copied, setCopied] = useState(false);
-  const [regeneratingCode, setRegeneratingCode] = useState(false);
+  const [inputCode, setInputCode] = useState('');
   const [styleInput, setStyleInput] = useState('');
+
+  // 通知設定
+  const [notificationSettings, setNotificationSettings] = useState(withDefaults());
+
+  // ローディング（6フラグ → 1オブジェクト）
+  const [isLoading, setIsLoading] = useState<LoadingState>(LOADING_INITIAL);
+  const setLoad = (key: keyof LoadingState, value: boolean) =>
+    setIsLoading(s => ({ ...s, [key]: value }));
+
+  // 時刻ピッカー（2変数 → 1オブジェクト）
+  const [timePickerOpen, setTimePickerOpen] = useState(false);
+  const [pickerTime, setPickerTime] = useState({ hour: DEFAULT_REMINDER_HOUR, minute: DEFAULT_REMINDER_MINUTE });
+
+  // 削除モーダル（2変数 → 1オブジェクト）
+  const [deleteModal, setDeleteModal] = useState({ open: false, password: '' });
+
+  // UI フラグ
+  const [editingName, setEditingName] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [styleSaved, setStyleSaved] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [sendingVerification, setSendingVerification] = useState(false);
   const [emailVerified, setEmailVerified] = useState(user?.emailVerified ?? true);
 
-  async function load(
-    isCancelled: () => boolean = () => false,
-    profileOverride?: UserProfile | null
-  ) {
-    if (!user) return;
-    const p = profileOverride ?? await getUserProfile(user.uid) ?? authProfile ?? await refreshProfile();
-    if (isCancelled() || !p) return;
-    setProfile(p);
-    setNotificationSettings(withDefaults(p.notificationSettings));
-    setNameInput(p.displayName ?? '');
-    setStyleInput(p.communicationStyle ?? '');
-    if (p?.partnerUid) {
-      const pp = await getUserProfile(p.partnerUid);
-      if (isCancelled()) return;
-      setPartnerProfile(pp);
-    } else {
-      setPartnerProfile(null);
-    }
-  }
-
-  useFocusEffect(useCallback(() => {
-    let cancelled = false;
-    load(() => cancelled);
-    return () => {
-      cancelled = true;
-    };
-  }, [user, authProfile]));
+  // プロフィールが更新されたら派生フォームを同期
+  useEffect(() => {
+    if (!profile) return;
+    setNotificationSettings(withDefaults(profile.notificationSettings));
+    setNameInput(profile.displayName ?? '');
+    setStyleInput(profile.communicationStyle ?? '');
+  }, [profile]);
 
   async function handleCopy() {
     if (!profile?.inviteCode) return;
@@ -144,7 +145,7 @@ export default function SettingsScreen() {
   }
 
   function handleRegenerateInviteCode() {
-    if (!user || regeneratingCode) return;
+    if (!user || isLoading.regenerate) return;
     Alert.alert(
       'コードを作り直しますか？',
       '今の招待コードは使えなくなります。すでに連携中のパートナーとの接続は変わりません。',
@@ -154,17 +155,16 @@ export default function SettingsScreen() {
           text: '作り直す',
           style: 'destructive',
           onPress: async () => {
-            setRegeneratingCode(true);
+            setLoad('regenerate', true);
             try {
               const result = await regenerateInviteCode();
-              setProfile((current) => current ? { ...current, inviteCode: result.inviteCode } : current);
-              await refreshProfile();
+              setProfile(current => current ? { ...current, inviteCode: result.inviteCode } : current);
               setCopied(false);
               Alert.alert('新しいコードを作りました', '古いコードは使えなくなりました');
             } catch (e: any) {
               Alert.alert('エラー', firebaseErrorMessage(e));
             } finally {
-              setRegeneratingCode(false);
+              setLoad('regenerate', false);
             }
           },
         },
@@ -174,17 +174,16 @@ export default function SettingsScreen() {
 
   async function handlePair() {
     if (!user || !inputCode.trim()) return;
-    setLoading(true);
+    setLoad('pair', true);
     try {
       await pairWithCode(inputCode.trim().toUpperCase());
-      const nextProfile = await refreshProfile();
-      await load(() => false, nextProfile);
+      await load();
       setInputCode('');
       Alert.alert('ペアリング完了', 'パートナーと繋がりました');
     } catch (e: any) {
       Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
-      setLoading(false);
+      setLoad('pair', false);
     }
   }
 
@@ -197,8 +196,7 @@ export default function SettingsScreen() {
         style: 'destructive',
         onPress: async () => {
           await unpairPartner();
-          const nextProfile = await refreshProfile();
-          await load(() => false, nextProfile);
+          await load();
         },
       },
     ]);
@@ -207,7 +205,6 @@ export default function SettingsScreen() {
   async function handleSaveStyle() {
     if (!user) return;
     await updateCommunicationStyle(user.uid, styleInput.trim());
-    await refreshProfile();
     setStyleSaved(true);
     setTimeout(() => setStyleSaved(false), 2000);
   }
@@ -219,20 +216,19 @@ export default function SettingsScreen() {
     }
     await updateDisplayName(user.uid, nameInput.trim());
     setEditingName(false);
-    const nextProfile = await refreshProfile();
-    await load(() => false, nextProfile);
+    await load();
   }
 
   async function saveNotificationSettings(next: Required<NotificationSettings>) {
     if (!user) return;
     setNotificationSettings(next);
     await updateNotificationSettings(user.uid, next);
-    setProfile((current) => current ? { ...current, notificationSettings: next } : current);
+    setProfile(current => current ? { ...current, notificationSettings: next } : current);
   }
 
   async function toggleDailyReminder(enabled: boolean) {
     if (!user) return;
-    setNotificationLoading(true);
+    setLoad('notification', true);
     try {
       const next = { ...notificationSettings, dailyReminderEnabled: enabled };
       if (enabled) {
@@ -251,23 +247,25 @@ export default function SettingsScreen() {
     } catch (e: any) {
       Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
-      setNotificationLoading(false);
+      setLoad('notification', false);
     }
   }
 
   function openReminderTimePicker() {
-    setPickerHour(notificationSettings.dailyReminderHour);
-    setPickerMinute(notificationSettings.dailyReminderMinute);
+    setPickerTime({
+      hour: notificationSettings.dailyReminderHour,
+      minute: notificationSettings.dailyReminderMinute,
+    });
     setTimePickerOpen(true);
   }
 
   async function saveReminderTime() {
-    if (!user || notificationLoading) return;
-    setNotificationLoading(true);
+    if (!user || isLoading.notification) return;
+    setLoad('notification', true);
     const next = {
       ...notificationSettings,
-      dailyReminderHour: pickerHour,
-      dailyReminderMinute: pickerMinute,
+      dailyReminderHour: pickerTime.hour,
+      dailyReminderMinute: pickerTime.minute,
     };
     try {
       if (next.dailyReminderEnabled) {
@@ -282,26 +280,25 @@ export default function SettingsScreen() {
     } catch (e: any) {
       Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
-      setNotificationLoading(false);
+      setLoad('notification', false);
     }
   }
 
   async function handleDeleteAccount() {
-    if (!user || deleteLoading) return;
+    if (!user || isLoading.delete) return;
     const providerId = user.providerData[0]?.providerId ?? 'password';
 
-    if (providerId === 'password' && !deletePassword.trim()) {
+    if (providerId === 'password' && !deleteModal.password.trim()) {
       Alert.alert('パスワードを入力してください');
       return;
     }
 
-    setDeleteLoading(true);
+    setLoad('delete', true);
     try {
       if (providerId === 'password') {
-        const credential = EmailAuthProvider.credential(user.email!, deletePassword);
+        const credential = EmailAuthProvider.credential(user.email!, deleteModal.password);
         await reauthenticateWithCredential(user, credential);
       }
-      // Google / Apple 再認証はプロバイダ実装時に追加
       await deleteAccount();
       await signOut(auth).catch(() => {});
     } catch (e: any) {
@@ -311,15 +308,15 @@ export default function SettingsScreen() {
         isWrongPassword ? 'パスワードが違います' : '削除に失敗しました',
         isWrongPassword ? 'もう一度確認してください' : e.message
       );
-      setDeleteLoading(false);
-      setDeletePassword('');
+      setLoad('delete', false);
+      setDeleteModal(d => ({ ...d, password: '' }));
     }
   }
 
   async function handleResendVerification() {
     const currentUser = auth.currentUser;
-    if (!currentUser || sendingVerification) return;
-    setSendingVerification(true);
+    if (!currentUser || isLoading.verification) return;
+    setLoad('verification', true);
     try {
       await reload(currentUser);
       if (currentUser.emailVerified) {
@@ -332,7 +329,7 @@ export default function SettingsScreen() {
     } catch (e: any) {
       Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
-      setSendingVerification(false);
+      setLoad('verification', false);
     }
   }
 
@@ -347,8 +344,8 @@ export default function SettingsScreen() {
   }
 
   async function handleExportData() {
-    if (!user || exporting) return;
-    setExporting(true);
+    if (!user || isLoading.export) return;
+    setLoad('export', true);
     try {
       const data = await getUserExportData(user.uid);
       const payload = {
@@ -362,13 +359,13 @@ export default function SettingsScreen() {
     } catch (e: any) {
       Alert.alert('エクスポートに失敗しました', firebaseErrorMessage(e));
     } finally {
-      setExporting(false);
+      setLoad('export', false);
     }
   }
 
   async function toggleSharedPostNotifications(enabled: boolean) {
     if (!user) return;
-    setNotificationLoading(true);
+    setLoad('notification', true);
     try {
       const next = { ...notificationSettings, sharedPostNotificationsEnabled: enabled };
       if (enabled) {
@@ -385,7 +382,7 @@ export default function SettingsScreen() {
     } catch (e: any) {
       Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
-      setNotificationLoading(false);
+      setLoad('notification', false);
     }
   }
 
@@ -431,11 +428,11 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
       <TouchableOpacity
-        style={[styles.regenerateButton, regeneratingCode && { opacity: 0.6 }]}
+        style={[styles.regenerateButton, isLoading.regenerate && { opacity: 0.6 }]}
         onPress={handleRegenerateInviteCode}
-        disabled={!profile?.inviteCode || regeneratingCode}
+        disabled={!profile?.inviteCode || isLoading.regenerate}
       >
-        {regeneratingCode ? (
+        {isLoading.regenerate ? (
           <ActivityIndicator color={COLORS.primary} size="small" />
         ) : (
           <Text style={styles.regenerateButtonText}>コードを作り直す</Text>
@@ -473,11 +470,11 @@ export default function SettingsScreen() {
             <TouchableOpacity
               style={[styles.pairButton, inputCode.length !== 6 && styles.pairButtonDisabled]}
               onPress={handlePair}
-              disabled={loading || inputCode.length !== 6}
+              disabled={isLoading.pair || inputCode.length !== 6}
               accessibilityLabel="パートナーと繋がる"
               accessibilityRole="button"
             >
-              {loading ? (
+              {isLoading.pair ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.pairButtonText}>繋がる</Text>
@@ -550,7 +547,7 @@ export default function SettingsScreen() {
           <Switch
             value={notificationSettings.dailyReminderEnabled}
             onValueChange={toggleDailyReminder}
-            disabled={notificationLoading}
+            disabled={isLoading.notification}
             trackColor={{ false: COLORS.border, true: COLORS.primaryDim }}
             thumbColor={notificationSettings.dailyReminderEnabled ? COLORS.primary : '#fff'}
           />
@@ -590,7 +587,7 @@ export default function SettingsScreen() {
         <Switch
           value={notificationSettings.sharedPostNotificationsEnabled}
           onValueChange={toggleSharedPostNotifications}
-          disabled={notificationLoading}
+          disabled={isLoading.notification}
           trackColor={{ false: COLORS.border, true: COLORS.partnerBorder }}
           thumbColor={notificationSettings.sharedPostNotificationsEnabled ? COLORS.partner : '#fff'}
         />
@@ -603,11 +600,11 @@ export default function SettingsScreen() {
         <View style={styles.verificationBanner}>
           <Text style={styles.verificationBannerText}>メールアドレスが未認証です</Text>
           <TouchableOpacity
-            style={[styles.verificationResendButton, sendingVerification && { opacity: 0.6 }]}
+            style={[styles.verificationResendButton, isLoading.verification && { opacity: 0.6 }]}
             onPress={handleResendVerification}
-            disabled={sendingVerification}
+            disabled={isLoading.verification}
           >
-            {sendingVerification ? (
+            {isLoading.verification ? (
               <ActivityIndicator color={COLORS.primary} size="small" />
             ) : (
               <Text style={styles.verificationResendText}>認証メールを再送</Text>
@@ -622,11 +619,11 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       ) : null}
       <TouchableOpacity
-        style={[styles.accountActionButton, exporting && { opacity: 0.6 }]}
+        style={[styles.accountActionButton, isLoading.export && { opacity: 0.6 }]}
         onPress={handleExportData}
-        disabled={exporting}
+        disabled={isLoading.export}
       >
-        {exporting ? (
+        {isLoading.export ? (
           <ActivityIndicator color={COLORS.primary} size="small" />
         ) : (
           <DownloadSimple size={17} color={COLORS.primary} weight="bold" />
@@ -662,22 +659,24 @@ export default function SettingsScreen() {
 
       <TouchableOpacity
         style={styles.deleteButton}
-        onPress={() => setDeleteModalOpen(true)}
+        onPress={() => setDeleteModal(d => ({ ...d, open: true }))}
       >
         <Text style={styles.deleteButtonText}>アカウントを削除</Text>
       </TouchableOpacity>
 
       <Modal
-        visible={deleteModalOpen}
+        visible={deleteModal.open}
         transparent
         animationType="fade"
-        onRequestClose={() => { if (!deleteLoading) setDeleteModalOpen(false); }}
+        onRequestClose={() => { if (!isLoading.delete) setDeleteModal({ open: false, password: '' }); }}
       >
         <View style={styles.modalOverlay}>
           <TouchableOpacity
             style={styles.modalBackdrop}
             activeOpacity={1}
-            onPress={() => { if (!deleteLoading) { setDeleteModalOpen(false); setDeletePassword(''); } }}
+            onPress={() => {
+              if (!isLoading.delete) setDeleteModal({ open: false, password: '' });
+            }}
           />
           <View style={styles.deleteSheet}>
             <Text style={styles.deleteSheetTitle}>アカウントを削除</Text>
@@ -689,8 +688,8 @@ export default function SettingsScreen() {
                 <Text style={styles.deleteSheetLabel}>パスワードを入力して確認</Text>
                 <TextInput
                   style={styles.deleteInput}
-                  value={deletePassword}
-                  onChangeText={setDeletePassword}
+                  value={deleteModal.password}
+                  onChangeText={p => setDeleteModal(d => ({ ...d, password: p }))}
                   placeholder="パスワード"
                   placeholderTextColor="#CCC"
                   secureTextEntry
@@ -706,11 +705,11 @@ export default function SettingsScreen() {
               </View>
             )}
             <TouchableOpacity
-              style={[styles.deleteConfirmButton, deleteLoading && { opacity: 0.6 }]}
+              style={[styles.deleteConfirmButton, isLoading.delete && { opacity: 0.6 }]}
               onPress={handleDeleteAccount}
-              disabled={deleteLoading}
+              disabled={isLoading.delete}
             >
-              {deleteLoading ? (
+              {isLoading.delete ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.deleteConfirmText}>削除する（取り消せません）</Text>
@@ -718,8 +717,8 @@ export default function SettingsScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.deleteCancelButton}
-              onPress={() => { setDeleteModalOpen(false); setDeletePassword(''); }}
-              disabled={deleteLoading}
+              onPress={() => setDeleteModal({ open: false, password: '' })}
+              disabled={isLoading.delete}
             >
               <Text style={styles.deleteCancelText}>キャンセル</Text>
             </TouchableOpacity>
@@ -731,11 +730,11 @@ export default function SettingsScreen() {
         visible={timePickerOpen}
         title="リマインダー時刻"
         previewLabel="この時間に通知します"
-        hour={pickerHour}
-        minute={pickerMinute}
-        saving={notificationLoading}
-        onChangeHour={setPickerHour}
-        onChangeMinute={setPickerMinute}
+        hour={pickerTime.hour}
+        minute={pickerTime.minute}
+        saving={isLoading.notification}
+        onChangeHour={h => setPickerTime(t => ({ ...t, hour: h }))}
+        onChangeMinute={m => setPickerTime(t => ({ ...t, minute: m }))}
         onCancel={() => setTimePickerOpen(false)}
         onSave={saveReminderTime}
       />

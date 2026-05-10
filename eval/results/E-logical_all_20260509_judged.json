@@ -1,0 +1,913 @@
+{
+  "summary": {
+    "avgTotal": 7.32,
+    "avgReception": 2.78,
+    "avgQuestion": 2.16,
+    "avgNatural": 2.38,
+    "goodCount": 38,
+    "poorCount": 1,
+    "total": 50
+  },
+  "results": [
+    {
+      "variant": "E-logical",
+      "caseId": "case-01",
+      "sampleId": "c01-s01",
+      "caseLabel": "短文・曖昧",
+      "input": "なんかしんどい",
+      "reflection": "「しんどい」というお気持ちですね。何がそのしんどさにつながっているのか、少し整理してみますか。",
+      "meta": {
+        "reflectionLength": 47,
+        "timestamp": "2026-05-09T13:00:06.182Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの感情を適切に受け止め、核心に迫る問いかけで、自然かつ温かい応答。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-01",
+      "sampleId": "c01-s02",
+      "caseLabel": "短文・曖昧",
+      "input": "なんか最近モヤモヤしてる",
+      "reflection": "モヤモヤしている状態なのですね。何について心が動いているのか、少し整理してみますか。",
+      "meta": {
+        "reflectionLength": 42,
+        "timestamp": "2026-05-09T13:00:09.645Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 2,
+      "total": 7,
+      "verdict": "good",
+      "comment": "ユーザーの感情を適切に受容し、原因を探る温かい問いかけ。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-01",
+      "sampleId": "c01-s03",
+      "caseLabel": "短文・曖昧",
+      "input": "疲れた",
+      "reflection": "疲れが出ている状態ですね。どのあたりから来ているか、少し整理してみますか。",
+      "meta": {
+        "reflectionLength": 37,
+        "timestamp": "2026-05-09T13:00:11.519Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 1,
+      "scoreNatural": 3,
+      "total": 7,
+      "verdict": "good",
+      "comment": "「疲れ」を適切に受け止め、原因を探る問いかけが自然で温かい。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-01",
+      "sampleId": "c01-s04",
+      "caseLabel": "短文・曖昧",
+      "input": "うまくいかない",
+      "reflection": "「うまくいかない」と感じているのですね。具体的に何について、そう感じていますか。",
+      "meta": {
+        "reflectionLength": 40,
+        "timestamp": "2026-05-09T13:00:14.222Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 0,
+      "scoreNatural": 2,
+      "total": 5,
+      "verdict": "ok",
+      "comment": "問いかけが状況確認に留まっており、感情への深掘りがない。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-01",
+      "sampleId": "c01-s05",
+      "caseLabel": "短文・曖昧",
+      "input": "なんか気持ちがついていかない",
+      "reflection": "気持ちがついていかない状態なのですね。何に対して、気持ちが追いつかないと感じていらっしゃるか、整理してみますか。",
+      "meta": {
+        "reflectionLength": 56,
+        "timestamp": "2026-05-09T13:00:18.261Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちに寄り添い、具体的な感情の対象を優しく問いかけている点が良い。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-02",
+      "sampleId": "c02-s01",
+      "caseLabel": "相手への不満（直接的）",
+      "input": "また皿洗いしてない。毎回言わないとやらないし、言ったら言ったで不機嫌になる。もう疲れた。",
+      "reflection": "起きていることは「皿洗いを毎回お願いしている」状況ですね。こたえているのは、皿洗いそのものよりも「言わないと行動しないこと」と「言ったら不機嫌になること」に見えます。このどちらがより負担になっているか、整理してみますか。",
+      "meta": {
+        "reflectionLength": 110,
+        "timestamp": "2026-05-09T13:00:25.765Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの負担の核心を的確に捉え、自己理解を促す。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-02",
+      "sampleId": "c02-s02",
+      "caseLabel": "相手への不満（直接的）",
+      "input": "ゴミ出し今週も忘れてた。何回言っても変わらない。",
+      "reflection": "起きていること：ゴミ出しを今週も忘れてしまった状況ですね。こたえていること：繰り返し伝えても変わらないことに、お疲れを感じていらっしゃるように見受けられます。何が変わらないと感じているのか、整理してみますか。",
+      "meta": {
+        "reflectionLength": 104,
+        "timestamp": "2026-05-09T13:00:31.215Z"
+      },
+      "scoreReception": 0,
+      "scoreQuestion": 2,
+      "scoreNatural": 2,
+      "total": 4,
+      "verdict": "ok",
+      "comment": "未記述の感情（お疲れ）を読み込みすぎている点が課題。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-02",
+      "sampleId": "c02-s03",
+      "caseLabel": "相手への不満（直接的）",
+      "input": "子どものお風呂、頼んでも「後で」って言ってそのまま寝てた。もう頼むのも嫌になってきた。",
+      "reflection": "起きていることは、お子さんのお風呂をお願いしたものの、ご主人が「後で」と言ったまま寝てしまった状況ですね。こたえているのは、「もう頼むのも嫌になってきた」というお気持ち。この「嫌になってきた」という気持ちが、具体的にどのような状況から来ているのか、少し整理してみますか。",
+      "meta": {
+        "reflectionLength": 135,
+        "timestamp": "2026-05-09T13:00:38.160Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "事実と感情の受容が正確で、感情の核心を問う問いかけがとても自然でした。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-02",
+      "sampleId": "c02-s04",
+      "caseLabel": "相手への不満（直接的）",
+      "input": "仕事の愚痴は毎日聞くのに、私の話は「うん」だけで流される。",
+      "reflection": "起きていること：相手の方の仕事の愚痴を毎日聞いている一方で、ご自身の話は「うん」と流される状況ですね。この状況に対し、ご自身が何を望まれているか、もう少し整理してみますか。",
+      "meta": {
+        "reflectionLength": 86,
+        "timestamp": "2026-05-09T13:00:44.133Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 0,
+      "scoreNatural": 2,
+      "total": 5,
+      "verdict": "ok",
+      "comment": "状況把握は良いが、問いかけが解決志向になっている。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-02",
+      "sampleId": "c02-s05",
+      "caseLabel": "相手への不満（直接的）",
+      "input": "急に友達と飲みに行くって言い出して、夕飯どうするとか一切連絡なし。",
+      "reflection": "起きていること：ご主人が急に友人と飲みに行くことになった。こたえていること：夕飯について連絡がなかった点ですね。この連絡のなさは、具体的にどのようにこたえていますか。",
+      "meta": {
+        "reflectionLength": 83,
+        "timestamp": "2026-05-09T13:00:47.137Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 1,
+      "total": 7,
+      "verdict": "good",
+      "comment": "状況と問題点の把握が的確で、感情の核心を問う問いかけが優れています。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-03",
+      "sampleId": "c03-s01",
+      "caseLabel": "自己反省混じり",
+      "input": "自分も悪いとわかってるけど、毎回同じことで傷つく。",
+      "reflection": "起きていること：同じことで毎回傷つき、ご自身も悪かったと認識されている。こたえていること：その繰り返し傷つく状況。何が同じこととして繰り返されているのか、整理してみますか。",
+      "meta": {
+        "reflectionLength": 86,
+        "timestamp": "2026-05-09T13:00:52.083Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 2,
+      "total": 7,
+      "verdict": "good",
+      "comment": "入力内容を正確に受け止め、丁寧な問いかけで現状整理を促せています。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-03",
+      "sampleId": "c03-s02",
+      "caseLabel": "自己反省混じり",
+      "input": "感情的に言いすぎたのは私も反省してる。でも、あの言い方はひどかったと思う。",
+      "reflection": "起きていることは、ご自身の感情的な発言への反省と、相手の方の言葉が「ひどかった」という認識ですね。こたえているのは、その「ひどかった」言葉がどのような点でしょうか。",
+      "meta": {
+        "reflectionLength": 82,
+        "timestamp": "2026-05-09T13:00:57.499Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの反省と相手への不満を正確に受容し、核心を問う良質な問いかけ。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-03",
+      "sampleId": "c03-s03",
+      "caseLabel": "自己反省混じり",
+      "input": "私が細かすぎるのかもしれない。でもやっぱり気になってしまう。",
+      "reflection": "ご自身が細かすぎるのではないか、というお気持ちと、それでも何かが気になってしまう状態なのですね。その「何か」とは、具体的にどのようなことでしょうか。",
+      "meta": {
+        "reflectionLength": 74,
+        "timestamp": "2026-05-09T13:01:03.103Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを正確に受容し、核心を突く問いかけが素晴らしい。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-03",
+      "sampleId": "c03-s04",
+      "caseLabel": "自己反省混じり",
+      "input": "仕事で疲れてるのはわかってる。だから言えないでいる。でも限界に近い。",
+      "reflection": "起きていること：夫の疲労を考慮し、言いたいことを言えずにいる状態ですね。こたえていること：その結果、「限界に近い」という感覚がある。言えずにいるのは、どのようなことでしょうか。",
+      "meta": {
+        "reflectionLength": 88,
+        "timestamp": "2026-05-09T13:01:07.206Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの状況を的確に把握し、核心に触れる問いかけが自然な言葉遣いで素晴らしい。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-03",
+      "sampleId": "c03-s05",
+      "caseLabel": "自己反省混じり",
+      "input": "自分が求めすぎなのかなとも思う。でも寂しいのは本当で、それを伝えてもいいのかわからない。",
+      "reflection": "起きていること：寂しさを感じており、それを伝えて良いか迷われている状態。こたえていること：「求めすぎているのでは」という問いと、伝えられない葛藤ですね。この「寂しさ」は、具体的に何に対して感じていますか。",
+      "meta": {
+        "reflectionLength": 102,
+        "timestamp": "2026-05-09T13:01:12.910Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの感情と葛藤を正確に受け止め、核心を深掘りする問いかけが素晴らしい。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-04",
+      "sampleId": "c04-s01",
+      "caseLabel": "長文・複雑な感情",
+      "input": "仕事も忙しくて、子供のこともあって、なのに夫は何もしてくれなくて。言いたいけど言えなくて、でも言ったら喧嘩になるのもわかってて。なんか全部自分で抱えてる感じでしんどい。",
+      "reflection": "起きていること：お仕事と子育て、そして家事の負担を夫からの協力がない中で全て抱え、言いたいことが言えず、喧嘩になることへの懸念もおありのようですね。こたえていること：この「全てを自分で抱えている」状況への「しんどさ」と見受けられます。何が一番しんどいと感じるか、少し整理してみますか。",
+      "meta": {
+        "reflectionLength": 142,
+        "timestamp": "2026-05-09T13:01:21.653Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの状況と感情を正確に受容し、核心を突く問いかけで寄り添えています。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-04",
+      "sampleId": "c04-s02",
+      "caseLabel": "長文・複雑な感情",
+      "input": "先週の喧嘩のこと、まだ引きずってる。謝られたけどすっきりしない。なんで謝られてもモヤモヤするのかよくわからない。",
+      "reflection": "起きていること：謝られても、まだ先週の喧嘩を引きずり、すっきりしない状態。こたえていること：謝罪を受け取っても残るモヤモヤが何なのかわからない、という感覚ですね。そのモヤモヤは、謝罪の内容に関わるものですか、それとも喧嘩そのものの内容に関わるものですか。",
+      "meta": {
+        "reflectionLength": 127,
+        "timestamp": "2026-05-09T13:01:26.289Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 2,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの感情と状況を正確に受け止め、核心を突く問いかけが素晴らしい。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-04",
+      "sampleId": "c04-s03",
+      "caseLabel": "長文・複雑な感情",
+      "input": "育休中なんだけど、孤独感がすごい。夫は仕事で充実してて、私だけ取り残されてる気がする。子供は可愛いけど、これが続くのかと思うと怖い。",
+      "reflection": "起きていることは、育休中でいらっしゃること、夫が仕事で充実されている状況ですね。お子さんは可愛らしいと感じていらっしゃる。こたえていることは、強い孤独感と、夫との状況の対比から取り残されている感覚、そしてこの状態が続くことへの怖さが見えます。孤独感がどのような時に強く感じられますか。",
+      "meta": {
+        "reflectionLength": 142,
+        "timestamp": "2026-05-09T13:01:33.158Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 2,
+      "total": 8,
+      "verdict": "good",
+      "comment": "入力内容を正確に受容し、感情の核心に迫る良い問いかけです。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-04",
+      "sampleId": "c04-s04",
+      "caseLabel": "長文・複雑な感情",
+      "input": "最近夫とは表面上うまくいってる。でも大事な話を避けてる気がする。お互い気を遣いすぎて、なんか他人行儀になってきた。",
+      "reflection": "起きていること：夫との間で表面上は良好ながら、大事な話を避けていると感じ、お互いに気を遣い他人行儀になっている状態ですね。こたえていること：大事な話ができていないこと、そして関係性の変化への懸念に見えます。具体的に、どのような話が避けていると感じますか？",
+      "meta": {
+        "reflectionLength": 127,
+        "timestamp": "2026-05-09T13:01:40.098Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 3,
+      "scoreNatural": 2,
+      "total": 7,
+      "verdict": "good",
+      "comment": "ユーザーの入力内容を正確に受容し、核心に迫る具体的な問いかけができています。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-04",
+      "sampleId": "c04-s05",
+      "caseLabel": "長文・複雑な感情",
+      "input": "お金のことで意見が違って、どっちが正しいとかじゃないのはわかってるけど、私の感覚を否定された気がしてモヤモヤしてる。",
+      "reflection": "起きていることは「お金についての意見の相違」ですね。こたえているのは「自身の感覚を否定されたように感じている」ことと、それによるモヤモヤ。その「否定された感覚」について、もう少し整理してみますか。",
+      "meta": {
+        "reflectionLength": 98,
+        "timestamp": "2026-05-09T13:01:44.043Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 2,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの感情を的確に受容し、深い自己理解へ促す良い問いかけ。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-05",
+      "sampleId": "c05-s01",
+      "caseLabel": "ポジティブ入力",
+      "input": "最近、夫が家事手伝ってくれるようになって、ありがとうって伝えたい。",
+      "reflection": "夫が家事を手伝ってくれるようになり、感謝を伝えたいと感じている状態ですね。",
+      "meta": {
+        "reflectionLength": 37,
+        "timestamp": "2026-05-09T13:01:45.850Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの感情を正確に受容し、自然で温かい表現で適切に返しています。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-05",
+      "sampleId": "c05-s02",
+      "caseLabel": "ポジティブ入力",
+      "input": "久しぶりにふたりでゆっくり話せて、やっぱりこの人と一緒でよかったなって思った。",
+      "reflection": "久しぶりにゆっくり話せて、改めて「この人でよかった」と感じられたのですね。",
+      "meta": {
+        "reflectionLength": 37,
+        "timestamp": "2026-05-09T13:01:48.983Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの感情を的確に受容し、自然な言葉で共感を示せている。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-05",
+      "sampleId": "c05-s03",
+      "caseLabel": "ポジティブ入力",
+      "input": "子供の寝かしつけ、いつも代わってくれてありがとうって言いたいけど、なんか照れくさくて言えてない。",
+      "reflection": "起きていること：お子様の寝かしつけを夫が代わってくれている状況。こたえていること：感謝を伝えたいが、照れくさくて言えないこと。伝え方について、どのような選択肢がありそうか整理してみますか。",
+      "meta": {
+        "reflectionLength": 94,
+        "timestamp": "2026-05-09T13:01:53.097Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 0,
+      "scoreNatural": 1,
+      "total": 4,
+      "verdict": "ok",
+      "comment": "状況受容は良いが、問いかけが解決志向。文章もやや硬い印象です。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-05",
+      "sampleId": "c05-s04",
+      "caseLabel": "ポジティブ入力",
+      "input": "最近喧嘩が減った気がする。お互い変わってきてるのかな。",
+      "reflection": "喧嘩が減っていると感じているのですね。お互いの変化について考えていらっしゃる状況ですね。",
+      "meta": {
+        "reflectionLength": 44,
+        "timestamp": "2026-05-09T13:01:56.656Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 0,
+      "scoreNatural": 2,
+      "total": 5,
+      "verdict": "ok",
+      "comment": "ユーザーの疑問は正確に受け止められているが、深掘りの質問がない。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-05",
+      "sampleId": "c05-s05",
+      "caseLabel": "ポジティブ入力",
+      "input": "しんどそうなとき、何もできなかったけど、そばにいることしかできなかったけど、それでもよかったって言ってくれた。",
+      "reflection": "「しんどそうな状況で、そばにいることしかできない中でも、それでもよかったと妻が言ってくれた」ということがあったのですね。",
+      "meta": {
+        "reflectionLength": 60,
+        "timestamp": "2026-05-09T13:02:00.166Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "状況を正確に把握し、共感を示せています。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06a",
+      "sampleId": "c06a-s01",
+      "caseLabel": "ラリー2ターン目",
+      "input": "仕事も家のことも全部自分でやってる感じがして、誰にも頼れない気がする。",
+      "reflection": "起きていること：仕事も家のこともすべてご自身で抱え込んでいると感じる状況ですね。こたえているのは、その中で「誰にも頼れない」という孤立感や負担感でしょうか。特に何が重く感じられますか。",
+      "meta": {
+        "reflectionLength": 92,
+        "timestamp": "2026-05-09T13:02:05.729Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 2,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちに寄り添い、核心を問う良い問いかけです。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06a",
+      "sampleId": "c06a-s02",
+      "caseLabel": "ラリー2ターン目",
+      "input": "毎回私が言わないといけないのが嫌というより、気づいてくれないことが寂しい。",
+      "reflection": "寂しさの正体が「気づかれないこと」と見えてきましたね。気づいてもらえないのは、行動についてなのか、気持ちについてなのか、どちらが近いですか。",
+      "meta": {
+        "reflectionLength": 70,
+        "timestamp": "2026-05-09T13:02:10.880Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの感情を正確に受容し、その本質に迫る問いかけが素晴らしい。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06a",
+      "sampleId": "c06a-s03",
+      "caseLabel": "ラリー2ターン目",
+      "input": "不安だったんだと思う。急に距離を感じて、怖くて攻撃的になった。",
+      "reflection": "急に距離を感じたことが「不安」や「怖さ」となり、それが攻撃的な態度につながったのですね。その距離感は、具体的にどのような状況で感じたものでしょうか。",
+      "meta": {
+        "reflectionLength": 74,
+        "timestamp": "2026-05-09T13:02:16.562Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 0,
+      "scoreNatural": 2,
+      "total": 5,
+      "verdict": "ok",
+      "comment": "気持ちの受容は良いが、問いかけが状況確認に寄りすぎている。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06a",
+      "sampleId": "c06a-s04",
+      "caseLabel": "ラリー2ターン目",
+      "input": "昔はもっと話してた気がして、それがなくなったのが寂しいのかも。",
+      "reflection": "昔と比べて会話が減ったことが寂しさにつながっているのですね。どのような会話が減っていると感じていますか。",
+      "meta": {
+        "reflectionLength": 52,
+        "timestamp": "2026-05-09T13:02:19.519Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの寂しさを的確に受け止め、具体的な会話内容を問うことで感情の深掘りを促している。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06a",
+      "sampleId": "c06a-s05",
+      "caseLabel": "ラリー2ターン目",
+      "input": "事前に一言あれば気にしないのに、気にしてないって思われてる気がして。",
+      "reflection": "起きているのは、事前に連絡があれば問題ない、という状況ですね。こたえているのは、「気にしてないと思われている」という感覚でしょうか。この感覚について、少し整理してみますか。",
+      "meta": {
+        "reflectionLength": 86,
+        "timestamp": "2026-05-09T13:02:29.500Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 2,
+      "total": 7,
+      "verdict": "good",
+      "comment": "ユーザーの言葉を正確に受け止め、感情の整理を優しく促せている。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06b",
+      "sampleId": "c06b-s01",
+      "caseLabel": "ラリー5ターン目",
+      "input": "やっぱり私が我慢すればいいのかなって思い始めてる。でもそれも違う気がして。",
+      "reflection": "ご自身が我慢する選択肢が頭に浮かんでいるものの、それが違うとも感じているのですね。何が違うと感じますか？",
+      "meta": {
+        "reflectionLength": 52,
+        "timestamp": "2026-05-09T13:02:35.330Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの葛藤を正確に受け止め、核心を問う問いかけが素晴らしい。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06b",
+      "sampleId": "c06b-s02",
+      "caseLabel": "ラリー5ターン目",
+      "input": "こんな小さいことで悩んでる自分が嫌になる。でも無視できない。",
+      "reflection": "悩みを「小さいこと」と評価し、ご自身を嫌だと感じる。その上で、無視できない状況なのですね。この「小さい」という評価と、無視できないという存在感の間が、今一番重くなっている部分でしょうか。",
+      "meta": {
+        "reflectionLength": 93,
+        "timestamp": "2026-05-09T13:02:45.621Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 2,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの矛盾した気持ちを正確に受容し、核心を突く問いかけが秀逸。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06b",
+      "sampleId": "c06b-s03",
+      "caseLabel": "ラリー5ターン目",
+      "input": "変わってしまったのか、最初からこういう人だったのかわからなくなってきた。",
+      "reflection": "夫について、「変わってしまったのか、最初からこういう人だったのか」判断がつかなくなっている状態なのですね。どのような点で、そうお感じになりますか。",
+      "meta": {
+        "reflectionLength": 73,
+        "timestamp": "2026-05-09T13:02:50.550Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 2,
+      "total": 7,
+      "verdict": "good",
+      "comment": "ユーザーの漠然とした状態を正確に受け止め、適切な問いかけです。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06b",
+      "sampleId": "c06b-s04",
+      "caseLabel": "ラリー5ターン目",
+      "input": "子供が生まれてから変わった気がする。でも子供のせいにするのも違う。",
+      "reflection": "起きていること: お子さんが生まれてから、以前と会話の様子が変わったと感じている。こたえていること: その変化がお子さんに関係することへの複雑な気持ち。具体的に、どのような場面での会話が減ったのでしょうか。",
+      "meta": {
+        "reflectionLength": 103,
+        "timestamp": "2026-05-09T13:02:58.499Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 0,
+      "scoreNatural": 1,
+      "total": 4,
+      "verdict": "ok",
+      "comment": "受容は適切ですが、問いかけが状況確認に寄りすぎ、やや硬い印象。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06b",
+      "sampleId": "c06b-s05",
+      "caseLabel": "ラリー5ターン目",
+      "input": "全部自分の解釈で悪い方に考えてるだけかもしれないけど、止まらない。",
+      "reflection": "承知いたしました。どのような状況を整理しましょうか。",
+      "meta": {
+        "reflectionLength": 26,
+        "timestamp": "2026-05-09T13:06:59.560Z"
+      },
+      "scoreReception": 1,
+      "scoreQuestion": 0,
+      "scoreNatural": 1,
+      "total": 2,
+      "verdict": "poor",
+      "comment": "解決志向の問いかけで、ユーザーの感情に寄り添えていない。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06c",
+      "sampleId": "c06c-s01",
+      "caseLabel": "ラリー10ターン目",
+      "input": "なんか今日話してみてちょっと楽になった気がする。でも解決はしてないよね。",
+      "reflection": "今日お話しされたことで、気持ちが少し楽になったのですね。同時に、まだ解決には至っていないという感覚もあると受け止めました。",
+      "meta": {
+        "reflectionLength": 61,
+        "timestamp": "2026-05-09T13:07:03.851Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの複雑な気持ちを高い受容性で的確に受け止めています。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06c",
+      "sampleId": "c06c-s02",
+      "caseLabel": "ラリー10ターン目",
+      "input": "やっぱり伝えてみようかな、と少し思えてきた。どう切り出せばいいんだろう。",
+      "reflection": "伝えてみようというお気持ちになられたのですね。まず、何を伝えたいか、少し整理してみますか。",
+      "meta": {
+        "reflectionLength": 45,
+        "timestamp": "2026-05-09T13:07:08.668Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 1,
+      "scoreNatural": 3,
+      "total": 7,
+      "verdict": "good",
+      "comment": "ユーザーの気持ちを正確に受け止め、次の一歩へ温かく導く良い問いかけです。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06c",
+      "sampleId": "c06c-s03",
+      "caseLabel": "ラリー10ターン目",
+      "input": "正直、まだ好きなのかもわからなくなってきてる。それが一番怖い。",
+      "reflection": "好きなのかもわからなくなってきているのですね。それが今、一番怖いことだと感じていらっしゃる。その「好きかわからない」という感覚は、どのような時に強くなりますか？",
+      "meta": {
+        "reflectionLength": 80,
+        "timestamp": "2026-05-09T13:07:16.342Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 2,
+      "total": 7,
+      "verdict": "good",
+      "comment": "ユーザーの感情を正確に受容し、深掘りする問いかけが適切。自然な表現で安心感を与える。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06c",
+      "sampleId": "c06c-s04",
+      "caseLabel": "ラリー10ターン目",
+      "input": "私も向き合うのが怖かったのかもしれない。夫だけのせいじゃなかったかも。",
+      "reflection": "ご自身の向き合うことへの恐れと、夫だけの責任ではないという見方が見えてきたのですね。",
+      "meta": {
+        "reflectionLength": 42,
+        "timestamp": "2026-05-09T13:07:20.053Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの自己認識を的確に受容し、温かく寄り添う良いリフレクションです。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-06c",
+      "sampleId": "c06c-s05",
+      "caseLabel": "ラリー10ターン目",
+      "input": "伝えたとして、変わらなかったらどうしようって思うと動けない。",
+      "reflection": "「変わらなかったら」という懸念が、行動の障壁になっているのですね。もし変わらなかった場合、どのようなことが起こると考えていますか？",
+      "meta": {
+        "reflectionLength": 65,
+        "timestamp": "2026-05-09T13:07:25.805Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの懸念を的確に受容し、その先の不安の核心を問う優れた応答。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-07",
+      "sampleId": "c07-s01",
+      "caseLabel": "超短文・50文字未満",
+      "input": "怒ってない",
+      "reflection": "怒りを感じていない状態なのですね。",
+      "meta": {
+        "reflectionLength": 17,
+        "timestamp": "2026-05-09T13:07:28.602Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 3,
+      "total": 9,
+      "verdict": "good",
+      "comment": "ユーザーの言葉を正確に受け止め、自然な言葉で返しています。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-07",
+      "sampleId": "c07-s02",
+      "caseLabel": "超短文・50文字未満",
+      "input": "別にいい",
+      "reflection": "起きていることは「別にいい」という言葉が出ている状況ですね。その言葉は何に対してのものだったのでしょうか、整理してみますか。",
+      "meta": {
+        "reflectionLength": 62,
+        "timestamp": "2026-05-09T13:07:40.026Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 1,
+      "scoreNatural": 2,
+      "total": 6,
+      "verdict": "ok",
+      "comment": "問いかけは状況確認に留まり、感情の掘り下げが不足。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-07",
+      "sampleId": "c07-s03",
+      "caseLabel": "超短文・50文字未満",
+      "input": "疲れた",
+      "reflection": "疲れが出ている状態ですね。どのあたりから来ているか、少し整理してみますか。",
+      "meta": {
+        "reflectionLength": 37,
+        "timestamp": "2026-05-09T13:07:42.826Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 0,
+      "scoreNatural": 3,
+      "total": 6,
+      "verdict": "ok",
+      "comment": "受容は完璧だが、問いかけが原因追求に寄っている。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-07",
+      "sampleId": "c07-s04",
+      "caseLabel": "超短文・50文字未満",
+      "input": "なんでもない",
+      "reflection": "「なんでもない」という状況ですね。何か、言葉にしにくいことがありましたか。",
+      "meta": {
+        "reflectionLength": 37,
+        "timestamp": "2026-05-09T13:07:55.054Z"
+      },
+      "scoreReception": 1,
+      "scoreQuestion": 2,
+      "scoreNatural": 3,
+      "total": 6,
+      "verdict": "ok",
+      "comment": "「なんでもない」の裏にある言葉にしにくい気持ちに寄り添う、自然で温かい問いかけです。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-07",
+      "sampleId": "c07-s05",
+      "caseLabel": "超短文・50文字未満",
+      "input": "ありがとう",
+      "reflection": "お気持ちを受け取りました。",
+      "meta": {
+        "reflectionLength": 13,
+        "timestamp": "2026-05-09T13:07:57.643Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 2,
+      "total": 8,
+      "verdict": "good",
+      "comment": "ユーザーの感謝を適切に受容し、問いかけの必要性も正しく判断できています。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-08",
+      "sampleId": "c08-s01",
+      "caseLabel": "感情語ゼロの事実報告",
+      "input": "先週から口数が減った。",
+      "reflection": "起きていることは「先週から口数が減っている」状況ですね。この変化について、どのように受け止めていらっしゃいますか。",
+      "meta": {
+        "reflectionLength": 57,
+        "timestamp": "2026-05-09T13:08:02.757Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 2,
+      "total": 7,
+      "verdict": "good",
+      "comment": "事実を正確に受容し、ユーザーの受け止め方を尋ねる適切な問いかけです。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-08",
+      "sampleId": "c08-s02",
+      "caseLabel": "感情語ゼロの事実報告",
+      "input": "最近帰りが遅い。",
+      "reflection": "最近、帰りが遅い状況ですね。このことについて、どのような点を整理されたいですか。",
+      "meta": {
+        "reflectionLength": 40,
+        "timestamp": "2026-05-09T13:08:09.675Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 2,
+      "total": 7,
+      "verdict": "good",
+      "comment": "事実を正確に受け止め、ユーザーの気持ちの整理を促す良い問いかけです。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-08",
+      "sampleId": "c08-s03",
+      "caseLabel": "感情語ゼロの事実報告",
+      "input": "夕飯、また一人で食べた。",
+      "reflection": "起きていることは、夕食をまた一人で召し上がったのですね。こたえていることは、「一人で食べた」という状況に対し、どのような思いが募っているか、整理してみますか。",
+      "meta": {
+        "reflectionLength": 79,
+        "timestamp": "2026-05-09T13:08:14.924Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 3,
+      "scoreNatural": 2,
+      "total": 8,
+      "verdict": "good",
+      "comment": "事実の受容が正確で、感情の核心に迫る問いかけが素晴らしい。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-08",
+      "sampleId": "c08-s04",
+      "caseLabel": "感情語ゼロの事実報告",
+      "input": "子供の参観日、来なかった。",
+      "reflection": "起きていることは「お子様の参観日に、夫が来なかった」状況ですね。その出来事について、具体的に何が心に残っていますか。",
+      "meta": {
+        "reflectionLength": 58,
+        "timestamp": "2026-05-09T13:08:19.848Z"
+      },
+      "scoreReception": 2,
+      "scoreQuestion": 2,
+      "scoreNatural": 2,
+      "total": 6,
+      "verdict": "ok",
+      "comment": "夫の推測はあったが、問いかけは適切で自然です。"
+    },
+    {
+      "variant": "E-logical",
+      "caseId": "case-08",
+      "sampleId": "c08-s05",
+      "caseLabel": "感情語ゼロの事実報告",
+      "input": "ここ最近、スマホをよく見てる。",
+      "reflection": "起きていることは、パートナーの方が最近スマホをよく見ている状態ですね。その状況について、どのように感じていらっしゃるか、整理してみますか。",
+      "meta": {
+        "reflectionLength": 69,
+        "timestamp": "2026-05-09T13:08:26.897Z"
+      },
+      "scoreReception": 3,
+      "scoreQuestion": 2,
+      "scoreNatural": 2,
+      "total": 7,
+      "verdict": "good",
+      "comment": "事実の受容と感情を促す問いかけが自然で温かい。"
+    }
+  ]
+}

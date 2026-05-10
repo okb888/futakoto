@@ -6,6 +6,9 @@ import { buildConsultPromptA } from './prompt-a.ts';
 import { buildConsultPromptB } from './prompt-b.ts';
 import { buildConsultPromptC } from './prompt-c.ts';
 import { buildConsultPromptD } from './prompt-d.ts';
+import { buildConsultPromptESoft } from './prompt-e-soft.ts';
+import { buildConsultPromptEFriendly } from './prompt-e-friendly.ts';
+import { buildConsultPromptELogical } from './prompt-e-logical.ts';
 
 const variant = process.argv[2] ?? 'A';
 const caseFilter = process.argv[3];
@@ -28,12 +31,31 @@ const CONSULT_SCHEMA_D = {
   },
 };
 
-const CONSULT_SCHEMA = variant === 'D' ? CONSULT_SCHEMA_D : CONSULT_SCHEMA_ABC;
+const CONSULT_SCHEMA_E = {
+  type: SchemaType.OBJECT,
+  required: ['reply'],
+  properties: {
+    reply: { type: SchemaType.STRING },
+  },
+};
+
+const E_VARIANTS = ['E-soft', 'E-friendly', 'E-logical'];
+
+function getSchema() {
+  if (variant === 'D') return CONSULT_SCHEMA_D;
+  if (E_VARIANTS.includes(variant)) return CONSULT_SCHEMA_E;
+  return CONSULT_SCHEMA_ABC;
+}
+
+const CONSULT_SCHEMA = getSchema();
 
 function buildPrompt(v: string, input: typeof cases[number]['samples'][number]['input']) {
   if (v === 'B') return buildConsultPromptB(input);
   if (v === 'C') return buildConsultPromptC(input);
   if (v === 'D') return buildConsultPromptD(input);
+  if (v === 'E-soft') return buildConsultPromptESoft(input);
+  if (v === 'E-friendly') return buildConsultPromptEFriendly(input);
+  if (v === 'E-logical') return buildConsultPromptELogical(input);
   return buildConsultPromptA(input);
 }
 
@@ -81,9 +103,12 @@ async function runSample(
   const result = await model.generateContent(prompt);
   const json = JSON.parse(result.response.text());
 
-  console.log('reflection:');
-  console.log(json.reflection);
-  console.log(`（${json.reflection.length}文字）`);
+  // E案は reply フィールド、それ以外は reflection フィールドを使う
+  const outputText: string = json.reply ?? json.reflection;
+
+  console.log('reply:');
+  console.log(outputText);
+  console.log(`（${outputText.length}文字）`);
 
   const timestamp = new Date().toISOString();
 
@@ -93,8 +118,8 @@ async function runSample(
     sampleId,
     caseLabel,
     input: input.text,
-    reflection: json.reflection,
-    reflectionLength: json.reflection.length,
+    reflection: outputText,
+    reflectionLength: outputText.length,
     timestamp,
   });
 
@@ -104,8 +129,8 @@ async function runSample(
     sampleId,
     caseLabel,
     input: input.text,
-    reflection: json.reflection,
-    meta: { reflectionLength: json.reflection.length, timestamp },
+    reflection: outputText,
+    meta: { reflectionLength: outputText.length, timestamp },
   };
 }
 

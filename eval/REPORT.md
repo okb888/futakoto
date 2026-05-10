@@ -140,9 +140,9 @@ B案が「がっかりした気持ち」「つらかった」のように感情�
 
 ### 次のアクション
 
-- [ ] `functions/src/index.ts` の `aiConsult` プロンプトをC案に差し替え
-- [ ] Cloud Functionsをデプロイして本番検証
-- [ ] messageDraft廃止・aiDraftOptions/aiDraft新関数の設計（docs/2026-05-08-review-fix-plan-v2.md参照）
+- [x] `functions/src/index.ts` の `aiConsult` プロンプトをC案に差し替え → V3-FN-1で反映済み（2026-05-09）。C案のまま差し替えではなく、C案の改善内容（感情読み込みなし・疲弊感を拾う・ポジティブは問いなし）＋出力例を追加したより洗練された形で組み込み
+- [x] Cloud Functionsをデプロイして本番検証 → デプロイ済み（2026-05-09、review-fix-plan-v2.md参照）
+- [x] messageDraft廃止・aiDraftOptions/aiDraft新関数の設計 → V3-FN-1で完了（2026-05-09）。aiConsultはreflection+readyForDraftのみを返す構造に変更、文案生成はaiDraftOptions/aiDraftに分離
 
 ---
 

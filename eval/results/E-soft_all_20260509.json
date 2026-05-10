@@ -1,0 +1,602 @@
+[
+  {
+    "variant": "E-soft",
+    "caseId": "case-01",
+    "sampleId": "c01-s01",
+    "caseLabel": "短文・曖昧",
+    "input": "なんかしんどい",
+    "reflection": "なんかしんどいと感じていらっしゃるんですね。そのしんどさは、今、どんな風に感じられますか。",
+    "meta": {
+      "reflectionLength": 45,
+      "timestamp": "2026-05-09T12:50:50.043Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-01",
+    "sampleId": "c01-s02",
+    "caseLabel": "短文・曖昧",
+    "input": "なんか最近モヤモヤしてる",
+    "reflection": "最近モヤモヤした気持ちがあるんですね。そのモヤモヤは、何に対して感じますか。",
+    "meta": {
+      "reflectionLength": 38,
+      "timestamp": "2026-05-09T12:50:53.918Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-01",
+    "sampleId": "c01-s03",
+    "caseLabel": "短文・曖昧",
+    "input": "疲れた",
+    "reflection": "疲れが重なっているんですね。今、特にしんどいことはありますか。",
+    "meta": {
+      "reflectionLength": 31,
+      "timestamp": "2026-05-09T12:50:57.542Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-01",
+    "sampleId": "c01-s04",
+    "caseLabel": "短文・曖昧",
+    "input": "うまくいかない",
+    "reflection": "うまくいかないと感じていらっしゃるんですね。どんなことが、今、心にありますか。",
+    "meta": {
+      "reflectionLength": 39,
+      "timestamp": "2026-05-09T12:51:00.843Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-01",
+    "sampleId": "c01-s05",
+    "caseLabel": "短文・曖昧",
+    "input": "なんか気持ちがついていかない",
+    "reflection": "気持ちがついていかない、と感じていらっしゃるのですね。どんな時に、そう思われますか。",
+    "meta": {
+      "reflectionLength": 42,
+      "timestamp": "2026-05-09T12:51:06.038Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-02",
+    "sampleId": "c02-s01",
+    "caseLabel": "相手への不満（直接的）",
+    "input": "また皿洗いしてない。毎回言わないとやらないし、言ったら言ったで不機嫌になる。もう疲れた。",
+    "reflection": "毎回言わないと動いてくれないこと、そして言えば不機嫌になってしまうことに、もう疲れていらっしゃるのですね。その中で、特に負担に感じているのは、どの部分でしょうか。",
+    "meta": {
+      "reflectionLength": 81,
+      "timestamp": "2026-05-09T12:51:13.759Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-02",
+    "sampleId": "c02-s02",
+    "caseLabel": "相手への不満（直接的）",
+    "input": "ゴミ出し今週も忘れてた。何回言っても変わらない。",
+    "reflection": "ゴミ出しをまた忘れていて、何回言っても変わらない、というお気持ちなのですね。そのことが、今のお気持ちにどのように響いていますか。",
+    "meta": {
+      "reflectionLength": 64,
+      "timestamp": "2026-05-09T12:51:19.961Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-02",
+    "sampleId": "c02-s03",
+    "caseLabel": "相手への不満（直接的）",
+    "input": "子どものお風呂、頼んでも「後で」って言ってそのまま寝てた。もう頼むのも嫌になってきた。",
+    "reflection": "お子さんのお風呂、お願いしても「後で」と言って、そのまま寝てしまわれたのですね。もう頼むのも嫌になってきた、というお気持ちなのですね。その「嫌」というお気持ちは、どんなことに対してですか。",
+    "meta": {
+      "reflectionLength": 94,
+      "timestamp": "2026-05-09T12:51:33.623Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-02",
+    "sampleId": "c02-s04",
+    "caseLabel": "相手への不満（直接的）",
+    "input": "仕事の愚痴は毎日聞くのに、私の話は「うん」だけで流される。",
+    "reflection": "仕事の話は聞くけれど、ご自身の話は「うん」と流されていると感じるのですね。その時、どんなお気持ちになりますか。",
+    "meta": {
+      "reflectionLength": 55,
+      "timestamp": "2026-05-09T12:51:37.146Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-02",
+    "sampleId": "c02-s05",
+    "caseLabel": "相手への不満（直接的）",
+    "input": "急に友達と飲みに行くって言い出して、夕飯どうするとか一切連絡なし。",
+    "reflection": "急に友達と飲みに行くことになり、夕飯についてのご連絡がなかったのですね。そのことに、どのようなお気持ちになられましたか。",
+    "meta": {
+      "reflectionLength": 60,
+      "timestamp": "2026-05-09T12:51:41.003Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-03",
+    "sampleId": "c03-s01",
+    "caseLabel": "自己反省混じり",
+    "input": "自分も悪いとわかってるけど、毎回同じことで傷つく。",
+    "reflection": "ご自身も悪いと感じていらっしゃる中で、同じことで毎回傷ついてしまうのですね。その「同じこと」について、もう少しお聞かせいただけますか。",
+    "meta": {
+      "reflectionLength": 67,
+      "timestamp": "2026-05-09T12:51:46.051Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-03",
+    "sampleId": "c03-s02",
+    "caseLabel": "自己反省混じり",
+    "input": "感情的に言いすぎたのは私も反省してる。でも、あの言い方はひどかったと思う。",
+    "reflection": "ご自身でも、感情的に言いすぎた部分があったと振り返られているんですね。そして、相手の言い方はひどかったと感じている、そのこともよくわかります。今、その中で特に心に残っていることは何でしょうか。",
+    "meta": {
+      "reflectionLength": 96,
+      "timestamp": "2026-05-09T12:51:50.579Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-03",
+    "sampleId": "c03-s03",
+    "caseLabel": "自己反省混じり",
+    "input": "私が細かすぎるのかもしれない。でもやっぱり気になってしまう。",
+    "reflection": "ご自身が細かすぎるのかもしれない、というお気持ちと、それでもやはり気になってしまうという思いがあるのですね。その気になる気持ちは、どんな時に特に強く感じますか。",
+    "meta": {
+      "reflectionLength": 80,
+      "timestamp": "2026-05-09T12:51:56.927Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-03",
+    "sampleId": "c03-s04",
+    "caseLabel": "自己反省混じり",
+    "input": "仕事で疲れてるのはわかってる。だから言えないでいる。でも限界に近い。",
+    "reflection": "ご主人のことを気遣い、言えないでいる中で、ご自身が限界に近いと感じていらっしゃるのですね。その「限界に近い」というお気持ちは、今、どのように感じていらっしゃいますか。",
+    "meta": {
+      "reflectionLength": 83,
+      "timestamp": "2026-05-09T12:52:03.246Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-03",
+    "sampleId": "c03-s05",
+    "caseLabel": "自己反省混じり",
+    "input": "自分が求めすぎなのかなとも思う。でも寂しいのは本当で、それを伝えてもいいのかわからない。",
+    "reflection": "ご自身が求めすぎなのかな、というお気持ちがある中で、寂しいという本当の気持ちを抱えていらっしゃるのですね。その寂しさを伝えてもいいのかどうか、迷われているのですね。その迷いがある時、どんなことを感じますか。",
+    "meta": {
+      "reflectionLength": 103,
+      "timestamp": "2026-05-09T12:52:13.433Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-04",
+    "sampleId": "c04-s01",
+    "caseLabel": "長文・複雑な感情",
+    "input": "仕事も忙しくて、子供のこともあって、なのに夫は何もしてくれなくて。言いたいけど言えなくて、でも言ったら喧嘩になるのもわかってて。なんか全部自分で抱えてる感じでしんどい。",
+    "reflection": "全部ご自分で抱えていらっしゃる感じがして、しんどさが募っているのですね。言いたいけど言えない、そのお気持ちは、今どんな風に感じられますか。",
+    "meta": {
+      "reflectionLength": 69,
+      "timestamp": "2026-05-09T12:52:19.233Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-04",
+    "sampleId": "c04-s02",
+    "caseLabel": "長文・複雑な感情",
+    "input": "先週の喧嘩のこと、まだ引きずってる。謝られたけどすっきりしない。なんで謝られてもモヤモヤするのかよくわからない。",
+    "reflection": "先週の喧嘩をまだ引きずっていて、謝られてもすっきりしない気持ちが続いているのですね。そのモヤモヤがどこから来るのか、ご自身でもよくわからないと感じていらっしゃるのですね。そのモヤモヤは、どんなことを伝えようとしているように感じますか。",
+    "meta": {
+      "reflectionLength": 117,
+      "timestamp": "2026-05-09T12:52:26.358Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-04",
+    "sampleId": "c04-s03",
+    "caseLabel": "長文・複雑な感情",
+    "input": "育休中なんだけど、孤独感がすごい。夫は仕事で充実してて、私だけ取り残されてる気がする。子供は可愛いけど、これが続くのかと思うと怖い。",
+    "reflection": "育休中に孤独感が募り、夫が仕事で充実している中で、取り残されているような感覚があるんですね。お子さんは可愛いと感じる一方で、この状況が続くことに怖さも感じているんですね。その怖さについて、もう少しお話しいただけますか。",
+    "meta": {
+      "reflectionLength": 109,
+      "timestamp": "2026-05-09T12:52:32.098Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-04",
+    "sampleId": "c04-s04",
+    "caseLabel": "長文・複雑な感情",
+    "input": "最近夫とは表面上うまくいってる。でも大事な話を避けてる気がする。お互い気を遣いすぎて、なんか他人行儀になってきた。",
+    "reflection": "ご主人とは表面上うまくいっているけれど、大事な話を避けているように感じ、お互いに気を遣いすぎて他人行儀になってきた、というお気持ち、受け止めます。その中で、特に今、どんなことが心に残っていますか。",
+    "meta": {
+      "reflectionLength": 98,
+      "timestamp": "2026-05-09T12:52:37.710Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-04",
+    "sampleId": "c04-s05",
+    "caseLabel": "長文・複雑な感情",
+    "input": "お金のことで意見が違って、どっちが正しいとかじゃないのはわかってるけど、私の感覚を否定された気がしてモヤモヤしてる。",
+    "reflection": "お金のことで意見の違いがあり、ご自身の感覚が否定されたように感じてモヤモヤされているのですね。そのモヤモヤは、今、どのようなお気持ちにつながっていますか。",
+    "meta": {
+      "reflectionLength": 77,
+      "timestamp": "2026-05-09T12:52:45.976Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-05",
+    "sampleId": "c05-s01",
+    "caseLabel": "ポジティブ入力",
+    "input": "最近、夫が家事手伝ってくれるようになって、ありがとうって伝えたい。",
+    "reflection": "ご主人が家事を手伝ってくださるようになって、ありがとうと伝えたいお気持ちなんですね。",
+    "meta": {
+      "reflectionLength": 42,
+      "timestamp": "2026-05-09T12:52:49.326Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-05",
+    "sampleId": "c05-s02",
+    "caseLabel": "ポジティブ入力",
+    "input": "久しぶりにふたりでゆっくり話せて、やっぱりこの人と一緒でよかったなって思った。",
+    "reflection": "久しぶりにゆっくりと話せたことで、やっぱりこの方と一緒でよかった、と感じられたのですね。",
+    "meta": {
+      "reflectionLength": 44,
+      "timestamp": "2026-05-09T12:52:51.947Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-05",
+    "sampleId": "c05-s03",
+    "caseLabel": "ポジティブ入力",
+    "input": "子供の寝かしつけ、いつも代わってくれてありがとうって言いたいけど、なんか照れくさくて言えてない。",
+    "reflection": "いつも寝かしつけを代わってくれること、ありがとうと伝えたいのですね。その気持ちを伝えるのに、少し照れくさいと感じていらっしゃるのですね。どんな時にそう感じますか。",
+    "meta": {
+      "reflectionLength": 81,
+      "timestamp": "2026-05-09T12:52:57.819Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-05",
+    "sampleId": "c05-s04",
+    "caseLabel": "ポジティブ入力",
+    "input": "最近喧嘩が減った気がする。お互い変わってきてるのかな。",
+    "reflection": "最近、喧嘩が減っていると感じていらっしゃるんですね。お互いの変化を感じているのかもしれませんね。",
+    "meta": {
+      "reflectionLength": 48,
+      "timestamp": "2026-05-09T12:53:00.587Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-05",
+    "sampleId": "c05-s05",
+    "caseLabel": "ポジティブ入力",
+    "input": "しんどそうなとき、何もできなかったけど、そばにいることしかできなかったけど、それでもよかったって言ってくれた。",
+    "reflection": "しんどそうなときに、何もできなかったけれど、そばにいてくれたことを「よかった」と伝えてくれたんですね。",
+    "meta": {
+      "reflectionLength": 51,
+      "timestamp": "2026-05-09T12:53:03.792Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06a",
+    "sampleId": "c06a-s01",
+    "caseLabel": "ラリー2ターン目",
+    "input": "仕事も家のことも全部自分でやってる感じがして、誰にも頼れない気がする。",
+    "reflection": "仕事も家のことも全部自分でやっている感じがして、誰にも頼れない気がするのですね。その頼れないという気持ちが、今一番重く感じるのはどんな時ですか？",
+    "meta": {
+      "reflectionLength": 72,
+      "timestamp": "2026-05-09T12:53:13.582Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06a",
+    "sampleId": "c06a-s02",
+    "caseLabel": "ラリー2ターン目",
+    "input": "毎回私が言わないといけないのが嫌というより、気づいてくれないことが寂しい。",
+    "reflection": "気づいてほしいという気持ち、そこにあるんですね。その寂しさはいつ頃から感じていますか。",
+    "meta": {
+      "reflectionLength": 43,
+      "timestamp": "2026-05-09T12:53:18.166Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06a",
+    "sampleId": "c06a-s03",
+    "caseLabel": "ラリー2ターン目",
+    "input": "不安だったんだと思う。急に距離を感じて、怖くて攻撃的になった。",
+    "reflection": "不安な気持ちから、急に距離を感じ、それが怖さとなって攻撃的な態度につながったのですね。その距離感は、どのようなものだったのでしょう。",
+    "meta": {
+      "reflectionLength": 66,
+      "timestamp": "2026-05-09T12:53:24.586Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06a",
+    "sampleId": "c06a-s04",
+    "caseLabel": "ラリー2ターン目",
+    "input": "昔はもっと話してた気がして、それがなくなったのが寂しいのかも。",
+    "reflection": "昔はもっと話していた時期があったと感じていらっしゃるんですね。その話す時間がなくなったことが、寂しさとして心にあるのですね。その頃は、どんなお話をされていたのでしょうか。",
+    "meta": {
+      "reflectionLength": 85,
+      "timestamp": "2026-05-09T12:53:30.163Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06a",
+    "sampleId": "c06a-s05",
+    "caseLabel": "ラリー2ターン目",
+    "input": "事前に一言あれば気にしないのに、気にしてないって思われてる気がして。",
+    "reflection": "事前に一言あれば気にしないのに、そう思われていると感じるのですね。その「気にしている」という気持ちを、どのように受け止めてほしいと感じますか。",
+    "meta": {
+      "reflectionLength": 71,
+      "timestamp": "2026-05-09T12:53:36.273Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06b",
+    "sampleId": "c06b-s01",
+    "caseLabel": "ラリー5ターン目",
+    "input": "やっぱり私が我慢すればいいのかなって思い始めてる。でもそれも違う気がして。",
+    "reflection": "私が我慢すればいいのかな、と思い始めているのですね。でも、それも違うような気がする、という気持ちもあるのですね。何が違うように感じますか？",
+    "meta": {
+      "reflectionLength": 69,
+      "timestamp": "2026-05-09T12:53:39.492Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06b",
+    "sampleId": "c06b-s02",
+    "caseLabel": "ラリー5ターン目",
+    "input": "こんな小さいことで悩んでる自分が嫌になる。でも無視できない。",
+    "reflection": "こんな小さいことで悩んでしまうご自身が嫌だと感じつつも、どうしても無視できないのですね。その「無視できない」という気持ちの奥には、どんな思いがあるのでしょう。",
+    "meta": {
+      "reflectionLength": 79,
+      "timestamp": "2026-05-09T12:53:47.071Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06b",
+    "sampleId": "c06b-s03",
+    "caseLabel": "ラリー5ターン目",
+    "input": "変わってしまったのか、最初からこういう人だったのかわからなくなってきた。",
+    "reflection": "変わってしまったのか、最初からこういう人だったのかわからなくなってきたのですね。そう思われるのは、どのようなことからでしょうか。",
+    "meta": {
+      "reflectionLength": 64,
+      "timestamp": "2026-05-09T12:53:54.308Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06b",
+    "sampleId": "c06b-s04",
+    "caseLabel": "ラリー5ターン目",
+    "input": "子供が生まれてから変わった気がする。でも子供のせいにするのも違う。",
+    "reflection": "お子さんが生まれてから、変化を感じていらっしゃるのですね。その変化を、お子さんのせいにするのとは少し違う、と感じられるのは、どんなところからでしょうか。",
+    "meta": {
+      "reflectionLength": 76,
+      "timestamp": "2026-05-09T12:53:58.644Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06b",
+    "sampleId": "c06b-s05",
+    "caseLabel": "ラリー5ターン目",
+    "input": "全部自分の解釈で悪い方に考えてるだけかもしれないけど、止まらない。",
+    "reflection": "自分の解釈で悪い方に考えているだけかもしれない、と思いながらも、その考えが止まらないのですね。今、どんなことに心を囚われていると感じますか？",
+    "meta": {
+      "reflectionLength": 70,
+      "timestamp": "2026-05-09T12:54:04.534Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06c",
+    "sampleId": "c06c-s01",
+    "caseLabel": "ラリー10ターン目",
+    "input": "なんか今日話してみてちょっと楽になった気がする。でも解決はしてないよね。",
+    "reflection": "今日お話しされてみて、少し楽になったように感じられたのですね。まだ解決には至っていないというお気持ちも、そうですね。",
+    "meta": {
+      "reflectionLength": 58,
+      "timestamp": "2026-05-09T12:54:11.725Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06c",
+    "sampleId": "c06c-s02",
+    "caseLabel": "ラリー10ターン目",
+    "input": "やっぱり伝えてみようかな、と少し思えてきた。どう切り出せばいいんだろう。",
+    "reflection": "伝えてみようかな、という気持ちが少しずつ芽生えてきたのですね。どう切り出せばいいか、と考えていらっしゃるのですね。伝えるときに、どんなことが気がかりになりますか？",
+    "meta": {
+      "reflectionLength": 81,
+      "timestamp": "2026-05-09T12:54:19.178Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06c",
+    "sampleId": "c06c-s03",
+    "caseLabel": "ラリー10ターン目",
+    "input": "正直、まだ好きなのかもわからなくなってきてる。それが一番怖い。",
+    "reflection": "まだ好きなのかもわからなくなってきている、そのことが一番怖いと感じていらっしゃるのですね。どんなときに、そう感じることが増えましたか？",
+    "meta": {
+      "reflectionLength": 67,
+      "timestamp": "2026-05-09T12:54:24.890Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06c",
+    "sampleId": "c06c-s04",
+    "caseLabel": "ラリー10ターン目",
+    "input": "私も向き合うのが怖かったのかもしれない。夫だけのせいじゃなかったかも。",
+    "reflection": "ご自身も向き合うのが怖かったのかもしれない、夫だけのせいではなかったかもしれない、そう気づかれたのですね。その気づきは、どんなお気持ちでしょうか。",
+    "meta": {
+      "reflectionLength": 73,
+      "timestamp": "2026-05-09T12:54:30.680Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-06c",
+    "sampleId": "c06c-s05",
+    "caseLabel": "ラリー10ターン目",
+    "input": "伝えたとして、変わらなかったらどうしようって思うと動けない。",
+    "reflection": "もし伝えても変わらなかったら、という不安が、今、動けなくさせているのですね。その時、一番つらいのはどんなことでしょうか。",
+    "meta": {
+      "reflectionLength": 60,
+      "timestamp": "2026-05-09T12:54:35.562Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-07",
+    "sampleId": "c07-s01",
+    "caseLabel": "超短文・50文字未満",
+    "input": "怒ってない",
+    "reflection": "怒っているわけではないのですね。今、どのようなお気持ちでいらっしゃいますか。",
+    "meta": {
+      "reflectionLength": 38,
+      "timestamp": "2026-05-09T12:54:40.799Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-07",
+    "sampleId": "c07-s02",
+    "caseLabel": "超短文・50文字未満",
+    "input": "別にいい",
+    "reflection": "別にいい、そう感じていらっしゃるのですね。その「別にいい」というお気持ちは、どんな風に湧いてきたのでしょうか。",
+    "meta": {
+      "reflectionLength": 55,
+      "timestamp": "2026-05-09T12:54:49.779Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-07",
+    "sampleId": "c07-s03",
+    "caseLabel": "超短文・50文字未満",
+    "input": "疲れた",
+    "reflection": "疲れが重なっているんですね。今、特にしんどいことはありますか。",
+    "meta": {
+      "reflectionLength": 31,
+      "timestamp": "2026-05-09T12:54:53.184Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-07",
+    "sampleId": "c07-s04",
+    "caseLabel": "超短文・50文字未満",
+    "input": "なんでもない",
+    "reflection": "なんでもない、と今、感じていらっしゃるのですね。そうおっしゃるのは、どのようなお気持ちからでしょうか。",
+    "meta": {
+      "reflectionLength": 51,
+      "timestamp": "2026-05-09T12:54:57.215Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-07",
+    "sampleId": "c07-s05",
+    "caseLabel": "超短文・50文字未満",
+    "input": "ありがとう",
+    "reflection": "ありがとうございます。",
+    "meta": {
+      "reflectionLength": 11,
+      "timestamp": "2026-05-09T12:54:59.620Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-08",
+    "sampleId": "c08-s01",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "先週から口数が減った。",
+    "reflection": "先週から、お相手の方の口数が減っているんですね。そのことを、今どのように感じていらっしゃいますか。",
+    "meta": {
+      "reflectionLength": 49,
+      "timestamp": "2026-05-09T12:55:03.541Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-08",
+    "sampleId": "c08-s02",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "最近帰りが遅い。",
+    "reflection": "最近、帰りが遅いと感じていらっしゃるんですね。そのことについて、今、どんな風に感じていらっしゃいますか。",
+    "meta": {
+      "reflectionLength": 52,
+      "timestamp": "2026-05-09T12:55:06.612Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-08",
+    "sampleId": "c08-s03",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "夕飯、また一人で食べた。",
+    "reflection": "夕飯をまたお一人で召し上がったのですね。お一人で召し上がって、どのようなことを思われましたか。",
+    "meta": {
+      "reflectionLength": 47,
+      "timestamp": "2026-05-09T12:55:09.695Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-08",
+    "sampleId": "c08-s04",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "子供の参観日、来なかった。",
+    "reflection": "お子さんの参観日に、ご主人がいらっしゃらなかったのですね。その時、どんな風に感じていらっしゃいましたか。",
+    "meta": {
+      "reflectionLength": 52,
+      "timestamp": "2026-05-09T12:55:14.764Z"
+    }
+  },
+  {
+    "variant": "E-soft",
+    "caseId": "case-08",
+    "sampleId": "c08-s05",
+    "caseLabel": "感情語ゼロの事実報告",
+    "input": "ここ最近、スマホをよく見てる。",
+    "reflection": "ここ最近、奥様がスマホをよく見ていらっしゃるのですね。そのことについて、何か心に引っかかることはありますか。",
+    "meta": {
+      "reflectionLength": 54,
+      "timestamp": "2026-05-09T12:55:18.963Z"
+    }
+  }
+]
