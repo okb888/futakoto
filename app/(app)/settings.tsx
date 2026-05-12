@@ -14,6 +14,7 @@ import {
   Linking,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import Constants from 'expo-constants';
 import { Bell, Clock, DownloadSimple, EnvelopeSimple, Heart, Sparkle } from 'phosphor-react-native';
 import {
   signOut,
@@ -540,35 +541,47 @@ export default function SettingsScreen() {
       )}
 
       <Text style={styles.sectionTitle}>AI利用量</Text>
-      <View style={styles.aiUsageBox}>
-        <View style={styles.notificationIconBox}>
-          <Sparkle size={22} color={COLORS.ai} weight="fill" />
-        </View>
-        <View style={styles.aiUsageContent}>
-          <View style={styles.aiUsageHeader}>
-            <Text style={styles.notificationTitle}>今月のAI利用</Text>
-            <Text style={styles.aiUsageCount}>
-              {profile?.aiCreditsMonth === currentMonthKey() ? (profile.aiCreditsUsed ?? 0) : 0}
-              /{profile?.aiCreditsLimit ?? 500}
-            </Text>
+      {profile?.premium ? (
+        <View style={styles.aiUsageBox}>
+          <View style={styles.notificationIconBox}>
+            <Sparkle size={22} color={COLORS.ai} weight="fill" />
           </View>
-          <View style={styles.aiUsageTrack}>
-            <View
-              style={[
-                styles.aiUsageFill,
-                {
-                  width: `${Math.min(
-                    100,
-                    (((profile?.aiCreditsMonth === currentMonthKey() ? (profile.aiCreditsUsed ?? 0) : 0)
-                      / (profile?.aiCreditsLimit ?? 500)) * 100)
-                  )}%`,
-                },
-              ]}
-            />
+          <View style={styles.aiUsageContent}>
+            <Text style={styles.notificationTitle}>AI無制限</Text>
+            <Text style={styles.notificationSub}>Premiumプランご利用中</Text>
           </View>
-          <Text style={styles.notificationSub}>月が変わると自動でリセットされます</Text>
         </View>
-      </View>
+      ) : (
+        <View style={styles.aiUsageBox}>
+          <View style={styles.notificationIconBox}>
+            <Sparkle size={22} color={COLORS.ai} weight="fill" />
+          </View>
+          <View style={styles.aiUsageContent}>
+            <View style={styles.aiUsageHeader}>
+              <Text style={styles.notificationTitle}>今月のAI利用</Text>
+              <Text style={styles.aiUsageCount}>
+                {profile?.aiCreditsMonth === currentMonthKey() ? (profile.aiCreditsUsed ?? 0) : 0}
+                /{profile?.aiCreditsLimit ?? 5}
+              </Text>
+            </View>
+            <View style={styles.aiUsageTrack}>
+              <View
+                style={[
+                  styles.aiUsageFill,
+                  {
+                    width: `${Math.min(
+                      100,
+                      (((profile?.aiCreditsMonth === currentMonthKey() ? (profile.aiCreditsUsed ?? 0) : 0)
+                        / (profile?.aiCreditsLimit ?? 5)) * 100)
+                    )}%`,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.notificationSub}>月が変わると自動でリセットされます</Text>
+          </View>
+        </View>
+      )}
 
       <Text style={styles.sectionTitle}>通知</Text>
       <View style={[styles.notificationBox, styles.notificationBoxStack]}>
@@ -676,6 +689,8 @@ export default function SettingsScreen() {
           <Text style={styles.legalLinkText}>利用規約</Text>
         </TouchableOpacity>
       </View>
+
+      <Text style={styles.versionText}>バージョン {Constants.expoConfig?.version ?? '—'}</Text>
 
       <TouchableOpacity
         style={styles.logoutButton}
@@ -1081,6 +1096,7 @@ const styles = StyleSheet.create({
   },
   legalLinkText: { fontSize: 12, color: COLORS.textMuted, textDecorationLine: 'underline' },
   legalSep: { fontSize: 12, color: COLORS.disabled },
+  versionText: { fontSize: 12, color: COLORS.disabled, textAlign: 'center', marginTop: 4, marginBottom: 8 },
   verificationBanner: {
     backgroundColor: COLORS.warningBg,
     borderRadius: 10,

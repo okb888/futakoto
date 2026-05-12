@@ -83,6 +83,7 @@ export interface UserProfile {
   notificationSettings?: NotificationSettings;
   communicationStyle?: string;
   aiPersona?: AiPersona;
+  premium?: boolean;
   aiCreditsMonth?: string;
   createdAt: any;
   aiCreditsUsed?: number;

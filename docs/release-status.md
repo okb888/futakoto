@@ -1,6 +1,6 @@
 # ふたこと リリースステータス
 
-**最終更新**: 2026-05-09（pricing-design.md 完成 / eval 全完了を反映）
+**最終更新**: 2026-05-11（設定画面バグ修正2件 / product-review.md 追加）
 **目標**: 2026年8月31日までに月額¥500の課金が1人発生
 **直近マイルストーン**: 5/31 App Store審査提出 → 6月中リリース
 
@@ -72,29 +72,26 @@ F. LP修正    ───────🟡 仮ページ公開中・本番版未作
 
 ---
 
-## C. 課金UI（月額¥500 + 無料AI月3回）— 🔴 最優先
+## C. 課金UI（月額¥500 + 無料AI月5回）— 🔴 最優先
 
 | 項目 | 状態 |
 |---|---|
-| 現状 | **未着手** |
-| 次 | (今週) `docs/pricing-design.md` を書く → (来週) 実装 |
+| 現状 | 設計完了・フロント一部準備済み → 実装待ち |
+| 次 | EAS Build環境整備 → RevenueCat統合 → Cloud Functionsガード |
 | デッドライン | **5/20までに実装完了**（β配布で課金フロー検証可能に） |
 | ⚠ 重要 | 事前検死v2 の最優先リスク R10（無料が便利すぎて課金しない） |
 
-### Step 1: pricing-design.md に書く項目（今週）
-- [ ] 月3回のカウント対象（aiRewrite/aiConsult/aiInterpret/aiSummary それぞれカウントするか）
-- [ ] 月次リセット日（カレンダー月初 or ユーザーごとの初回利用日基準）
-- [ ] 残回数の表示方法（毎回表示 vs 残2回時点で警告）
-- [ ] 課金誘導UI の配置（3回目使用直後 / 設定画面 / 月初リセット時）
-- [ ] 月額¥500の特典文言（AI無制限／広告非表示／月次AI要約フル機能 等）
-- [ ] 7日間無料トライアルを採用するかどうか
-- [ ] StoreKit / RevenueCat の SKU 名と価格
+### ✅ 完了済み（2026-05-11）
+- [x] `docs/pricing-design.md` 完成（月5回・ローリングリセット・RevenueCat設計まで確定）
+- [x] `lib/db.ts` に `UserProfile.premium?: boolean` フィールド追加（Webhook受信時に書き込む準備）
+- [x] 設定画面のAI利用表示を課金状態で出し分け（premium=true→「AI無制限」、free→X/5表示）
 
-### Step 2: 実装（来週以降）
-- [ ] RevenueCat × Expo 統合
-- [ ] AI機能呼び出し時のカウントロジック（Cloud Functions または Firestore側）
-- [ ] 月次リセットの cron / Cloud Function
-- [ ] 課金誘導UIの実装
+### 実装（来週以降）
+- [ ] EAS Build環境整備（`expo-dev-client` 追加）
+- [ ] Cloud Functions の使用回数ガード（6関数すべてに `checkAndConsumeAiQuota` を差し込み）
+- [ ] RevenueCat × Expo 統合（`react-native-purchases`、Webhook）
+- [ ] `AiQuotaChip.tsx` + `PaywallModal.tsx` 実装
+- [ ] 課金誘導UI の配置（5回目使用直後 / 設定画面 / 月次振り返り）
 - [ ] App Store Connect でサブスクSKU作成（Apple Developer Program承認後）
 
 ---
@@ -111,9 +108,14 @@ F. LP修正    ───────🟡 仮ページ公開中・本番版未作
 | β配布計画 | 同僚2組+奥さん（合計3ペア） |
 | 審査提出 | **5/31** デッドライン |
 
+### ✅ 完了済み（2026-05-11）
+- [x] 設定画面にバージョン表記を追加（`expo-constants` で `app.json` から動的取得）
+- [x] プライバシーポリシー・利用規約リンクのURLは実装済み（Firebase側ページ作成が残タスク）
+
 ### 今週やる
 - [ ] Apple Developer Program 承認メール受領 → 受領後すぐにApp Store Connect初期設定
 - [ ] 受領が5/15までに来ない場合のPlan B検討（β配布をTestFlight以外で実施するか）
+- [ ] Firebase でプライバシーポリシー・利用規約ページ作成（リンク有効化）
 
 ### 来週以降
 - [ ] App Privacy Manifest 実装
@@ -172,6 +174,7 @@ F. LP修正    ───────🟡 仮ページ公開中・本番版未作
 | [`docs/pricing-design.md`](./pricing-design.md) | 課金設計（月額¥500 / 1契約2人 / 無料AI月5回） |
 | [`docs/acquisition-strategy.md`](./acquisition-strategy.md) | 集客戦略・SNS運用方針（ターゲット定義・チャネル設計・プライバシー運用） |
 | [`docs/content-stock.md`](./content-stock.md) | 発信ネタストック（19件・7シリーズ・note 5本構成案） |
+| [`docs/2026-05-10-product-review.md`](./2026-05-10-product-review.md) | Any Planner分析メモ（課金・UI・設定画面・動画プロモ）+ 実機バグTODO |
 | `docs/auth-integration.md` | （未作成・別スレッド完了時に作る） |
 | `eval/PLAN.md` | AI精度評価プラン |
 | `AGENTS.md` | エージェント向けハンドオフ本体 |
