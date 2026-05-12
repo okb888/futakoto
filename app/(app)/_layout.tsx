@@ -9,7 +9,7 @@ export default function AppLayout() {
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.placeholder,
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: COLORS.surface,
           borderTopColor: COLORS.borderSoft,
           height: 84,
           paddingTop: 8,

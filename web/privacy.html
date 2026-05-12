@@ -128,7 +128,15 @@
     </ul>
 
     <h2>3. AI処理について</h2>
-    <p>AI機能を利用すると、投稿や相談内容、要約対象の記録など、処理に必要なテキストがGoogle Generative AI（Gemini API）に送信されます。送信されたテキストは、AIによるリライト、相談への返答、投稿の読み解き、月次要約の生成に利用されます。</p>
+    <p>AI機能を利用すると、機能ごとに以下の範囲のテキストがGoogle Generative AI（Gemini API）に送信されます。アプリ初回利用時に同意ダイアログで明示的にご確認いただきます。</p>
+    <ul>
+      <li><strong>3.1 文章リライト（aiRewrite）</strong>：あなたが入力した文章本文と、表示用のパートナー名（任意）を送信します。出力結果は端末上でのみ表示し、サーバーには保存しません。</li>
+      <li><strong>3.2 壁打ち（aiConsult）</strong>：あなたの相談文と、同一セッション内のこれまでのやり取り、パートナー名（任意）、選択中のAI人格（やわらか／フレンドリー／論理的）を送信します。会話履歴はあなた自身のFirestoreにのみ保存されます。</li>
+      <li><strong>3.3 伝え方の選択肢生成（aiDraftOptions）／投稿文の生成（aiDraft）</strong>：壁打ちセッション内のあなたの発話と、選択した「伝え方」の指示文を送信します。</li>
+      <li><strong>3.4 気持ちを読み解く（aiInterpret）</strong>：相手の投稿本文と気分値を送信します。同じ投稿に対する解釈結果は、あなたの端末側でキャッシュされます。</li>
+      <li><strong>3.5 月次サマリー（aiSummary）</strong>：対象期間（最大{500}件以内、本文合計{50,000}文字以内）の気分値と投稿本文を送信します。生成結果は端末上でのみ表示します。</li>
+    </ul>
+    <p>送信されない情報：メールアドレス、認証情報、Apple Sign-in / Google Sign-in のIDトークン、招待コード、通知トークン、課金情報。</p>
     <p>Googleのデータの取り扱いについては、<a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Gemini API Terms</a> および <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a> を確認してください。</p>
 
     <h2>4. 第三者サービス</h2>
@@ -147,7 +155,7 @@
     <p>アプリの設定画面からアカウント削除を行うと、アカウント情報、投稿、相談履歴、お気に入り、通知トークンなど、ユーザーに紐づくデータを削除します。削除後は元に戻せません。</p>
 
     <h2>7. お問い合わせ</h2>
-    <p>プライバシーに関するお問い合わせは、<a href="mailto:support@futakoto.jp">support@futakoto.jp</a> までご連絡ください。</p>
+    <p>プライバシーに関するお問い合わせは、<a href="/support">サポートページのお問い合わせフォーム</a>からご連絡ください。</p>
 
     <div class="note">
       <p>App Storeのプライバシー申告では、メールアドレス、ユーザーID、投稿などのユーザーコンテンツ、利用状況を、アプリ機能提供のために利用する情報として申告します。トラッキング目的では利用しません。</p>

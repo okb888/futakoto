@@ -16,12 +16,14 @@ import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { ArrowCounterClockwise, CalendarBlank, Clock, Users, Lock, Sparkle } from 'phosphor-react-native';
 import { TimePickerSheet } from '../../components/TimePickerSheet';
 import { useAuth } from '../../lib/auth';
-import { addEntry, getEntry, getUserProfile, updateEntry, updateLastVisibility, Visibility } from '../../lib/db';
+import { addEntry, getEntry, getUserProfile, setAiConsentAcknowledged, updateEntry, updateLastVisibility, Visibility } from '../../lib/db';
 import { getPartnerDisplayName } from '../../lib/profile';
 import { aiRewrite, RewriteResult } from '../../lib/ai';
 import { MOODS } from '../../lib/mood';
-import { firebaseErrorMessage } from '../../lib/errors';
+import { classifyError, firebaseErrorMessage } from '../../lib/errors';
 import { COLORS } from '../../lib/theme';
+import { PaywallModal } from '../../components/PaywallModal';
+import { AiConsentModal } from '../../components/AiConsentModal';
 
 function formatDateInput(date: Date): string {
   return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
@@ -43,7 +45,7 @@ function timestampToDate(ts: any): Date {
 type PickerMode = 'date' | 'time';
 
 export default function PostScreen() {
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const router = useRouter();
   const navigation = useNavigation();
   const params = useLocalSearchParams<{ memo?: string; entryId?: string; sourceConsultationSessionId?: string }>();
@@ -63,10 +65,15 @@ export default function PostScreen() {
   const [pickerHour, setPickerHour] = useState(() => new Date().getHours());
   const [pickerMinute, setPickerMinute] = useState(() => new Date().getMinutes());
 
+  const [memoFocused, setMemoFocused] = useState(false);
+
   // AI リライト
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<RewriteResult | null>(null);
   const [previousMemo, setPreviousMemo] = useState<string | null>(null);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallReason, setPaywallReason] = useState<string | undefined>(undefined);
+  const [consentOpen, setConsentOpen] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({ title: isEditing ? '記録を編集' : '記録する' });
@@ -151,19 +158,44 @@ export default function PostScreen() {
     }
   }
 
-  async function handleAiRewrite() {
-    if (!memo.trim()) {
-      Alert.alert('まずメモを書いてください', 'AIで書き直すには元の文章が必要です');
-      return;
-    }
+  async function runAiRewrite() {
     setAiLoading(true);
     try {
       const result = await aiRewrite(memo, partnerName);
       setAiResult(result);
     } catch (e: any) {
-      Alert.alert('エラー', firebaseErrorMessage(e));
+      const c = classifyError(e);
+      if (c.kind === 'quota') {
+        setPaywallReason(c.message);
+        setPaywallOpen(true);
+      } else {
+        Alert.alert(c.title, c.message);
+      }
     } finally {
       setAiLoading(false);
+    }
+  }
+
+  async function handleAiRewrite() {
+    if (!memo.trim()) {
+      Alert.alert('まずメモを書いてください', 'AIで書き直すには元の文章が必要です');
+      return;
+    }
+    if (profile && profile.aiConsentAcknowledged !== true) {
+      setConsentOpen(true);
+      return;
+    }
+    await runAiRewrite();
+  }
+
+  async function handleAgreeConsent() {
+    if (!user) return;
+    try {
+      await setAiConsentAcknowledged(user.uid);
+      await refreshProfile();
+    } finally {
+      setConsentOpen(false);
+      await runAiRewrite();
     }
   }
 
@@ -299,7 +331,7 @@ export default function PostScreen() {
                 }}
                 onDayPress={(day) => handleDaySelect(day.dateString)}
                 theme={{
-                  calendarBackground: '#fff',
+                  calendarBackground: COLORS.surface,
                   todayTextColor: COLORS.primary,
                   arrowColor: COLORS.primary,
                   monthTextColor: COLORS.text,
@@ -326,11 +358,13 @@ export default function PostScreen() {
           </TouchableOpacity>
         </View>
         <TextInput
-          style={styles.input}
+          style={[styles.input, memoFocused && styles.inputFocused]}
           placeholder={`${partnerName}に伝えたいことを、そのまま書いてください`}
-          placeholderTextColor="#BBB"
+          placeholderTextColor="#999"
           value={memo}
           onChangeText={setMemo}
+          onFocus={() => setMemoFocused(true)}
+          onBlur={() => setMemoFocused(false)}
           multiline
           numberOfLines={4}
           textAlignVertical="top"
@@ -422,7 +456,7 @@ export default function PostScreen() {
           disabled={loading || mood === null}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={COLORS.surface} />
           ) : (
             <Text style={styles.saveButtonText}>{isEditing ? '変更を保存する' : '保存する'}</Text>
           )}
@@ -443,6 +477,19 @@ export default function PostScreen() {
         quickAction={{ label: '今', onPress: setPickerToNow }}
       />
 
+      <PaywallModal
+        visible={paywallOpen}
+        reason={paywallReason}
+        onClose={() => setPaywallOpen(false)}
+        onPurchased={() => refreshProfile()}
+      />
+
+      <AiConsentModal
+        visible={consentOpen}
+        onAgree={handleAgreeConsent}
+        onCancel={() => setConsentOpen(false)}
+      />
+
     </KeyboardAvoidingView>
   );
 }
@@ -451,7 +498,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { padding: 24, paddingBottom: 48 },
   entryLoading: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.borderSoft,
     borderRadius: 12,
@@ -462,7 +509,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   entryLoadingText: { color: COLORS.textMuted, fontSize: 13 },
-  label: { fontSize: 14, fontWeight: '600', color: COLORS.textSubtle, marginBottom: 12, marginTop: 24 },
+  label: { fontSize: 13, fontWeight: '600', color: COLORS.textMuted, marginBottom: 10, marginTop: 22, letterSpacing: 0.2 },
   messageLabel: { flex: 1 },
   messageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 },
   aiButton: {
@@ -481,19 +528,19 @@ const styles = StyleSheet.create({
   moodButton: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 14,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: COLORS.border,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
   },
-  moodEmoji: { fontSize: 24 },
-  moodLabel: { fontSize: 10, color: COLORS.textWeak, marginTop: 4 },
+  moodEmoji: { fontSize: 28 },
+  moodLabel: { fontSize: 11, color: COLORS.textWeak, marginTop: 6 },
   moodLabelSelected: { color: COLORS.textSubtle, fontWeight: '600' },
   quickDateRow: { flexDirection: 'row', gap: 8 },
   quickDateButton: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 16,
@@ -504,7 +551,7 @@ const styles = StyleSheet.create({
   dateTimeRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
   pickerButton: {
     flex: 1.4,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
@@ -522,7 +569,7 @@ const styles = StyleSheet.create({
   timePickerButton: { flex: 0.8 },
   pickerButtonText: { fontSize: 14, color: COLORS.text, fontWeight: '600' },
   pickerPanel: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
@@ -530,7 +577,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
@@ -538,6 +585,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.text,
     minHeight: 100,
+  },
+  inputFocused: {
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
   },
   undoButton: {
     alignSelf: 'flex-start',
@@ -558,7 +612,7 @@ const styles = StyleSheet.create({
   aiSuggestionTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text },
   aiSuggestionSub: { fontSize: 11, color: COLORS.textMuted },
   inlineLoading: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     paddingVertical: 24,
     alignItems: 'center',
@@ -573,7 +627,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: COLORS.border,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 6,
@@ -585,24 +639,28 @@ const styles = StyleSheet.create({
   visBtnPrivateTextActive: { color: COLORS.textSubtle, fontWeight: '600' },
   saveButton: {
     backgroundColor: COLORS.primary,
-    borderRadius: 12,
+    borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 32,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
   },
-  saveButtonDisabled: { backgroundColor: COLORS.primaryDim },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonDisabled: { backgroundColor: COLORS.primaryDim, shadowOpacity: 0 },
+  saveButtonText: { color: COLORS.surface, fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
   modalTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   modalLoadingText: { fontSize: 13, color: COLORS.textMuted },
   rewriteCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
     borderColor: COLORS.aiBorder,
   },
   understandingCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,

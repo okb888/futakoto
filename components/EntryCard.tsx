@@ -103,15 +103,20 @@ export function EntryCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     marginHorizontal: 16,
-    marginBottom: 10,
-    borderRadius: 12,
+    marginBottom: 14,
+    borderRadius: 14,
     padding: 16,
     borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  cardEmoji: { fontSize: 28 },
+  cardEmoji: { fontSize: 32 },
   cardMeta: { flex: 1 },
   badgeRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   authorBadge: {
@@ -145,6 +150,6 @@ const styles = StyleSheet.create({
   cardTime: { fontSize: 11, color: COLORS.textWeak, marginTop: 5 },
   favoriteButton: { padding: 6, marginRight: -6 },
   favoriteStatic: { padding: 6, marginRight: -6 },
-  cardMemo: { fontSize: 14, color: COLORS.textBody, marginTop: 10, lineHeight: 20 },
+  cardMemo: { fontSize: 14, color: COLORS.textBody, marginTop: 10, lineHeight: 22 },
   cardFooter: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.borderSoft },
 });

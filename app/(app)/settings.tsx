@@ -33,9 +33,11 @@ import {
   updateNotificationSettings,
   updateCommunicationStyle,
   updateAiPersona,
+  AI_FREE_MONTHLY_LIMIT,
   type AiPersona,
   type NotificationSettings,
 } from '../../lib/db';
+import { PaywallModal } from '../../components/PaywallModal';
 import { pairWithCode, unpairPartner, deleteAccount, regenerateInviteCode } from '../../lib/ai';
 import {
   cancelDailyReminder,
@@ -123,6 +125,7 @@ export default function SettingsScreen() {
   const [copied, setCopied] = useState(false);
   const [styleSaved, setStyleSaved] = useState(false);
   const [emailVerified, setEmailVerified] = useState(user?.emailVerified ?? true);
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   // プロフィールが更新されたら派生フォームを同期
   useEffect(() => {
@@ -192,17 +195,25 @@ export default function SettingsScreen() {
 
   async function handleUnpair() {
     if (!user || !profile?.partnerUid) return;
-    Alert.alert('解除しますか？', 'パートナーとの接続を解除します。自分の投稿は残ります', [
-      { text: 'キャンセル', style: 'cancel' },
-      {
-        text: '解除する',
-        style: 'destructive',
-        onPress: async () => {
-          await unpairPartner();
-          await load();
+    Alert.alert(
+      'パートナー接続を解除しますか？',
+      '解除すると、これまで「ふたりへ」で共有した投稿は相手から見えなくなります。あなたの投稿データはこの端末・アカウントに残ります。\n\n再びつなぎ直すには、新しい招待コードでもう一度ペア設定が必要です。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '解除する',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await unpairPartner();
+              await load();
+            } catch (e: any) {
+              Alert.alert('エラー', firebaseErrorMessage(e));
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   }
 
   async function handleSaveStyle() {
@@ -484,7 +495,7 @@ export default function SettingsScreen() {
               accessibilityRole="button"
             >
               {isLoading.pair ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={COLORS.surface} size="small" />
               ) : (
                 <Text style={styles.pairButtonText}>繋がる</Text>
               )}
@@ -547,41 +558,45 @@ export default function SettingsScreen() {
             <Sparkle size={22} color={COLORS.ai} weight="fill" />
           </View>
           <View style={styles.aiUsageContent}>
-            <Text style={styles.notificationTitle}>AI無制限</Text>
-            <Text style={styles.notificationSub}>Premiumプランご利用中</Text>
+            <Text style={styles.notificationTitle}>プレミアム加入中</Text>
+            <Text style={styles.notificationSub}>AI機能は無制限でお使いいただけます</Text>
           </View>
         </View>
-      ) : (
-        <View style={styles.aiUsageBox}>
-          <View style={styles.notificationIconBox}>
-            <Sparkle size={22} color={COLORS.ai} weight="fill" />
-          </View>
-          <View style={styles.aiUsageContent}>
-            <View style={styles.aiUsageHeader}>
-              <Text style={styles.notificationTitle}>今月のAI利用</Text>
-              <Text style={styles.aiUsageCount}>
-                {profile?.aiCreditsMonth === currentMonthKey() ? (profile.aiCreditsUsed ?? 0) : 0}
-                /{profile?.aiCreditsLimit ?? 5}
+      ) : (() => {
+        const used = profile?.aiCreditsUsed ?? 0;
+        const limit = AI_FREE_MONTHLY_LIMIT;
+        const remaining = Math.max(0, limit - used);
+        const ratio = Math.min(100, (used / limit) * 100);
+        return (
+          <View style={styles.aiUsageBox}>
+            <View style={styles.notificationIconBox}>
+              <Sparkle size={22} color={COLORS.ai} weight="fill" />
+            </View>
+            <View style={styles.aiUsageContent}>
+              <View style={styles.aiUsageHeader}>
+                <Text style={styles.notificationTitle}>今月の無料分</Text>
+                <Text style={styles.aiUsageCount}>残り {remaining}/{limit}</Text>
+              </View>
+              <View style={styles.aiUsageTrack}>
+                <View style={[styles.aiUsageFill, { width: `${ratio}%` }]} />
+              </View>
+              <Text style={styles.notificationSub}>
+                {remaining === 0
+                  ? '無料分を使い切りました。プレミアムで無制限に使えます'
+                  : '初回利用から30日でリセットされます'}
               </Text>
+              <TouchableOpacity
+                style={styles.premiumCta}
+                onPress={() => setPaywallOpen(true)}
+                activeOpacity={0.85}
+              >
+                <Sparkle size={14} color={COLORS.surface} weight="fill" />
+                <Text style={styles.premiumCtaText}>プレミアムを試す</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.aiUsageTrack}>
-              <View
-                style={[
-                  styles.aiUsageFill,
-                  {
-                    width: `${Math.min(
-                      100,
-                      (((profile?.aiCreditsMonth === currentMonthKey() ? (profile.aiCreditsUsed ?? 0) : 0)
-                        / (profile?.aiCreditsLimit ?? 5)) * 100)
-                    )}%`,
-                  },
-                ]}
-              />
-            </View>
-            <Text style={styles.notificationSub}>月が変わると自動でリセットされます</Text>
           </View>
-        </View>
-      )}
+        );
+      })()}
 
       <Text style={styles.sectionTitle}>通知</Text>
       <View style={[styles.notificationBox, styles.notificationBoxStack]}>
@@ -598,7 +613,7 @@ export default function SettingsScreen() {
             onValueChange={toggleDailyReminder}
             disabled={isLoading.notification}
             trackColor={{ false: COLORS.border, true: COLORS.primaryDim }}
-            thumbColor={notificationSettings.dailyReminderEnabled ? COLORS.primary : '#fff'}
+            thumbColor={notificationSettings.dailyReminderEnabled ? COLORS.primary : COLORS.surface}
           />
         </View>
         <TouchableOpacity
@@ -638,7 +653,7 @@ export default function SettingsScreen() {
           onValueChange={toggleSharedPostNotifications}
           disabled={isLoading.notification}
           trackColor={{ false: COLORS.border, true: COLORS.partnerBorder }}
-          thumbColor={notificationSettings.sharedPostNotificationsEnabled ? COLORS.partner : '#fff'}
+          thumbColor={notificationSettings.sharedPostNotificationsEnabled ? COLORS.partner : COLORS.surface}
         />
       </View>
 
@@ -761,7 +776,7 @@ export default function SettingsScreen() {
               disabled={isLoading.delete}
             >
               {isLoading.delete ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={COLORS.surface} />
               ) : (
                 <Text style={styles.deleteConfirmText}>削除する（取り消せません）</Text>
               )}
@@ -790,6 +805,12 @@ export default function SettingsScreen() {
         onSave={saveReminderTime}
       />
 
+      <PaywallModal
+        visible={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        onPurchased={() => load()}
+      />
+
     </ScrollView>
   );
 }
@@ -800,7 +821,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 13, fontWeight: '700', color: COLORS.textMuted, marginTop: 28, marginBottom: 8, letterSpacing: 1 },
   hint: { fontSize: 12, color: COLORS.placeholder, marginBottom: 10 },
   row: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -818,9 +839,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
   },
-  smallButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  smallButtonText: { color: COLORS.surface, fontSize: 13, fontWeight: '600' },
   codeBox: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
@@ -836,10 +857,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
-  copyButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  copyButtonText: { color: COLORS.surface, fontSize: 13, fontWeight: '600' },
   shareButton: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.primary,
     paddingVertical: 12,
@@ -848,7 +869,7 @@ const styles = StyleSheet.create({
   },
   shareButtonText: { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
   regenerateButton: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     paddingVertical: 10,
@@ -858,7 +879,7 @@ const styles = StyleSheet.create({
   },
   regenerateButtonText: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700' },
   pairedBox: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -868,7 +889,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   notificationBox: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -899,7 +920,7 @@ const styles = StyleSheet.create({
   notificationTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text },
   notificationSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 3, lineHeight: 16 },
   aiUsageBox: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -922,6 +943,22 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: COLORS.ai,
+  },
+  premiumCta: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.ai,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  premiumCtaText: {
+    color: COLORS.surface,
+    fontSize: 13,
+    fontWeight: '700',
   },
   reminderTimeArea: {
     borderTopWidth: 1,
@@ -971,7 +1008,7 @@ const styles = StyleSheet.create({
   inputRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   input: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
@@ -988,13 +1025,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   pairButtonDisabled: { backgroundColor: COLORS.primaryDim },
-  pairButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  pairButtonText: { color: COLORS.surface, fontSize: 13, fontWeight: '600' },
   styleCharCount: { fontSize: 11, color: COLORS.placeholder, textAlign: 'right', marginTop: 4 },
   personaOption: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -1031,7 +1068,7 @@ const styles = StyleSheet.create({
   personaDesc: { fontSize: 12, color: COLORS.textMuted, marginTop: 2, lineHeight: 17 },
   divider: { height: 1, backgroundColor: COLORS.borderSoft, marginTop: 32, marginBottom: 8 },
   accountActionButton: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.primaryBorder,
     borderRadius: 12,
@@ -1060,7 +1097,7 @@ const styles = StyleSheet.create({
   deleteSheetBody: { fontSize: 13, color: COLORS.textMuted, lineHeight: 20 },
   deleteSheetLabel: { fontSize: 13, fontWeight: '600', color: COLORS.textSubtle, marginTop: 4 },
   deleteInput: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
@@ -1084,7 +1121,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
-  deleteConfirmText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  deleteConfirmText: { color: COLORS.surface, fontSize: 14, fontWeight: '700' },
   deleteCancelButton: { paddingVertical: 10, alignItems: 'center' },
   deleteCancelText: { fontSize: 14, color: COLORS.textWeak },
   legalLinks: {

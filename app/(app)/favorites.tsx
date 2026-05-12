@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   missingCard: {
     marginHorizontal: 16,
     marginBottom: 10,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,

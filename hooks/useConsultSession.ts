@@ -13,7 +13,7 @@ import {
   ConsultationSession,
   getUserProfile,
 } from '../lib/db';
-import { firebaseErrorMessage } from '../lib/errors';
+import { classifyError } from '../lib/errors';
 import { getPartnerDisplayName } from '../lib/profile';
 
 const MAX_TURNS = 10;
@@ -25,6 +25,25 @@ export type ConversationTurn = {
   reflection: string;
   legacyMessageDraft?: string;
   collapsed: boolean;
+};
+
+/**
+ * 共通エラーハンドラ。
+ * 危機介入 → 専用ダイアログ、quota → onQuotaExceeded コールバック、
+ * その他は分類した title/message で Alert。
+ */
+function showError(e: any, onQuotaExceeded?: (message: string) => void) {
+  const c = classifyError(e);
+  if (c.kind === 'quota' && onQuotaExceeded) {
+    onQuotaExceeded(c.message);
+    return;
+  }
+  Alert.alert(c.title, c.message);
+}
+
+export type UseConsultSessionOptions = {
+  /** AI上限到達時の通知。consult.tsx 側でPaywallを開くのに使う */
+  onQuotaExceeded?: (message: string) => void;
 };
 
 export type UseConsultSessionReturn = {
@@ -67,7 +86,11 @@ export type UseConsultSessionReturn = {
   handleRegenerateDraft: () => void;
 };
 
-export function useConsultSession(focusSessionId?: string): UseConsultSessionReturn {
+export function useConsultSession(
+  focusSessionId?: string,
+  options?: UseConsultSessionOptions
+): UseConsultSessionReturn {
+  const onQuotaExceeded = options?.onQuotaExceeded;
   const { user, profile: authProfile, refreshProfile } = useAuth();
   const router = useRouter();
 
@@ -140,12 +163,19 @@ export function useConsultSession(focusSessionId?: string): UseConsultSessionRet
       const nextResult = await aiConsult(currentInput, partnerName, sessionId, aiPersona);
       const sessionTurn = { input: currentInput, reflection: nextResult.reply };
 
+      // セッション作成/追記の失敗はAI返信を保持したまま再試行可能にするため、別try-catchで囲う
       let activeSessionId = sessionId;
-      if (!activeSessionId) {
-        activeSessionId = await createConsultationSession(user.uid, sessionTurn);
-        setSessionId(activeSessionId);
-      } else {
-        await addTurnToSession(user.uid, activeSessionId, sessionTurn);
+      try {
+        if (!activeSessionId) {
+          activeSessionId = await createConsultationSession(user.uid, sessionTurn);
+          setSessionId(activeSessionId);
+        } else {
+          await addTurnToSession(user.uid, activeSessionId, sessionTurn);
+        }
+      } catch (saveErr: any) {
+        // 保存失敗時は会話を進めない（AI消費は発生済みだが、表示の整合性を優先）
+        showError(saveErr, onQuotaExceeded);
+        return;
       }
 
       setConversation((prev) => [
@@ -162,15 +192,7 @@ export function useConsultSession(focusSessionId?: string): UseConsultSessionRet
       setDraftIntent(null);
       setDraftOptions(null);
     } catch (e: any) {
-      if ((e as any)?.details?.type === 'crisis') {
-        Alert.alert(
-          '話を聞いてもらえる場所があります',
-          'いまとても辛い状況かもしれません。\n\nよりそいホットライン\n0120-279-338（24時間・無料）\n\nかかりつけの人や信頼できる人に話すことも一つの方法です。',
-          [{ text: '閉じる' }]
-        );
-      } else {
-        Alert.alert('エラー', firebaseErrorMessage(e));
-      }
+      showError(e, onQuotaExceeded);
     } finally {
       setLoading(false);
     }
@@ -245,7 +267,7 @@ export function useConsultSession(focusSessionId?: string): UseConsultSessionRet
       setIsFavorited(!isFavorited);
       await load();
     } catch (e: any) {
-      Alert.alert('エラー', firebaseErrorMessage(e));
+      showError(e, onQuotaExceeded);
     } finally {
       setTogglingFavorite(false);
     }
@@ -259,7 +281,7 @@ export function useConsultSession(focusSessionId?: string): UseConsultSessionRet
         prev.map((s) => s.id === session.id ? { ...s, favored: !s.favored } : s)
       );
     } catch (e: any) {
-      Alert.alert('エラー', firebaseErrorMessage(e));
+      showError(e, onQuotaExceeded);
     }
   }
 
@@ -278,7 +300,7 @@ export function useConsultSession(focusSessionId?: string): UseConsultSessionRet
               await deleteConsultationSession(user.uid, session.id!);
               setRecentSessions((prev) => prev.filter((s) => s.id !== session.id));
             } catch (e: any) {
-              Alert.alert('エラー', firebaseErrorMessage(e));
+              showError(e, onQuotaExceeded);
             }
           },
         },
@@ -309,7 +331,7 @@ export function useConsultSession(focusSessionId?: string): UseConsultSessionRet
       if (!customIntent && res.summary) setCustomIntent(res.summary);
     } catch (e: any) {
       setOptionsModalOpen(false);
-      Alert.alert('エラー', firebaseErrorMessage(e));
+      showError(e, onQuotaExceeded);
     } finally {
       setDraftOptionsLoading(false);
     }
@@ -319,6 +341,9 @@ export function useConsultSession(focusSessionId?: string): UseConsultSessionRet
     if (!sessionId) return;
     const trimmed = intent.trim();
     if (!trimmed) return;
+    // 失敗時に元の状態を復元できるよう、変更前の値を退避
+    const prevIntent = draftIntent;
+    const prevDraft = generatedDraft;
     setOptionsModalOpen(false);
     setDraftIntent(trimmed);
     setDraftLoading(true);
@@ -326,7 +351,10 @@ export function useConsultSession(focusSessionId?: string): UseConsultSessionRet
       const res = await aiDraft(sessionId, trimmed, partnerName);
       setGeneratedDraft(res.messageDraft);
     } catch (e: any) {
-      Alert.alert('エラー', firebaseErrorMessage(e));
+      // 失敗：表示中のドラフトと意図を元に戻す
+      setDraftIntent(prevIntent);
+      setGeneratedDraft(prevDraft);
+      showError(e, onQuotaExceeded);
     } finally {
       setDraftLoading(false);
     }

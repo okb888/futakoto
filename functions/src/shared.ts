@@ -29,7 +29,10 @@ export const AI_DAILY_LIMITS = {
   aiInterpret: 30,
   aiSummary: 10,
 } as const;
-export const AI_MONTHLY_CREDIT_LIMIT = 500;
+// 無料プランの月次クレジット上限（設計：月5回・初回利用日基準でローリング）
+export const AI_FREE_MONTHLY_LIMIT = 5;
+// ローリング月の期間（30日）
+export const AI_QUOTA_ROLLING_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 export const AI_SUMMARY_MAX_ENTRIES = 500;
 export const AI_SUMMARY_MAX_TOTAL_CHARS = 50000;
 export const AI_SUMMARY_MAX_MEMO_CHARS = 500;
@@ -121,24 +124,50 @@ export async function sendExpoPush(messages: ExpoPushMessage[]) {
   }
 }
 
+/**
+ * Premium 状態を判定する。
+ * - 本人が premium: true かつ premiumExpiresAt が未来 → Premium
+ * - ペア相手が同条件 → Premium（ペア連鎖）
+ * - premiumExpiresAt が未設定なら有効期限なしとして扱う
+ */
+async function isPremiumUser(uid: string): Promise<boolean> {
+  const userSnap = await db.doc(`users/${uid}`).get();
+  if (!userSnap.exists) return false;
+  const data = userSnap.data()!;
+  if (checkPremiumFlag(data)) return true;
+
+  const partnerUid = data.partnerUid as string | undefined;
+  if (!partnerUid) return false;
+  const partnerSnap = await db.doc(`users/${partnerUid}`).get();
+  if (!partnerSnap.exists) return false;
+  return checkPremiumFlag(partnerSnap.data()!);
+}
+
+function checkPremiumFlag(data: admin.firestore.DocumentData): boolean {
+  if (data.premium !== true) return false;
+  const expiresAt = data.premiumExpiresAt as admin.firestore.Timestamp | undefined;
+  if (!expiresAt) return true;
+  return expiresAt.toMillis() > Date.now();
+}
+
 export async function consumeAiQuota(uid: string, feature: AiFeature): Promise<void> {
+  // Premium は全上限スキップ
+  if (await isPremiumUser(uid)) return;
+
   const dateKey = tokyoDateKey();
-  const monthKey = tokyoMonthKey();
   const usageRef = db.doc(`users/${uid}/aiUsage/${dateKey}`);
-  const monthlyUsageRef = db.doc(`users/${uid}/aiMonthlyUsage/${monthKey}`);
   const userRef = db.doc(`users/${uid}`);
   const featureLimit = AI_DAILY_LIMITS[feature];
+  const now = Date.now();
 
   await db.runTransaction(async (transaction) => {
-    const [snap, monthlySnap] = await Promise.all([
+    const [snap, userSnap] = await Promise.all([
       transaction.get(usageRef),
-      transaction.get(monthlyUsageRef),
+      transaction.get(userRef),
     ]);
     const data = snap.exists ? snap.data()! : {};
-    const monthlyData = monthlySnap.exists ? monthlySnap.data()! : {};
     const total = typeof data.total === 'number' ? data.total : 0;
     const featureCount = typeof data[feature] === 'number' ? data[feature] : 0;
-    const monthlyUsed = typeof monthlyData.total === 'number' ? monthlyData.total : 0;
 
     if (total >= AI_DAILY_TOTAL_LIMIT || featureCount >= featureLimit) {
       throw new HttpsError(
@@ -146,10 +175,23 @@ export async function consumeAiQuota(uid: string, feature: AiFeature): Promise<v
         `今日のAI利用上限に達しました（1日${AI_DAILY_TOTAL_LIMIT}回まで）。明日また使えます`
       );
     }
-    if (monthlyUsed >= AI_MONTHLY_CREDIT_LIMIT) {
+
+    // ローリング月リセット判定
+    const userData = userSnap.data() ?? {};
+    const resetAt = userData.aiQuotaResetAt as admin.firestore.Timestamp | undefined;
+    let rollingUsed = typeof userData.aiCreditsUsed === 'number' ? userData.aiCreditsUsed : 0;
+    let nextResetAt = resetAt ?? admin.firestore.Timestamp.fromMillis(now + AI_QUOTA_ROLLING_WINDOW_MS);
+
+    if (!resetAt || resetAt.toMillis() <= now) {
+      rollingUsed = 0;
+      nextResetAt = admin.firestore.Timestamp.fromMillis(now + AI_QUOTA_ROLLING_WINDOW_MS);
+    }
+
+    if (rollingUsed >= AI_FREE_MONTHLY_LIMIT) {
       throw new HttpsError(
         'resource-exhausted',
-        `今月のAI利用上限に達しました（月${AI_MONTHLY_CREDIT_LIMIT}回まで）。来月また使えます`
+        `今月の無料AI枠（月${AI_FREE_MONTHLY_LIMIT}回）を使い切りました。プレミアムプランで無制限に使えます`,
+        { type: 'quota-exceeded', limit: AI_FREE_MONTHLY_LIMIT, resetAt: nextResetAt.toMillis() }
       );
     }
 
@@ -163,18 +205,12 @@ export async function consumeAiQuota(uid: string, feature: AiFeature): Promise<v
       payload.createdAt = admin.firestore.FieldValue.serverTimestamp();
     }
     transaction.set(usageRef, payload, { merge: true });
-    transaction.set(monthlyUsageRef, {
-      month: monthKey,
-      total: admin.firestore.FieldValue.increment(1),
-      limit: AI_MONTHLY_CREDIT_LIMIT,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      ...(monthlySnap.exists ? {} : { createdAt: admin.firestore.FieldValue.serverTimestamp() }),
-    }, { merge: true });
     transaction.set(userRef, {
-      aiCreditsMonth: monthKey,
-      aiCreditsUsed: monthlyUsed + 1,
-      aiCreditsLimit: AI_MONTHLY_CREDIT_LIMIT,
+      aiCreditsUsed: rollingUsed + 1,
+      aiCreditsLimit: AI_FREE_MONTHLY_LIMIT,
       aiCreditsUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      aiQuotaResetAt: nextResetAt,
+      ...(userData.aiFirstUsedAt ? {} : { aiFirstUsedAt: admin.firestore.FieldValue.serverTimestamp() }),
     }, { merge: true });
   });
 }

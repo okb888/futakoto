@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,15 +11,27 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { ArrowRight, Sparkle, Star, Trash, X } from 'phosphor-react-native';
 import { useConsultSession } from '../../hooks/useConsultSession';
 import { formatShortDate } from '../../lib/format';
 import { COLORS } from '../../lib/theme';
+import { useAuth } from '../../lib/auth';
+import { setAiConsentAcknowledged } from '../../lib/db';
+import { AiQuotaChip } from '../../components/AiQuotaChip';
+import { PaywallModal } from '../../components/PaywallModal';
+import { AiConsentModal } from '../../components/AiConsentModal';
 
 export default function ConsultScreen() {
   const params = useLocalSearchParams<{ sessionId?: string }>();
   const focusSessionId = typeof params.sessionId === 'string' ? params.sessionId : undefined;
+  const navigation = useNavigation();
+  const { user, profile, refreshProfile } = useAuth();
+
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallReason, setPaywallReason] = useState<string | undefined>(undefined);
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [pendingSend, setPendingSend] = useState(false);
 
   const {
     text, setText,
@@ -52,11 +65,56 @@ export default function ConsultScreen() {
     handleSelectOption,
     handleSubmitCustomIntent,
     handleRegenerateDraft,
-  } = useConsultSession(focusSessionId);
+  } = useConsultSession(focusSessionId, {
+    onQuotaExceeded: (message) => {
+      setPaywallReason(message);
+      setPaywallOpen(true);
+    },
+  });
 
   const isBlank = (s: string) => /^[\s　 ]*$/.test(s);
   const contentLength = text.replace(/[\s　 ]+/g, ' ').trim().length;
   const tooShort = contentLength > 0 && contentLength < 50;
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{ marginRight: 12 }}>
+          <AiQuotaChip
+            profile={profile}
+            onPress={() => {
+              setPaywallReason(undefined);
+              setPaywallOpen(true);
+            }}
+          />
+        </View>
+      ),
+    });
+  }, [navigation, profile]);
+
+  // AI同意がまだなら確認モーダルを挟む
+  async function ensureConsentAndConsult() {
+    if (profile && profile.aiConsentAcknowledged !== true) {
+      setPendingSend(true);
+      setConsentOpen(true);
+      return;
+    }
+    await handleConsult();
+  }
+
+  async function handleAgreeConsent() {
+    if (!user) return;
+    try {
+      await setAiConsentAcknowledged(user.uid);
+      await refreshProfile();
+    } finally {
+      setConsentOpen(false);
+      if (pendingSend) {
+        setPendingSend(false);
+        await handleConsult();
+      }
+    }
+  }
 
   return (
     <KeyboardAvoidingView
@@ -139,7 +197,7 @@ export default function ConsultScreen() {
                       onPress={() => useAsPost(generatedDraft, sessionId ?? undefined)}
                       disabled={draftLoading}
                     >
-                      <ArrowRight size={13} color="#fff" weight="bold" />
+                      <ArrowRight size={13} color={COLORS.surface} weight="bold" />
                       <Text style={styles.primaryActionText}>投稿に使う</Text>
                     </TouchableOpacity>
                   </View>
@@ -195,8 +253,43 @@ export default function ConsultScreen() {
           <View style={styles.limitCard}>
             <Sparkle size={16} color={COLORS.ai} weight="fill" />
             <Text style={styles.limitText}>
-              十分に話し合えました。会話をお気に入りに保存して、気持ちをふたりの記録に残しましょう。
+              ここまでしっかり話し合えました。続けて{partnerName}に伝える文を作るか、会話を保存して終えるか、新しく始められます。
             </Text>
+            <View style={styles.limitActions}>
+              {!generatedDraft ? (
+                <TouchableOpacity
+                  style={styles.limitPrimary}
+                  onPress={openDraftOptions}
+                  disabled={draftOptionsLoading || draftLoading}
+                  activeOpacity={0.85}
+                >
+                  <Sparkle size={14} color={COLORS.surface} weight="fill" />
+                  <Text style={styles.limitPrimaryText}>伝える文を作る</Text>
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                style={styles.limitSecondary}
+                onPress={handleToggleFavorite}
+                disabled={togglingFavorite || !sessionId}
+                activeOpacity={0.85}
+              >
+                <Star
+                  size={14}
+                  color={isFavorited ? COLORS.primary : COLORS.textSubtle}
+                  weight={isFavorited ? 'fill' : 'regular'}
+                />
+                <Text style={styles.limitSecondaryText}>
+                  {isFavorited ? '保存済み' : '保存して終わる'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.limitSecondary}
+                onPress={handleStartNewConversation}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.limitSecondaryText}>新しく始める</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
           <>
@@ -210,7 +303,7 @@ export default function ConsultScreen() {
                   ? '相手のこと、自分のこと、まだ言葉になっていない気持ちをそのまま書いてください'
                   : '続きを話してください'
               }
-              placeholderTextColor="#BBB"
+              placeholderTextColor="#999"
               value={text}
               onChangeText={setText}
               multiline
@@ -222,7 +315,7 @@ export default function ConsultScreen() {
             ) : null}
             <TouchableOpacity
               style={[styles.aiButton, (isBlank(text) || loading) && styles.aiButtonDisabled]}
-              onPress={handleConsult}
+              onPress={ensureConsentAndConsult}
               disabled={isBlank(text) || loading}
             >
               {loading ? (
@@ -401,7 +494,7 @@ export default function ConsultScreen() {
                   <TextInput
                     style={styles.customIntentInput}
                     placeholder="例: 仕事で疲れていることを伝えたい"
-                    placeholderTextColor="#BBB"
+                    placeholderTextColor="#999"
                     value={customIntent}
                     onChangeText={setCustomIntent}
                     maxLength={MAX_CUSTOM_INTENT}
@@ -423,6 +516,22 @@ export default function ConsultScreen() {
           </View>
         </View>
       </Modal>
+
+      <PaywallModal
+        visible={paywallOpen}
+        reason={paywallReason}
+        onClose={() => setPaywallOpen(false)}
+        onPurchased={() => refreshProfile()}
+      />
+
+      <AiConsentModal
+        visible={consentOpen}
+        onAgree={handleAgreeConsent}
+        onCancel={() => {
+          setConsentOpen(false);
+          setPendingSend(false);
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -435,7 +544,7 @@ const styles = StyleSheet.create({
 
   conversationArea: { gap: 8, marginBottom: 4 },
   turnCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: COLORS.ai,
@@ -485,14 +594,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginLeft: 'auto',
   },
-  primaryActionText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  primaryActionText: { color: COLORS.surface, fontSize: 12, fontWeight: '700' },
   secondaryActionButton: {
     borderWidth: 1,
     borderColor: COLORS.primaryBorder,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
   },
   secondaryActionText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
 
@@ -511,12 +620,12 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primaryBorder,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
   },
   newConversationButtonText: { fontSize: 11, color: COLORS.primary, fontWeight: '700' },
 
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
@@ -541,7 +650,7 @@ const styles = StyleSheet.create({
   aiButtonDisabled: { opacity: 0.5 },
   aiButtonText: { color: COLORS.ai, fontSize: 14, fontWeight: '700' },
   loadingCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     paddingVertical: 20,
     alignItems: 'center',
@@ -551,7 +660,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.aiDivider,
   },
   inlineLoading: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     paddingVertical: 20,
     alignItems: 'center',
@@ -564,15 +673,48 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.aiBg,
     borderRadius: 12,
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
+    gap: 12,
     marginTop: 8,
   },
-  limitText: { flex: 1, fontSize: 13, color: COLORS.ai, lineHeight: 20 },
+  limitText: { fontSize: 13, color: COLORS.ai, lineHeight: 20 },
+  limitActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  limitPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.ai,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+  },
+  limitPrimaryText: {
+    color: COLORS.surface,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  limitSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.aiBorderSoft,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+  },
+  limitSecondaryText: {
+    color: COLORS.textSubtle,
+    fontSize: 13,
+    fontWeight: '600',
+  },
 
   aiCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: COLORS.aiBorder,
@@ -584,7 +726,7 @@ const styles = StyleSheet.create({
   aiCardLabel: { fontSize: 11, color: COLORS.ai, fontWeight: '700', marginBottom: 6 },
 
   partnerDraftCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: COLORS.primaryBorder,
@@ -609,7 +751,7 @@ const styles = StyleSheet.create({
   empty: { textAlign: 'center', color: COLORS.placeholder, fontSize: 13, paddingVertical: 20 },
   sessionList: { gap: 10 },
   sessionCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: COLORS.ai,
@@ -678,7 +820,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   optionCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.aiBorder,
@@ -691,7 +833,7 @@ const styles = StyleSheet.create({
   customIntentArea: { marginTop: 8, gap: 8 },
   customIntentLabel: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
   customIntentInput: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 10,
@@ -710,5 +852,5 @@ const styles = StyleSheet.create({
   customIntentButtonDisabled: {
     backgroundColor: COLORS.primaryDim,
   },
-  customIntentButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  customIntentButtonText: { color: COLORS.surface, fontSize: 13, fontWeight: '700' },
 });

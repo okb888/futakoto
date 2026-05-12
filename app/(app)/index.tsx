@@ -9,12 +9,15 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import { Plus, Heart, Sparkle, Star, ArrowRight } from 'phosphor-react-native';
 import { aiInterpret } from '../../lib/ai';
 import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
 import { SourceConsultationLink } from '../../components/SourceConsultationLink';
+import { AiQuotaChip } from '../../components/AiQuotaChip';
+import { PaywallModal } from '../../components/PaywallModal';
+import { AiConsentModal } from '../../components/AiConsentModal';
 import { useAuth } from '../../lib/auth';
 import {
   getUserProfile,
@@ -26,17 +29,19 @@ import {
   getFavoriteEntryIds,
   toggleFavoriteEntry,
   getAllInterpretationCaches,
+  setAiConsentAcknowledged,
   Entry,
   UserProfile,
 } from '../../lib/db';
-import { firebaseErrorMessage } from '../../lib/errors';
-import { formatEntryDate } from '../../lib/format';
+import { classifyError } from '../../lib/errors';
+import { formatEntryDate, sortMillis } from '../../lib/format';
 import { getPartnerDisplayName } from '../../lib/profile';
 import { COLORS } from '../../lib/theme';
 
 export default function HomeScreen() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
   const router = useRouter();
+  const navigation = useNavigation();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [partnerProfile, setPartnerProfile] = useState<UserProfile | null>(null);
@@ -45,6 +50,10 @@ export default function HomeScreen() {
   const [interpretationsCache, setInterpretationsCache] = useState<Record<string, string[]>>({});
   const [interpretLoadingIds, setInterpretLoadingIds] = useState<Set<string>>(new Set());
   const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallReason, setPaywallReason] = useState<string | undefined>(undefined);
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [pendingInterpret, setPendingInterpret] = useState<{ entry: Entry; force: boolean } | null>(null);
 
   function actionKey(entry: Entry): string {
     return `${entry.uid}_${entry.id ?? ''}`;
@@ -73,7 +82,7 @@ export default function HomeScreen() {
       }
       setInterpretationsCache(caches);
 
-      const myEntries = await getRecentEntries(user.uid);
+      const myEntries = await getRecentEntries(user.uid, 100);
       if (isCancelled()) return;
 
       let allEntries = myEntries;
@@ -82,11 +91,11 @@ export default function HomeScreen() {
           const pp = await getUserProfile(p.partnerUid);
           if (isCancelled()) return;
           setPartnerProfile(pp);
-          const partnerEntries = await getPartnerSharedEntries(p.partnerUid);
+          const partnerEntries = await getPartnerSharedEntries(p.partnerUid, 100);
           if (isCancelled()) return;
-          allEntries = [...myEntries, ...partnerEntries].sort(
-            (a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
-          );
+          allEntries = [...myEntries, ...partnerEntries]
+            .sort((a, b) => sortMillis(b.createdAt) - sortMillis(a.createdAt))
+            .slice(0, 100);
         } catch (e: any) {
           console.error('[Home] パートナーデータ取得エラー:', e?.code, e?.message);
           allEntries = myEntries;
@@ -108,6 +117,22 @@ export default function HomeScreen() {
       cancelled = true;
     };
   }, [user, authProfile]));
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={styles.headerRight}>
+          <AiQuotaChip
+            profile={profile}
+            onPress={() => {
+              setPaywallReason(undefined);
+              setPaywallOpen(true);
+            }}
+          />
+        </View>
+      ),
+    });
+  }, [navigation, profile]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -164,7 +189,7 @@ export default function HomeScreen() {
     });
   }
 
-  async function handleInterpret(entry: Entry, force = false) {
+  async function runInterpret(entry: Entry, force = false) {
     if (!entry.id || !entry.memo) return;
     const cacheKey = favoriteKey(entry.uid, entry.id);
     setInterpretLoadingIds((prev) => new Set([...prev, cacheKey]));
@@ -172,7 +197,15 @@ export default function HomeScreen() {
       const res = await aiInterpret(entry.memo, entry.mood, partnerName, entry.id, entry.uid, force);
       setInterpretationsCache((prev) => ({ ...prev, [cacheKey]: res.interpretations }));
     } catch (e: any) {
-      Alert.alert('エラー', firebaseErrorMessage(e));
+      const classified = classifyError(e);
+      if (classified.kind === 'quota') {
+        setPaywallReason(classified.message);
+        setPaywallOpen(true);
+      } else if (classified.kind === 'network') {
+        Alert.alert(classified.title, classified.message);
+      } else {
+        Alert.alert(classified.title, classified.message);
+      }
     } finally {
       setInterpretLoadingIds((prev) => {
         const next = new Set(prev);
@@ -180,6 +213,42 @@ export default function HomeScreen() {
         return next;
       });
     }
+  }
+
+  async function handleInterpret(entry: Entry, force = false) {
+    if (!entry.id || !entry.memo) return;
+    // AI同意が未取得なら同意モーダルを表示し、同意後に実行する
+    if (profile?.aiConsentAcknowledged !== true) {
+      setPendingInterpret({ entry, force });
+      setConsentOpen(true);
+      return;
+    }
+    await runInterpret(entry, force);
+  }
+
+  async function handleConsentAgree() {
+    if (!user) return;
+    try {
+      await setAiConsentAcknowledged(user.uid);
+      await refreshProfile();
+    } catch (e: any) {
+      const classified = classifyError(e);
+      Alert.alert(classified.title, classified.message);
+      setConsentOpen(false);
+      setPendingInterpret(null);
+      return;
+    }
+    setConsentOpen(false);
+    const next = pendingInterpret;
+    setPendingInterpret(null);
+    if (next) {
+      await runInterpret(next.entry, next.force);
+    }
+  }
+
+  function handleConsentCancel() {
+    setConsentOpen(false);
+    setPendingInterpret(null);
   }
 
   function openSourceConsultation(entry: Entry) {
@@ -225,8 +294,17 @@ export default function HomeScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>まだ記録がありません</Text>
-            <Text style={styles.emptyHint}>右下の＋ボタンで記録してみよう</Text>
+            <Text style={styles.emptyEmoji}>🌿</Text>
+            <Text style={styles.emptyText}>今日の気持ちを記録しよう</Text>
+            <Text style={styles.emptyHint}>
+              毎日の気持ちを残すと{'\n'}パートナーに気持ちが届きます
+            </Text>
+            <TouchableOpacity
+              style={styles.emptyAction}
+              onPress={() => router.push('/(app)/post')}
+            >
+              <Text style={styles.emptyActionText}>最初の記録をする</Text>
+            </TouchableOpacity>
           </View>
         }
         renderItem={({ item }) => {
@@ -312,8 +390,24 @@ export default function HomeScreen() {
         accessibilityLabel="新しい記録を追加"
         accessibilityRole="button"
       >
-        <Plus size={28} color="#fff" weight="bold" />
+        <Plus size={28} color={COLORS.surface} weight="bold" />
       </TouchableOpacity>
+
+      <PaywallModal
+        visible={paywallOpen}
+        reason={paywallReason}
+        onClose={() => setPaywallOpen(false)}
+        onPurchased={() => {
+          setPaywallOpen(false);
+          refreshProfile();
+        }}
+      />
+
+      <AiConsentModal
+        visible={consentOpen}
+        onAgree={handleConsentAgree}
+        onCancel={handleConsentCancel}
+      />
     </View>
   );
 }
@@ -321,7 +415,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   list: { paddingBottom: 100, paddingTop: 12 },
-  connectionHeader: { paddingHorizontal: 16, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  connectionHeader: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
   connectionPill: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -357,9 +451,18 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   favoriteShortcutText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
-  empty: { alignItems: 'center', paddingTop: 64 },
-  emptyText: { fontSize: 15, color: COLORS.textWeak },
-  emptyHint: { fontSize: 13, color: COLORS.disabled, marginTop: 8 },
+  empty: { alignItems: 'center', paddingTop: 64, paddingHorizontal: 32 },
+  emptyEmoji: { fontSize: 48, marginBottom: 16 },
+  emptyText: { fontSize: 16, color: COLORS.textSubtle, fontWeight: '600', textAlign: 'center' },
+  emptyHint: { fontSize: 13, color: COLORS.textWeak, marginTop: 8, textAlign: 'center', lineHeight: 20 },
+  emptyAction: {
+    marginTop: 24,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  emptyActionText: { color: COLORS.surface, fontSize: 14, fontWeight: '700' },
   fab: {
     position: 'absolute',
     bottom: 16,
@@ -376,7 +479,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  fabText: { fontSize: 28, color: '#fff', lineHeight: 32 },
+  fabText: { fontSize: 28, color: COLORS.surface, lineHeight: 32 },
   interpretArea: {
     backgroundColor: COLORS.aiBgSoft,
     borderRadius: 10,

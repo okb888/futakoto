@@ -19,14 +19,20 @@ service cloud.firestore {
       allow create: if request.auth.uid == uid
         && !request.resource.data.keys().hasAny([
           'partnerUid', 'notificationMeta', 'aiCreditsUsed',
-          'aiCreditsLimit', 'aiCreditsUpdatedAt', 'aiCreditsMonth'
+          'aiCreditsLimit', 'aiCreditsUpdatedAt', 'aiCreditsMonth',
+          'premium', 'premiumExpiresAt', 'aiFirstUsedAt',
+          'aiQuotaResetAt'
         ]);
 
       // 更新: クライアントが変更できるフィールドを明示的に制限
-      // partnerUid / notificationMeta / aiCredits系 はCloud Functionsのみ変更可
+      // partnerUid / notificationMeta / aiCredits系 / premium系 はCloud Functionsのみ変更可
       allow update: if request.auth.uid == uid
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['displayName', 'communicationStyle', 'lastVisibility', 'notificationSettings']);
+             .hasOnly([
+               'displayName', 'communicationStyle', 'lastVisibility',
+               'notificationSettings', 'aiPersona', 'aiConsentAcknowledged',
+               'aiConsentAcknowledgedAt'
+             ]);
 
       allow delete: if false;
 

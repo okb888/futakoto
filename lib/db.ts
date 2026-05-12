@@ -19,6 +19,18 @@ import { db } from './firebase';
 
 export type Visibility = 'private' | 'shared';
 
+/**
+ * 無料プランの月次AI利用上限。
+ * functions/src/shared.ts の AI_FREE_MONTHLY_LIMIT と揃える必要がある。
+ */
+export const AI_FREE_MONTHLY_LIMIT = 5;
+
+/**
+ * Firestore Timestamp はクライアントで serverTimestamp() が解決されるまで
+ * 一時的に null になる可能性がある。読み取り後は Timestamp として扱う。
+ */
+export type FirestoreTimestampLike = Timestamp | { seconds: number; nanoseconds: number };
+
 export interface Entry {
   id?: string;
   uid: string;
@@ -26,8 +38,8 @@ export interface Entry {
   memo: string;
   visibility: Visibility;
   sourceConsultationSessionId?: string;
-  createdAt: any;
-  updatedAt?: any;
+  createdAt: FirestoreTimestampLike;
+  updatedAt?: FirestoreTimestampLike;
 }
 
 export interface Consultation {
@@ -36,7 +48,7 @@ export interface Consultation {
   input: string;
   reflection: string;
   messageDraft: string;
-  createdAt: any;
+  createdAt: FirestoreTimestampLike;
 }
 
 export interface ConsultationSessionTurn {
@@ -49,7 +61,7 @@ export interface ConsultationSessionTurn {
 export interface ConsultationSessionDraft {
   intent: string;
   messageDraft: string;
-  createdAt: any;
+  createdAt: FirestoreTimestampLike;
 }
 
 export interface ConsultationSession {
@@ -57,7 +69,7 @@ export interface ConsultationSession {
   uid: string;
   turns: ConsultationSessionTurn[];
   favored: boolean;
-  createdAt: any;
+  createdAt: FirestoreTimestampLike;
   lastDraft?: ConsultationSessionDraft;
 }
 
@@ -65,7 +77,7 @@ export interface FavoriteEntry {
   id?: string;
   entryUid: string;
   entryId: string;
-  createdAt: any;
+  createdAt: FirestoreTimestampLike;
 }
 
 export interface FavoriteEntryWithEntry extends FavoriteEntry {
@@ -84,10 +96,15 @@ export interface UserProfile {
   communicationStyle?: string;
   aiPersona?: AiPersona;
   premium?: boolean;
+  premiumExpiresAt?: Timestamp;
   aiCreditsMonth?: string;
-  createdAt: any;
+  createdAt: Timestamp;
   aiCreditsUsed?: number;
   aiCreditsLimit?: number;
+  aiQuotaResetAt?: Timestamp;
+  aiFirstUsedAt?: Timestamp;
+  aiConsentAcknowledged?: boolean;
+  aiConsentAcknowledgedAt?: Timestamp;
   lastVisibility?: Visibility;
 }
 
@@ -123,6 +140,13 @@ export async function updateAiPersona(uid: string, persona: AiPersona): Promise<
 
 export async function updateLastVisibility(uid: string, visibility: Visibility): Promise<void> {
   await updateDoc(doc(db, 'users', uid), { lastVisibility: visibility });
+}
+
+export async function setAiConsentAcknowledged(uid: string): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), {
+    aiConsentAcknowledged: true,
+    aiConsentAcknowledgedAt: serverTimestamp(),
+  });
 }
 
 export async function updateNotificationSettings(
@@ -228,18 +252,6 @@ export async function getPartnerSharedEntries(partnerUid: string, count = 50): P
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry));
-}
-
-// ---- Consultations (旧 collection。getRecentConsultations のみ calendar.tsx で参照中) ----
-
-export async function getRecentConsultations(uid: string, count = 20): Promise<Consultation[]> {
-  const q = query(
-    collection(db, 'users', uid, 'consultations'),
-    orderBy('createdAt', 'desc'),
-    limit(count)
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Consultation));
 }
 
 // ---- Consultation Sessions ----
