@@ -153,7 +153,7 @@ export async function consumeAiQuota(uid: string, feature: AiFeature): Promise<v
       );
     }
 
-    const payload: Record<string, any> = {
+    const payload: Record<string, string | admin.firestore.FieldValue> = {
       date: dateKey,
       total: admin.firestore.FieldValue.increment(1),
       [feature]: admin.firestore.FieldValue.increment(1),

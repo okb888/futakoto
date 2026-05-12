@@ -47,6 +47,15 @@ LocaleConfig.defaultLocale = 'ja';
 type FilterType = 'all' | 'me' | 'partner' | 'favorite' | 'consultation';
 type SortOrder = 'desc' | 'asc';
 
+const MAX_CACHE_MONTHS = 6;
+
+function trimCache(cache: Record<string, Entry[]>): Record<string, Entry[]> {
+  const keys = Object.keys(cache).sort();
+  if (keys.length <= MAX_CACHE_MONTHS) return cache;
+  const keep = keys.slice(-MAX_CACHE_MONTHS);
+  return Object.fromEntries(keep.map((k) => [k, cache[k]]));
+}
+
 function latestByDate(entries: Entry[]): Record<string, Entry> {
   const map: Record<string, Entry> = {};
   entries.forEach((entry) => {
@@ -103,7 +112,7 @@ export default function CalendarScreen() {
       const { start, end } = getMonthBounds(monthStr);
       const entries = await getEntriesInRange(user.uid, start, end);
       setMyEntries(entries);
-      setMyEntriesCache((prev) => ({ ...prev, [monthStr]: entries }));
+      setMyEntriesCache((prev) => trimCache({ ...prev, [monthStr]: entries }));
     } catch (e: any) {
       Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
@@ -126,7 +135,7 @@ export default function CalendarScreen() {
       getFavoriteEntryIds(user.uid),
     ]);
     if (isCancelled()) return;
-    const newCache = { [currentMonth]: my };
+    const newCache = trimCache({ [currentMonth]: my });
     setMyEntries(my);
     setMyEntriesCache(newCache);
     setConsultations(savedConsultations);

@@ -5,7 +5,8 @@
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test": "jest --no-coverage"
   },
   "engines": {
     "node": "20"
@@ -17,6 +18,9 @@
     "firebase-functions": "^6.1.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.9",
     "typescript": "^5.7.0"
   },
   "private": true

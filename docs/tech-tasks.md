@@ -37,10 +37,10 @@
 
 ## 🟡 中優先度
 
-### 4. consult.tsx のカスタムhook化
-- **問題**: 壁打ちロジック全部（セッション管理・AI呼び出し・文案フロー）が1画面に集約（1,010行）
-- **対応案**: `useConsultSession` カスタムhookを作成し、状態管理を分離
-- **対象ファイル**: `app/(app)/consult.tsx`
+### 4. consult.tsx のカスタムhook化 ✅ 対応済み
+- **対応**: `hooks/useConsultSession.ts` を新規作成し、全状態・ハンドラを分離
+  - `consult.tsx` は UI レンダリングのみに縮小（997行 → 約350行）
+  - hook が返す値: 18 状態 + 12 ハンドラ
 
 ### 5. パートナー削除時のデータ残留 ✅ 対応済み
 - **対応**: `deleteAccount` と `unpairPartner` にクリーンアップ処理を追加
@@ -51,21 +51,22 @@
 
 ## 🟢 低優先度
 
-### 6. calendar.tsx のメモリ使用監視
-- **問題**: `myEntriesCache` が肥大化する可能性
-- **対応**: キャッシュサイズ上限 or TTL の設定を検討
+### 6. calendar.tsx のメモリ使用監視 ✅ 対応済み
+- **対応**: `trimCache()` 関数を追加し `MAX_CACHE_MONTHS = 6` でキャッシュサイズを上限管理
+  - 月移動のたびに古い月から順に削除（最新6ヶ月を保持）
 
-### 7. TypeScript 厳密モード確認
-- **確認**: `tsconfig.json` の `strict: true` が有効になっているか
-- **対象**: `any` の使用箇所（`consumeAiQuota` の `Record<string, any>` 等）
+### 7. TypeScript 厳密モード確認 ✅ 対応済み
+- **確認**: `tsconfig.json` に `strict: true` が設定済みであることを確認
+- **対応**: `consumeAiQuota` の `Record<string, any>` → `Record<string, string | admin.firestore.FieldValue>` に変更
 
-### 8. ユニットテスト追加
-- **現状**: `eval/` ディレクトリにAI評価テストはあるが、メイン機能のテストなし
-- **対応案**: Cloud Functions の主要ロジック（`consumeAiQuota`, `pairWithCode`）にユニットテスト追加
+### 8. ユニットテスト追加 ✅ 対応済み
+- **対応**: jest + ts-jest をセットアップし20テストを追加（全 pass）
+  - `src/__tests__/shared.test.ts`: `detectCrisis`, `isBlank`, `generateInviteCode`, `wrapUserData`, `tokyoDateKey/MonthKey`, `consumeAiQuota`（クォータ制限・月次制限）
+  - `src/__tests__/pairing.test.ts`: `pairWithCode` の各エラーケースと正常ケース
+  - `npm test` で実行可能
 
-### 9. ログ出力の統一
-- **問題**: `console.error()` が散在、一貫したlogger未設定
-- **対応**: Cloud Functions の logger（`import { logger } from 'firebase-functions'`）に統一
+### 9. ログ出力の統一 ✅ 対応済み（対応不要）
+- **確認**: `functions/src/` 内に `console.*` 呼び出しは一切なし（全て HttpsError スロー方式で統一済み）
 
 ---
 
@@ -75,3 +76,8 @@
 |---|---|
 | 2026-05-09 | functions/src/index.ts を6ファイルに分割 |
 | 2026-05-10 | Gemini APIキーを有料→無料枠（Google AI Studio）に切り替え。`firebase functions:secrets:set GEMINI_API_KEY --project futakoto` で更新・動作確認済み。モデル（gemini-2.5-flash）・品質に変化なし、レート制限のみ異なる（無料: 10 RPM / 500 RPD） |
+| 2026-05-12 | consult.tsx を useConsultSession hook に分割（#4） |
+| 2026-05-12 | calendar.tsx の myEntriesCache に MAX_CACHE_MONTHS=6 上限追加（#6） |
+| 2026-05-12 | shared.ts の Record\<string,any\> を適切な型に修正（#7） |
+| 2026-05-12 | jest + ts-jest セットアップ、20ユニットテスト追加（#8） |
+| 2026-05-12 | functions/src/ の console 未使用を確認（#9） |
