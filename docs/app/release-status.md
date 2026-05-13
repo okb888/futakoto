@@ -1,6 +1,6 @@
 # ふたこと リリースステータス
 
-**最終更新**: 2026-05-13（build 3 再提出完了 / Google・Apple Sign-in コード実装完了 / done.md最新化）
+**最終更新**: 2026-05-14（build 5 成功 / Google・RevenueCat入り production IPA 生成）
 **目標**: 2026年8月31日までに月額¥500の課金が1人発生
 **直近マイルストーン**: TestFlight内部配布 → β検証 → 5/31 App Store審査提出
 
@@ -9,15 +9,14 @@
 
 ---
 
-## 🎯 今週（2026-05-09〜05-15）残タスク
+## 🎯 明日（2026-05-15）やること
 
-| 優先 | タスク | 担当スレッド | 完了条件 |
-|---|---|---|---|
-| **1** | 修正版 build 3 のApple処理完了確認 | D. リリース準備 | App Store Connectで処理完了後、TestFlightから再インストール |
-| **2** | 初回実機スモークテスト | D. リリース準備 | 起動・ログイン・投稿・ペアリング・AI・通知許可の最低限確認 |
-| **3** | Firebase プライバシーポリシー・利用規約ページ作成 | D. リリース準備 | URLリンクが有効になること |
-
-次週（5/15〜）: **β配布 → `react-native-purchases` インストール → App Store Connect SKU 作成 → RevenueCat ダッシュボード設定 → Sandbox 課金フロー検証 → 審査提出準備**
+| 優先 | タスク | 完了条件 |
+|---|---|---|
+| **1** | `REVENUECAT_WEBHOOK_AUTH` Cloud Functions Secret 設定 → Functions デプロイ → RevenueCat Webhook URL 登録 | RevenueCat TEST イベント送信で 200 OK |
+| **2** | build 5 をTestFlight提出 → インストール → Sandbox 課金フロー検証 | 購入→更新→解約→復元の一連が通る |
+| **3** | 初回実機スモークテスト（起動・ログイン・投稿・ペアリング・AI・通知） | 致命バグなし |
+| **4** | Firebase プライバシーポリシー・利用規約ページ作成 | URLリンクが有効になること |
 
 ---
 
@@ -26,8 +25,8 @@
 ```
 A. AI精度改善 ───────✅ 完了（archive/done.md 参照）
 B. 認証拡張   ───────🟢 コード実装完了 → webClientID投入・実機確認待ち
-C. 課金UI    ───────🟢 コード実装完了 → SDK統合 + ストア設定待ち
-D. リリース準備 ─────🟡 build 3 再提出完了・Apple処理待ち（残3タスク）
+C. 課金UI    ───────🟡 SDK統合・EAS設定完了 → Webhook設定 + Sandbox検証待ち
+D. リリース準備 ─────🟡 build 5 成功・App Store Connect提出待ち
 E. SNS運用   ───────🔴 未着手（別スレッド予定）
 F. LP修正    ───────🟡 仮ページ公開中・本番版未作成
 G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
@@ -39,15 +38,17 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 | 項目 | 状態 |
 |---|---|
-| 現状 | **コード実装済み**（`lib/auth-providers.ts` + `login.tsx`）・実機確認待ち |
-| 次 | Google webClientID を Google Cloud Console から取得 → `app.json` の `PLACEHOLDER_GOOGLE_WEB_CLIENT_ID` に投入 → EAS build → 実機確認 |
+| 現状 | **コード実装済み**（`lib/auth-providers.ts` + `login.tsx`）・EAS env 設定済み・実機確認待ち |
+| 次 | EAS build → 実機確認 |
 | デッドライン | TestFlight β配布前（5/20週） |
-| ⚠ 重要 | **Apple Sign-in は実装必須**（App Store審査ガイドライン要件）→ コード実装済み |
+| 実機確認 | Google / Apple Sign-in とアカウント連携の確認待ち |
 
 - [x] Google Sign-in 実装（`lib/auth-providers.ts` の `signInWithGoogle` + `login.tsx` 組み込み）
 - [x] **Apple Sign-in 実装**（`expo-apple-authentication` + `lib/auth-providers.ts` の `signInWithApple` + `login.tsx` 組み込み）
 - [x] 既存のメアド/パスワードログインとの共存確認（login.tsx でメール/Google/Apple を並列表示）
-- [ ] Google webClientID 実値を `app.json` に投入（現在 `PLACEHOLDER_GOOGLE_WEB_CLIENT_ID`）
+- [x] Google/Apple アカウント連携機能（`settings/account.tsx` + `auth-providers.ts` の `linkGoogleToCurrentUser` / `linkAppleToCurrentUser`）
+- [x] Google webClientID・iosClientId を EAS env に投入済み
+- [x] Appleボタンの `onPress={handleApple}` 設定を確認済み
 - [ ] 実機で Google/Apple Sign-in の動作確認
 - [ ] 実施記録を `docs/auth-integration.md` に残す
 
@@ -63,11 +64,11 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 | ⚠ 重要 | 事前検死v2 の最優先リスク R10（無料が便利すぎて課金しない） |
 
 ### 残作業（外部依存・実機要）
-- [ ] `react-native-purchases` インストール → `lib/purchases.ts` の SDK インポート/`Purchases.configure` 行のコメントアウト解除
-- [ ] App Store Connect でサブスクグループ `futakoto_main` + Product ID `futakoto_premium_monthly`（¥500 / Tier 5）作成
+- [x] `react-native-purchases` インストール → `lib/purchases.ts` の SDK インポート/`Purchases.configure` 行のコメントアウト解除
+- [x] App Store Connect でサブスクグループ `futakoto_main` + Product ID `futakoto_premium_monthly`（¥500 / Tier 5）作成
 - [ ] **Apple Small Business Program** 登録（手取り 30%→15%）
-- [ ] RevenueCat ダッシュボードで Entitlement `premium` にプロダクトをマップ
-- [ ] EAS Secret に `EXPO_PUBLIC_REVENUECAT_IOS_KEY` を設定
+- [x] RevenueCat ダッシュボードで Entitlement `premium` にプロダクトをマップ
+- [x] EAS Secret に `EXPO_PUBLIC_REVENUECAT_IOS_KEY` を設定（+ Firebase/Google 全変数も登録済み）
 - [ ] Cloud Functions Secret に `REVENUECAT_WEBHOOK_AUTH` を設定 → RevenueCat 側 Webhook URL/Authorization に同値を設定
 - [ ] Sandbox アカウントで購入→更新→解約→復元の一連を検証
 
@@ -77,11 +78,11 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 | 項目 | 状態 |
 |---|---|
-| TestFlight | build 3（Firebase設定同梱修正版）・App Store Connect再提出済み / Apple処理待ち |
+| TestFlight | build 5（Google Sign-in / RevenueCat SDK / Firebase設定込み）・App Store Connect提出待ち |
 | Apple Developer Program | 承認済み |
 | Bundle ID | `com.futakoto.app` 登録済み |
-| EAS iOS build | build 3 成功（production / `.ipa` 生成済み） |
-| App Store Connect | build 3 バイナリアップロード完了・Apple処理待ち |
+| EAS iOS build | build 5 成功（production / `.ipa` 生成済み） |
+| App Store Connect | build 5 提出待ち |
 | TestFlight URL | https://appstoreconnect.apple.com/apps/6768653868/testflight/ios |
 | App Privacy Manifest（iOS17+） | app.json に設定済み |
 | AI送信に関する同意UI | 実装済み・実機確認待ち |
@@ -89,8 +90,8 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 | 審査提出 | **5/31** デッドライン |
 
 ### 残タスク
-- [x] 修正版をApp Store Connectへ提出
-- [ ] Apple処理完了後、TestFlightで build 3 をインストール
+- [ ] build 5 をApp Store Connectへ提出
+- [ ] Apple処理完了後、TestFlightで build 5 をインストール
 - [ ] 初回実機スモークテスト
 - [ ] Firebase でプライバシーポリシー・利用規約ページ作成（リンク有効化）
 - [ ] プライバシーポリシーにAI送信範囲を追記
@@ -169,7 +170,7 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 | 期日 | やること |
 |---|---|
-| **5/9〜5/15** | ✅ EAS iOS本番ビルド / App Store Connect提出 / TestFlight内部配布準備 → **残: build 3 提出・スモークテスト** |
+| **5/9〜5/15** | ✅ EAS iOS本番ビルド / App Store Connect提出 / TestFlight内部配布準備 → **残: build 5 提出・スモークテスト** |
 | **5/15〜5/20** | 実機スモークテスト / Apple・Googleログイン確認 / 課金UI SDK統合 / プライバシー対応 |
 | **5/20〜5/28** | TestFlight配布 → β同僚2組+奥さん / フィードバック収集・致命バグ修正 / LP本番版 |
 | **5/28〜5/31** | 審査提出最終チェック |

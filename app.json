@@ -18,6 +18,7 @@
       "bundleIdentifier": "com.futakoto.app",
       "usesAppleSignIn": true,
       "infoPlist": {
+        "CFBundleDevelopmentRegion": "ja",
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserNotificationsUsageDescription": "毎日の記録リマインダーやパートナーからのお知らせをお届けするために使います。",
         "NSPhotoLibraryUsageDescription": "プロフィール画像など、画像を選択する際にフォトライブラリへアクセスします。",
@@ -92,7 +93,13 @@
     "plugins": [
       "expo-router",
       "expo-notifications",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.316368993378-3hvql0htr6gusjd5vrbof0truso97g8i"
+        }
+      ]
     ],
     "extra": {
       "router": {},
@@ -100,8 +107,8 @@
         "projectId": "6cf40c14-7b75-471f-9ce5-17d8585326c5"
       },
       "google": {
-        "iosClientId": "PLACEHOLDER_GOOGLE_IOS_CLIENT_ID",
-        "webClientId": "PLACEHOLDER_GOOGLE_WEB_CLIENT_ID"
+        "iosClientId": "316368993378-3hvql0htr6gusjd5vrbof0truso97g8i.apps.googleusercontent.com",
+        "webClientId": "316368993378-nq558jfjf43n69rbvlj5q708fc7sfb3k.apps.googleusercontent.com"
       },
       "firebase": {
         "apiKey": "AIzaSyDWSwaOpnpCRKJ_dnV-gKktuqmRYIJhZYg",

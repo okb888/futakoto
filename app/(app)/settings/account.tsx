@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Modal,
+  Platform,
 } from 'react-native';
 import { DownloadSimple, EnvelopeSimple } from 'phosphor-react-native';
 import {
@@ -25,6 +26,11 @@ import { useAuth } from '../../../lib/auth';
 import { updateDisplayName, getUserExportData } from '../../../lib/db';
 import { deleteAccount } from '../../../lib/ai';
 import { firebaseErrorMessage } from '../../../lib/errors';
+import {
+  linkGoogleToCurrentUser,
+  linkAppleToCurrentUser,
+  isGoogleSignInConfigured,
+} from '../../../lib/auth-providers';
 import { useSettingsProfile } from '../../../hooks/useSettingsProfile';
 import { COLORS } from '../../../lib/theme';
 
@@ -51,8 +57,12 @@ export default function AccountScreen() {
   const [loadingExport, setLoadingExport] = useState(false);
   const [loadingVerification, setLoadingVerification] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const [linkingProvider, setLinkingProvider] = useState<'google' | 'apple' | null>(null);
 
   const providerId = user?.providerData[0]?.providerId ?? 'password';
+  const linkedProviderIds = user?.providerData.map(p => p.providerId) ?? [];
+  const showGoogleLink = isGoogleSignInConfigured();
+  const showAppleLink = Platform.OS === 'ios';
 
   async function handleSaveName() {
     if (!user || !nameInput.trim()) {
@@ -91,6 +101,28 @@ export default function AccountScreen() {
       Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
       setLoadingVerification(false);
+    }
+  }
+
+  async function handleLinkGoogle() {
+    if (linkingProvider) return;
+    setLinkingProvider('google');
+    try {
+      const ok = await linkGoogleToCurrentUser();
+      if (ok) Alert.alert('連携完了', 'Googleアカウントと連携しました。次回からGoogleでもログインできます。');
+    } finally {
+      setLinkingProvider(null);
+    }
+  }
+
+  async function handleLinkApple() {
+    if (linkingProvider) return;
+    setLinkingProvider('apple');
+    try {
+      const ok = await linkAppleToCurrentUser();
+      if (ok) Alert.alert('連携完了', 'Apple IDと連携しました。次回からApple IDでもログインできます。');
+    } finally {
+      setLinkingProvider(null);
     }
   }
 
@@ -179,6 +211,69 @@ export default function AccountScreen() {
           <Text style={styles.rowLabel}>メールアドレス</Text>
           <Text style={styles.rowValue} numberOfLines={1}>{user?.email ?? '—'}</Text>
         </View>
+      </View>
+
+      <Text style={styles.sectionLabel}>ログイン方法</Text>
+      <View style={styles.section}>
+        {/* メール/パスワード は常に表示 */}
+        <View style={styles.row}>
+          <Text style={styles.rowLabel}>メール / パスワード</Text>
+          <View style={styles.linkedBadge}><Text style={styles.linkedBadgeText}>連携中</Text></View>
+        </View>
+
+        {/* Google 連携 */}
+        {showGoogleLink && (
+          <>
+            <View style={styles.divider} />
+            {linkedProviderIds.includes('google.com') ? (
+              <View style={styles.row}>
+                <Text style={styles.googleG}>G</Text>
+                <Text style={styles.rowLabel}>Google</Text>
+                <View style={styles.linkedBadge}><Text style={styles.linkedBadgeText}>連携中</Text></View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.row, !!linkingProvider && { opacity: 0.6 }]}
+                onPress={handleLinkGoogle}
+                disabled={!!linkingProvider}
+              >
+                {linkingProvider === 'google' ? (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                ) : (
+                  <Text style={styles.googleG}>G</Text>
+                )}
+                <Text style={[styles.rowLabel, styles.rowLabelAction]}>Googleで連携する</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+
+        {/* Apple 連携（iOS のみ） */}
+        {showAppleLink && (
+          <>
+            <View style={styles.divider} />
+            {linkedProviderIds.includes('apple.com') ? (
+              <View style={styles.row}>
+                <Text style={styles.appleIcon}></Text>
+                <Text style={styles.rowLabel}>Apple ID</Text>
+                <View style={styles.linkedBadge}><Text style={styles.linkedBadgeText}>連携中</Text></View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.row, !!linkingProvider && { opacity: 0.6 }]}
+                onPress={handleLinkApple}
+                disabled={!!linkingProvider}
+              >
+                {linkingProvider === 'apple' ? (
+                  <ActivityIndicator size="small" color={COLORS.text} />
+                ) : (
+                  <Text style={styles.appleIcon}></Text>
+                )}
+                <Text style={[styles.rowLabel, styles.rowLabelAction]}>Apple IDで連携する</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
       </View>
 
       {!emailVerified && providerId === 'password' && (
@@ -428,4 +523,13 @@ const styles = StyleSheet.create({
   deleteConfirmText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   deleteCancelButton: { paddingVertical: 10, alignItems: 'center' },
   deleteCancelText: { fontSize: 14, color: COLORS.textWeak },
+  linkedBadge: {
+    backgroundColor: COLORS.primarySoft,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  linkedBadgeText: { fontSize: 11, color: COLORS.primaryDeep, fontWeight: '600' },
+  googleG: { fontSize: 15, fontWeight: '700', color: '#4285F4', width: 20, textAlign: 'center' },
+  appleIcon: { fontSize: 15, color: COLORS.text, width: 20, textAlign: 'center' },
 });

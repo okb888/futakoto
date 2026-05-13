@@ -10,6 +10,7 @@ import {
   OAuthProvider,
   GoogleAuthProvider,
   signInWithCredential,
+  linkWithCredential,
 } from 'firebase/auth';
 
 import { auth } from './firebase';
@@ -176,4 +177,107 @@ export async function signInWithGoogle(): Promise<boolean> {
 export function isGoogleSignInConfigured(): boolean {
   const { iosClientId } = getGoogleConfig();
   return !isPlaceholder(iosClientId);
+}
+
+// ---------------------------------------------------------------------------
+// アカウント連携
+// ---------------------------------------------------------------------------
+
+/** 現在のユーザーに連携済みのプロバイダーID一覧（例: ['password', 'google.com']） */
+export function getLinkedProviderIds(): string[] {
+  return auth.currentUser?.providerData.map(p => p.providerId) ?? [];
+}
+
+/** 現在ログイン中のアカウントに Google を連携する */
+export async function linkGoogleToCurrentUser(): Promise<boolean> {
+  if (!auth.currentUser) {
+    Alert.alert('エラー', 'ログインが必要です');
+    return false;
+  }
+  if (!ensureGoogleConfigured()) {
+    Alert.alert('設定が必要', 'Google Sign-inの設定が未完了です。アプリ管理者にお問い合わせください。');
+    return false;
+  }
+
+  try {
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    const result: any = await GoogleSignin.signIn();
+    const idToken: string | undefined = result?.data?.idToken ?? result?.idToken;
+    if (!idToken) throw new Error('Google Sign-in: idToken が取得できませんでした。');
+
+    const credential = GoogleAuthProvider.credential(idToken);
+    await linkWithCredential(auth.currentUser, credential);
+    return true;
+  } catch (e: any) {
+    if (isUserCancelled(e)) return false;
+    if (e?.code === 'auth/credential-already-in-use') {
+      Alert.alert('連携できません', 'このGoogleアカウントはすでに別のふたことアカウントに連携されています。');
+      return false;
+    }
+    if (e?.code === 'auth/provider-already-linked') {
+      Alert.alert('すでに連携済み', 'このアカウントはすでにGoogleと連携されています。');
+      return false;
+    }
+    showError(e, 'Google連携エラー');
+    return false;
+  }
+}
+
+/** 現在ログイン中のアカウントに Apple ID を連携する（iOS のみ） */
+export async function linkAppleToCurrentUser(): Promise<boolean> {
+  if (!auth.currentUser) {
+    Alert.alert('エラー', 'ログインが必要です');
+    return false;
+  }
+  if (Platform.OS !== 'ios') {
+    Alert.alert('未対応', 'Apple Sign-inはiOSのみで利用できます。');
+    return false;
+  }
+
+  try {
+    const available = await AppleAuthentication.isAvailableAsync();
+    if (!available) {
+      Alert.alert('Apple Sign-in未対応', 'この端末では Apple Sign-in が利用できません。');
+      return false;
+    }
+
+    const rawNonce = Crypto.randomUUID();
+    const hashedNonce = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      rawNonce
+    );
+
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+      nonce: hashedNonce,
+    });
+
+    if (!credential.identityToken) {
+      throw new Error('Apple Sign-in: identityToken が取得できませんでした。');
+    }
+
+    const provider = new OAuthProvider('apple.com');
+    const oauthCredential = provider.credential({
+      idToken: credential.identityToken,
+      rawNonce,
+    });
+
+    await linkWithCredential(auth.currentUser, oauthCredential);
+    return true;
+  } catch (e: any) {
+    if (isUserCancelled(e)) return false;
+    if (e?.code === 'auth/credential-already-in-use') {
+      Alert.alert('連携できません', 'このApple IDはすでに別のふたことアカウントに連携されています。');
+      return false;
+    }
+    if (e?.code === 'auth/provider-already-linked') {
+      Alert.alert('すでに連携済み', 'このアカウントはすでにApple IDと連携されています。');
+      return false;
+    }
+    showError(e, 'Apple連携エラー');
+    return false;
+  }
 }

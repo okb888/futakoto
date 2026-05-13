@@ -1,17 +1,4 @@
-/**
- * RevenueCat 雛形。
- *
- * 現状は API キー未取得のため、すべての関数は no-op で動作する。
- * App Store Connect で IAP プロダクトを登録し、RevenueCat ダッシュボードで
- * API キーを取得したら以下を実施:
- *
- * 1. `expo install react-native-purchases`
- * 2. app.json の plugins に "react-native-purchases" 追加（必要なら）
- * 3. .env / EAS Secrets に EXPO_PUBLIC_REVENUECAT_IOS_KEY を設定
- * 4. このファイルの SDK インポート + configure 実装を有効化
- * 5. functions/src/revenuecat-webhook.ts で署名検証付きの webhook を実装
- */
-
+import Purchases from 'react-native-purchases';
 import Constants from 'expo-constants';
 
 const REVENUECAT_IOS_KEY: string | undefined =
@@ -35,9 +22,7 @@ export async function configurePurchases(uid: string): Promise<void> {
   }
 
   try {
-    // 本実装時は以下を有効化:
-    // const Purchases = (await import('react-native-purchases')).default;
-    // Purchases.configure({ apiKey: REVENUECAT_IOS_KEY, appUserID: uid });
+    Purchases.configure({ apiKey: REVENUECAT_IOS_KEY, appUserID: uid });
     configured = true;
   } catch (e) {
     console.warn('[purchases] configure failed', e);
@@ -66,18 +51,15 @@ export async function getCurrentOffering(): Promise<PaywallOffering | null> {
   }
 
   try {
-    // 本実装時:
-    // const Purchases = (await import('react-native-purchases')).default;
-    // const offerings = await Purchases.getOfferings();
-    // const monthly = offerings.current?.monthly;
-    // if (!monthly) return null;
-    // return {
-    //   productId: monthly.product.identifier,
-    //   priceString: monthly.product.priceString,
-    //   title: monthly.product.title,
-    //   description: monthly.product.description,
-    // };
-    return null;
+    const offerings = await Purchases.getOfferings();
+    const monthly = offerings.current?.monthly;
+    if (!monthly) return null;
+    return {
+      productId: monthly.product.identifier,
+      priceString: monthly.product.priceString,
+      title: monthly.product.title,
+      description: monthly.product.description,
+    };
   } catch (e) {
     console.warn('[purchases] getOfferings failed', e);
     return null;
@@ -97,14 +79,11 @@ export async function purchasePremium(): Promise<{ success: boolean; error?: str
   }
 
   try {
-    // 本実装時:
-    // const Purchases = (await import('react-native-purchases')).default;
-    // const offerings = await Purchases.getOfferings();
-    // const pkg = offerings.current?.monthly;
-    // if (!pkg) return { success: false, error: '商品が取得できませんでした' };
-    // const result = await Purchases.purchasePackage(pkg);
-    // return { success: result.customerInfo.entitlements.active.premium != null };
-    return { success: false, error: '未実装' };
+    const offerings = await Purchases.getOfferings();
+    const pkg = offerings.current?.monthly;
+    if (!pkg) return { success: false, error: '商品が取得できませんでした' };
+    const result = await Purchases.purchasePackage(pkg);
+    return { success: result.customerInfo.entitlements.active['premium'] != null };
   } catch (e: any) {
     if (e?.userCancelled) {
       return { success: false };
@@ -119,11 +98,8 @@ export async function restorePurchases(): Promise<{ success: boolean; error?: st
   }
 
   try {
-    // 本実装時:
-    // const Purchases = (await import('react-native-purchases')).default;
-    // const customerInfo = await Purchases.restorePurchases();
-    // return { success: customerInfo.entitlements.active.premium != null };
-    return { success: false, error: '未実装' };
+    const customerInfo = await Purchases.restorePurchases();
+    return { success: customerInfo.entitlements.active['premium'] != null };
   } catch (e: any) {
     return { success: false, error: e?.message ?? '復元に失敗しました' };
   }
