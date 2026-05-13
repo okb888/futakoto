@@ -102,6 +102,14 @@
       "google": {
         "iosClientId": "PLACEHOLDER_GOOGLE_IOS_CLIENT_ID",
         "webClientId": "PLACEHOLDER_GOOGLE_WEB_CLIENT_ID"
+      },
+      "firebase": {
+        "apiKey": "AIzaSyDWSwaOpnpCRKJ_dnV-gKktuqmRYIJhZYg",
+        "authDomain": "futakoto.firebaseapp.com",
+        "projectId": "futakoto",
+        "storageBucket": "futakoto.firebasestorage.app",
+        "messagingSenderId": "316368993378",
+        "appId": "1:316368993378:web:3318076ce781f2c568253b"
       }
     },
     "owner": "h.okb"

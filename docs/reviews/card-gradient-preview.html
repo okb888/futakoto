@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ふたこと — カードグラデーション比較</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+    background: #FAFAF8;
+    padding: 32px 20px;
+    min-height: 100vh;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2D2D2D;
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 40px;
+  }
+  .col-wrap {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 32px;
+    max-width: 1200px;
+  }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+  .col-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #E0E0E0;
+  }
+  .col-desc {
+    font-size: 12px;
+    color: #AAA;
+    margin-top: -6px;
+    margin-bottom: 4px;
+    line-height: 1.6;
+  }
+
+  /* ──── カード共通 ──── */
+  .card {
+    border-radius: 14px;
+    padding: 16px;
+    border-left-width: 4px;
+    border-left-style: solid;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-top { display: flex; align-items: center; gap: 12px; }
+  .emoji { font-size: 32px; line-height: 1; }
+  .meta { flex: 1; }
+  .badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+  .badge {
+    border-radius: 16px;
+    padding: 2px 9px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .badge-own { background: #EDF4F0; color: #5A7E68; }
+  .badge-vis {
+    border: 1px solid #DCE9E1;
+    background: #F7FBF8;
+    color: #7B9E87;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+  }
+  .time { font-size: 11px; color: #AAA; }
+  .memo { font-size: 14px; color: #444; margin-top: 10px; line-height: 22px; }
+  .star { color: #7B9E87; font-size: 16px; }
+
+  /* ──── 0. 現状（シャドウのみ） ──── */
+  .card-current {
+    background: #FFFFFF;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  /* ──── A. Pure RN ウォームホワイト ──── */
+  .card-warm {
+    background: #FDFDF9;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    border-top: 0.5px solid rgba(255,255,255,0.9);
+  }
+
+  /* ──── B. Sage Lift（おすすめ） ──── */
+  .card-sage {
+    background: linear-gradient(135deg, #FFFFFF 0%, #F4F8F5 100%);
+    box-shadow: 0 2px 8px rgba(123,158,135,0.10), 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  /* ──── C. 縦グラデ（上から下） ──── */
+  .card-vert {
+    background: linear-gradient(180deg, #FFFFFF 0%, #F6F9F7 100%);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+
+  /* ──── D. Glass（光沢） ──── */
+  .card-glass {
+    background: linear-gradient(145deg, #FFFFFF 0%, #F9FAF8 50%, #F3F7F4 100%);
+    box-shadow: 0 4px 12px rgba(123,158,135,0.12), 0 1px 3px rgba(0,0,0,0.04);
+    border-top: 1px solid rgba(255,255,255,0.95);
+  }
+
+  /* ──── E. Soft Paper（テクスチャ風） ──── */
+  .card-paper {
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 1px,
+        rgba(123,158,135,0.018) 1px,
+        rgba(123,158,135,0.018) 2px
+      ),
+      linear-gradient(135deg, #FFFFFF 0%, #F5F9F6 100%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  /* 気分カラー（くすみ系 — 今回変更後） */
+  .mood-1 { border-left-color: #D4A0A0; }
+  .mood-3 { border-left-color: #B8C4B0; }
+  .mood-5 { border-left-color: #6B9678; }
+
+  /* 選択インジケーター */
+  .recommend {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #7B9E87;
+    background: #EDF4F0;
+    border-radius: 8px;
+    padding: 2px 8px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<h1>ふたこと</h1>
+<p class="subtitle">EntryCard — カード背景グラデーション比較プレビュー</p>
+
+<div class="col-wrap">
+
+  <!-- 0. 現状 -->
+  <div class="col">
+    <div class="col-label">0. 現状（シャドウのみ）</div>
+    <div class="col-desc">background: #FFF + shadow 0.06</div>
+
+    <div class="card card-current mood-5">
+      <div class="card-top">
+        <span class="emoji">😊</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 20:12</div>
+        </div>
+        <span class="star">★</span>
+      </div>
+      <p class="memo">今日はうまくいったな。夕飯一緒に食べられてよかった。</p>
+    </div>
+
+    <div class="card card-current mood-3">
+      <div class="card-top">
+        <span class="emoji">😐</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">パートナー</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 18:30</div>
+        </div>
+      </div>
+      <p class="memo">ちょっと疲れた。でも大丈夫。</p>
+    </div>
+
+    <div class="card card-current mood-1">
+      <div class="card-top">
+        <span class="emoji">😣</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+          </div>
+          <div class="time">昨日 23:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A. ウォームホワイト -->
+  <div class="col">
+    <div class="col-label">A. Pure RN ウォームホワイト</div>
+    <div class="col-desc">background: #FDFDF9<br>追加インストール不要</div>
+
+    <div class="card card-warm mood-5">
+      <div class="card-top">
+        <span class="emoji">😊</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 20:12</div>
+        </div>
+        <span class="star">★</span>
+      </div>
+      <p class="memo">今日はうまくいったな。夕飯一緒に食べられてよかった。</p>
+    </div>
+
+    <div class="card card-warm mood-3">
+      <div class="card-top">
+        <span class="emoji">😐</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">パートナー</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 18:30</div>
+        </div>
+      </div>
+      <p class="memo">ちょっと疲れた。でも大丈夫。</p>
+    </div>
+
+    <div class="card card-warm mood-1">
+      <div class="card-top">
+        <span class="emoji">😣</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+          </div>
+          <div class="time">昨日 23:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B. Sage Lift おすすめ -->
+  <div class="col">
+    <div class="col-label">B. Sage Lift <span class="recommend">おすすめ</span></div>
+    <div class="col-desc">linear-gradient(135deg, #FFF → #F4F8F5)<br>expo-linear-gradient 必要</div>
+
+    <div class="card card-sage mood-5">
+      <div class="card-top">
+        <span class="emoji">😊</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 20:12</div>
+        </div>
+        <span class="star">★</span>
+      </div>
+      <p class="memo">今日はうまくいったな。夕飯一緒に食べられてよかった。</p>
+    </div>
+
+    <div class="card card-sage mood-3">
+      <div class="card-top">
+        <span class="emoji">😐</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">パートナー</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 18:30</div>
+        </div>
+      </div>
+      <p class="memo">ちょっと疲れた。でも大丈夫。</p>
+    </div>
+
+    <div class="card card-sage mood-1">
+      <div class="card-top">
+        <span class="emoji">😣</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+          </div>
+          <div class="time">昨日 23:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C. 縦グラデ -->
+  <div class="col">
+    <div class="col-label">C. 縦グラデ（上→下）</div>
+    <div class="col-desc">linear-gradient(180deg, #FFF → #F6F9F7)<br>expo-linear-gradient 必要</div>
+
+    <div class="card card-vert mood-5">
+      <div class="card-top">
+        <span class="emoji">😊</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 20:12</div>
+        </div>
+        <span class="star">★</span>
+      </div>
+      <p class="memo">今日はうまくいったな。夕飯一緒に食べられてよかった。</p>
+    </div>
+
+    <div class="card card-vert mood-3">
+      <div class="card-top">
+        <span class="emoji">😐</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">パートナー</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 18:30</div>
+        </div>
+      </div>
+      <p class="memo">ちょっと疲れた。でも大丈夫。</p>
+    </div>
+
+    <div class="card card-vert mood-1">
+      <div class="card-top">
+        <span class="emoji">😣</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+          </div>
+          <div class="time">昨日 23:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- D. Glass -->
+  <div class="col">
+    <div class="col-label">D. Glass（光沢）</div>
+    <div class="col-desc">3点グラデ + sage色シャドウ<br>expo-linear-gradient 必要</div>
+
+    <div class="card card-glass mood-5">
+      <div class="card-top">
+        <span class="emoji">😊</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 20:12</div>
+        </div>
+        <span class="star">★</span>
+      </div>
+      <p class="memo">今日はうまくいったな。夕飯一緒に食べられてよかった。</p>
+    </div>
+
+    <div class="card card-glass mood-3">
+      <div class="card-top">
+        <span class="emoji">😐</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">パートナー</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 18:30</div>
+        </div>
+      </div>
+      <p class="memo">ちょっと疲れた。でも大丈夫。</p>
+    </div>
+
+    <div class="card card-glass mood-1">
+      <div class="card-top">
+        <span class="emoji">😣</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+          </div>
+          <div class="time">昨日 23:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E. Soft Paper -->
+  <div class="col">
+    <div class="col-label">E. Soft Paper（テクスチャ）</div>
+    <div class="col-desc">横線テクスチャ + グラデ<br>expo-linear-gradient 必要</div>
+
+    <div class="card card-paper mood-5">
+      <div class="card-top">
+        <span class="emoji">😊</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 20:12</div>
+        </div>
+        <span class="star">★</span>
+      </div>
+      <p class="memo">今日はうまくいったな。夕飯一緒に食べられてよかった。</p>
+    </div>
+
+    <div class="card card-paper mood-3">
+      <div class="card-top">
+        <span class="emoji">😐</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">パートナー</span>
+            <span class="badge badge-vis">🔗 ふたりに共有</span>
+          </div>
+          <div class="time">今日 18:30</div>
+        </div>
+      </div>
+      <p class="memo">ちょっと疲れた。でも大丈夫。</p>
+    </div>
+
+    <div class="card card-paper mood-1">
+      <div class="card-top">
+        <span class="emoji">😣</span>
+        <div class="meta">
+          <div class="badges">
+            <span class="badge badge-own">自分</span>
+          </div>
+          <div class="time">昨日 23:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p style="margin-top:48px; font-size:11px; color:#CCC; text-align:center;">
+  ふたこと card gradient preview — generated 2026-05-13
+</p>
+
+</body>
+</html>

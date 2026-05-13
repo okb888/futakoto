@@ -14,6 +14,7 @@ import { Sparkle } from 'phosphor-react-native';
 import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
 import { SourceConsultationLink } from '../../components/SourceConsultationLink';
+import { PaywallModal } from '../../components/PaywallModal';
 import { useAuth } from '../../lib/auth';
 import { aiSummary } from '../../lib/ai';
 import { MOOD_COLORS, MOOD_EMOJI } from '../../lib/mood';
@@ -56,6 +57,27 @@ function trimCache(cache: Record<string, Entry[]>): Record<string, Entry[]> {
   return Object.fromEntries(keep.map((k) => [k, cache[k]]));
 }
 
+function thisMonthKey(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function isPastMonth(monthStr: string): boolean {
+  return monthStr < thisMonthKey();
+}
+
+function isPremium(profile: UserProfile | null, partnerProfile: UserProfile | null): boolean {
+  return checkActivePremium(profile) || checkActivePremium(partnerProfile);
+}
+
+function checkActivePremium(p: UserProfile | null): boolean {
+  if (!p?.premium) return false;
+  const expires = p.premiumExpiresAt;
+  if (!expires) return true;
+  const ms = typeof (expires as any)?.toMillis === 'function' ? (expires as any).toMillis() : 0;
+  return ms === 0 || ms > Date.now();
+}
+
 function latestByDate(entries: Entry[]): Record<string, Entry> {
   const map: Record<string, Entry> = {};
   entries.forEach((entry) => {
@@ -91,6 +113,11 @@ export default function CalendarScreen() {
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
   const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallReason, setPaywallReason] = useState<string | undefined>(undefined);
+  const [calendarKey, setCalendarKey] = useState(0);
+
+  const premium = isPremium(authProfile ?? null, partnerProfile);
 
   function actionKey(entry: Entry): string {
     return `${entry.uid}_${entry.id ?? ''}`;
@@ -176,13 +203,23 @@ export default function CalendarScreen() {
 
   function handleMonthChange(date: { year: number; month: number }) {
     const newMonth = `${date.year}-${String(date.month).padStart(2, '0')}`;
-    if (newMonth !== currentMonth) {
-      setCurrentMonth(newMonth);
-      const key = `${newMonth}-${summaryTarget}`;
-      setAiSummaryText(aiSummaryCache[key] ?? null);
-      setSummaryExpanded(false);
-      loadMonthEntries(newMonth, myEntriesCache);
+    if (newMonth === currentMonth) return;
+
+    // 無料ユーザーは過去月を閲覧できない（Premium 特典: 全期間振り返り）
+    if (!premium && isPastMonth(newMonth)) {
+      setPaywallReason('過去の月を振り返れるのはプレミアム特典です');
+      setPaywallOpen(true);
+      // 月表示を当月に戻す（react-native-calendars は内部状態を持つので key で再描画）
+      setCurrentMonth(thisMonthKey());
+      setCalendarKey((k) => k + 1);
+      return;
     }
+
+    setCurrentMonth(newMonth);
+    const key = `${newMonth}-${summaryTarget}`;
+    setAiSummaryText(aiSummaryCache[key] ?? null);
+    setSummaryExpanded(false);
+    loadMonthEntries(newMonth, myEntriesCache);
   }
 
   async function handleAiSummary() {
@@ -409,6 +446,8 @@ export default function CalendarScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Calendar
+        key={calendarKey}
+        current={`${currentMonth}-01`}
         markedDates={markedDates}
         onDayPress={(d) => setSelected(d.dateString)}
         onMonthChange={handleMonthChange}
@@ -557,6 +596,22 @@ export default function CalendarScreen() {
         </TouchableOpacity>
       </View>
 
+      {!premium ? (
+        <TouchableOpacity
+          style={styles.premiumHint}
+          onPress={() => {
+            setPaywallReason('過去の月を振り返れるのはプレミアム特典です');
+            setPaywallOpen(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Sparkle size={13} color={COLORS.ai} weight="fill" />
+          <Text style={styles.premiumHintText}>
+            過去月の振り返りはプレミアム
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+
       {selectedDayRecords.length === 0 ? (
         <Text style={styles.empty}>この日の記録はありません</Text>
       ) : (
@@ -634,6 +689,16 @@ export default function CalendarScreen() {
           );
         })
       )}
+
+      <PaywallModal
+        visible={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        reason={paywallReason}
+        onPurchased={() => {
+          setPaywallOpen(false);
+          load();
+        }}
+      />
     </ScrollView>
   );
 }
@@ -780,4 +845,19 @@ const styles = StyleSheet.create({
   summaryCardTitle: { flex: 1, fontSize: 13, color: COLORS.ai, fontWeight: '700' },
   summaryToggle: { fontSize: 11, color: COLORS.ai },
   summaryText: { fontSize: 14, color: COLORS.text, lineHeight: 21, paddingHorizontal: 14, paddingBottom: 14 },
+  premiumHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginHorizontal: 16,
+    marginVertical: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: COLORS.aiBgSoft,
+    borderWidth: 1,
+    borderColor: COLORS.aiBorderSoft,
+  },
+  premiumHintText: { fontSize: 12, color: COLORS.ai, fontWeight: '600' },
 });

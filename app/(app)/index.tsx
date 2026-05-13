@@ -121,7 +121,7 @@ export default function HomeScreen() {
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={styles.headerRight}>
+        <View style={{ marginRight: 12 }}>
           <AiQuotaChip
             profile={profile}
             onPress={() => {

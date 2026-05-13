@@ -3,14 +3,38 @@ import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
+import Constants from 'expo-constants';
 
-const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+type FirebaseConfig = {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId: string;
+  appId: string;
+};
+
+const extra = (Constants.expoConfig?.extra ?? {}) as { firebase?: Partial<FirebaseConfig> };
+const firebaseExtra = extra.firebase ?? {};
+
+function requiredConfigValue(key: keyof FirebaseConfig, envKey: string): string {
+  const value = process.env[envKey] ?? firebaseExtra[key];
+  if (!value) {
+    throw new Error(`Firebase config is missing: ${key}`);
+  }
+  return value;
+}
+
+const firebaseConfig: FirebaseConfig = {
+  apiKey: requiredConfigValue('apiKey', 'EXPO_PUBLIC_FIREBASE_API_KEY'),
+  authDomain: requiredConfigValue('authDomain', 'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+  projectId: requiredConfigValue('projectId', 'EXPO_PUBLIC_FIREBASE_PROJECT_ID'),
+  storageBucket: requiredConfigValue('storageBucket', 'EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: requiredConfigValue(
+    'messagingSenderId',
+    'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'
+  ),
+  appId: requiredConfigValue('appId', 'EXPO_PUBLIC_FIREBASE_APP_ID'),
 };
 
 export const app = initializeApp(firebaseConfig);
