@@ -193,9 +193,12 @@ export default function PostScreen() {
     try {
       await setAiConsentAcknowledged(user.uid);
       await refreshProfile();
-    } finally {
       setConsentOpen(false);
       await runAiRewrite();
+    } catch (e: any) {
+      const c = classifyError(e);
+      Alert.alert(c.title, c.message);
+      setConsentOpen(false);
     }
   }
 

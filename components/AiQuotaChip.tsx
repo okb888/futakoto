@@ -10,11 +10,19 @@ type Props = {
   onPress?: () => void;
 };
 
+function isProfilePremiumActive(p: UserProfile): boolean {
+  if (!p.premium) return false;
+  const exp = p.premiumExpiresAt as any;
+  if (!exp) return true;
+  const ms = typeof exp?.toMillis === 'function' ? exp.toMillis() : 0;
+  return ms === 0 || ms > Date.now();
+}
+
 export function AiQuotaChip({ profile, freeLimit = 5, onPress }: Props) {
   if (!profile) return null;
 
   // Premium はチップ自体表示しない（無制限なので情報的に薄い）
-  if (profile.premium) {
+  if (isProfilePremiumActive(profile)) {
     return (
       <TouchableOpacity style={[styles.chip, styles.chipPremium]} onPress={onPress} activeOpacity={0.7}>
         <Sparkle size={12} color={COLORS.ai} weight="fill" />

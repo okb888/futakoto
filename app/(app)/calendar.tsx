@@ -32,7 +32,7 @@ import {
   ConsultationSession,
   UserProfile,
 } from '../../lib/db';
-import { firebaseErrorMessage } from '../../lib/errors';
+import { classifyError, firebaseErrorMessage } from '../../lib/errors';
 import { dateKey, formatTime, sortMillis, todayKey } from '../../lib/format';
 import { getPartnerDisplayName } from '../../lib/profile';
 import { COLORS } from '../../lib/theme';
@@ -253,7 +253,13 @@ export default function CalendarScreen() {
       setAiSummaryCache((prev) => ({ ...prev, [cacheKey]: res.summary }));
       setSummaryExpanded(true);
     } catch (e: any) {
-      Alert.alert('エラー', firebaseErrorMessage(e));
+      const classified = classifyError(e);
+      if (classified.kind === 'quota') {
+        setPaywallReason(classified.message);
+        setPaywallOpen(true);
+      } else {
+        Alert.alert('エラー', classified.message);
+      }
     } finally {
       setAiSummaryLoading(false);
     }
