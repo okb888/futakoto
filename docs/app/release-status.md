@@ -1,6 +1,6 @@
 # ふたこと リリースステータス
 
-**最終更新**: 2026-05-14（build 5 成功 / Google・RevenueCat入り production IPA 生成）
+**最終更新**: 2026-05-14（RevenueCat SDK有効化・Appleボタンバグ修正 → build 6 未提出）
 **目標**: 2026年8月31日までに月額¥500の課金が1人発生
 **直近マイルストーン**: TestFlight内部配布 → β検証 → 5/31 App Store審査提出
 
@@ -13,10 +13,9 @@
 
 | 優先 | タスク | 完了条件 |
 |---|---|---|
-| **1** | `REVENUECAT_WEBHOOK_AUTH` Cloud Functions Secret 設定 → Functions デプロイ → RevenueCat Webhook URL 登録 | RevenueCat TEST イベント送信で 200 OK |
-| **2** | build 5 をTestFlight提出 → インストール → Sandbox 課金フロー検証 | 購入→更新→解約→復元の一連が通る |
-| **3** | 初回実機スモークテスト（起動・ログイン・投稿・ペアリング・AI・通知） | 致命バグなし |
-| **4** | Firebase プライバシーポリシー・利用規約ページ作成 | URLリンクが有効になること |
+| **1** | `eas build --platform ios --profile production` → build 6 提出 | `.ipa` 生成・App Store Connect アップロード完了 |
+| **2** | build 6 インストール → 初回実機スモークテスト（起動・ログイン・投稿・ペアリング・AI・通知） | 致命バグなし |
+| **3** | Apple処理完了次第 → Sandbox 課金フロー検証 | 購入→更新→解約→復元の一連が通る |
 
 ---
 
@@ -24,9 +23,9 @@
 
 ```
 A. AI精度改善 ───────✅ 完了（archive/done.md 参照）
-B. 認証拡張   ───────🟢 コード実装完了 → webClientID投入・実機確認待ち
-C. 課金UI    ───────🟡 SDK統合・EAS設定完了 → Webhook設定 + Sandbox検証待ち
-D. リリース準備 ─────🟡 build 5 成功・App Store Connect提出待ち
+B. 認証拡張   ───────🟢 コード実装完了・webClientID投入済み → 実機確認待ち
+C. 課金UI    ───────🟡 SDK統合・EAS設定・Webhook設定完了 → Sandbox検証待ち
+D. リリース準備 ─────🟡 build 5 提出完了・Apple処理待ち・初回オンボーディング実装済み
 E. SNS運用   ───────🔴 未着手（別スレッド予定）
 F. LP修正    ───────🟡 仮ページ公開中・本番版未作成
 G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
@@ -54,7 +53,7 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 ---
 
-## C. 課金UI（月額¥500 + 無料AI月5回）— 🟢 コード実装完了
+## C. 課金UI（月額¥500 + 無料AI月5回）— 🟡 Sandbox検証待ち
 
 | 項目 | 状態 |
 |---|---|
@@ -69,7 +68,8 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 - [ ] **Apple Small Business Program** 登録（手取り 30%→15%）
 - [x] RevenueCat ダッシュボードで Entitlement `premium` にプロダクトをマップ
 - [x] EAS Secret に `EXPO_PUBLIC_REVENUECAT_IOS_KEY` を設定（+ Firebase/Google 全変数も登録済み）
-- [ ] Cloud Functions Secret に `REVENUECAT_WEBHOOK_AUTH` を設定 → RevenueCat 側 Webhook URL/Authorization に同値を設定
+- [x] Cloud Functions Secret に `REVENUECAT_WEBHOOK_AUTH` を設定（version 1）→ `revenuecatWebhook` 関数デプロイ済み（asia-northeast1）
+- [x] RevenueCat ダッシュボードで Webhook URL / Authorization を登録 → TEST イベントで 200 OK 確認済み（5/14）
 - [ ] Sandbox アカウントで購入→更新→解約→復元の一連を検証
 
 ---
@@ -78,24 +78,30 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 | 項目 | 状態 |
 |---|---|
-| TestFlight | build 5（Google Sign-in / RevenueCat SDK / Firebase設定込み）・App Store Connect提出待ち |
+| TestFlight | build 5（Apple/Google Sign-in実装・RevenueCat SDK **未有効**）提出済み / Apple処理待ち |
+| **build 6 必要** | commit `f7e4a35`（RevenueCat SDK有効化・Appleボタンバグ修正）未ビルド → **Sandbox検証前に build 6 要提出** |
 | Apple Developer Program | 承認済み |
 | Bundle ID | `com.futakoto.app` 登録済み |
 | EAS iOS build | build 5 成功（production / `.ipa` 生成済み） |
-| App Store Connect | build 5 提出待ち |
+| App Store Connect | build 5 バイナリアップロード完了・Apple処理待ち |
 | TestFlight URL | https://appstoreconnect.apple.com/apps/6768653868/testflight/ios |
 | App Privacy Manifest（iOS17+） | app.json に設定済み |
 | AI送信に関する同意UI | 実装済み・実機確認待ち |
+| 初回オンボーディング | 3枚スライド実装済み（コンセプト / ペアリング / AI機能）・実機確認待ち |
 | β配布計画 | 同僚2組+奥さん（合計3ペア） |
 | 審査提出 | **5/31** デッドライン |
 
 ### 残タスク
-- [ ] build 5 をApp Store Connectへ提出
+- [x] build 5 をApp Store Connectへ提出
 - [ ] Apple処理完了後、TestFlightで build 5 をインストール
-- [ ] 初回実機スモークテスト
-- [ ] Firebase でプライバシーポリシー・利用規約ページ作成（リンク有効化）
-- [ ] プライバシーポリシーにAI送信範囲を追記
-- [ ] `web/support.html` の `GOOGLE_FORM_URL` を実際の Google フォーム URL に差し替え
+- [ ] 初回実機スモークテスト（起動・ログイン・投稿・ペアリング・AI・通知）
+- [x] 初回起動オンボーディング実装（`components/OnboardingModal.tsx` + `app/(app)/index.tsx`、AsyncStorage `hasSeenOnboarding` で初回のみ表示）
+- [ ] **オンボーディングUX確認**（初回3枚スライド→設定で招待コード共有→パートナーインストール→ペアリング完了の流れが自然か）← UX分析より
+- [x] Firebase でプライバシーポリシー・利用規約ページ作成（リンク有効化）
+- [x] プライバシーポリシーにAI送信範囲を追記
+- [x] GAS でお問い合わせフォーム作成（`docs/gas-contact-form.gs`・通知先: futakoto.app@gmail.com）
+- [x] `web/support.html` の `GOOGLE_FORM_URL` を実際の Google フォーム URL に差し替え
+- [x] Firebase Hosting 本番デプロイ（privacy / terms / support 全ページ公開 https://futakoto.web.app）
 - [ ] β配布（同僚2組+奥さん）
 - [ ] βフィードバック収集 → 致命バグ修正
 - [ ] 5/31審査提出
@@ -122,9 +128,11 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 | 項目 | 状態 |
 |---|---|
-| 現状 | futakoto.web.app は仮ページ |
+| 現状 | futakoto.web.app 仮ページ公開中・リリース通知セクション追加済み |
 | デッドライン | 6月リリース時 |
 
+- [x] リリース通知セクション追加（`#notify`・Formspree `mjgldnwe` でメール収集・Xフォロー誘導）
+- [x] バナーを「2026年6月リリース予定」に更新
 - [ ] 「無料で使える」を最上部に明示
 - [ ] AI機能の無料枠（月5回）を明示
 - [ ] 月額¥500の訴求は2スクロール下
@@ -143,8 +151,10 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 | 完了詳細 | [`archive/done.md`](./archive/done.md) 参照 |
 
 ### 長期対応（β後）
-- [ ] 設定画面のサブページ分割
+- [ ] 設定画面のサブページ分割（5グループ化）
 - [ ] カード背景をグラデーション or 微細テクスチャ検討
+- [ ] お気に入りタブと設定の分離（タブの意味が2つ同居している）← UX分析より
+- [ ] borderSoft(#F0F0F0) と background(#FAFAF8) のコントラスト差を拡大 ← UX分析より
 
 ---
 
@@ -160,6 +170,7 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 | [`content-stock.md`](./content-stock.md) | 発信ネタストック（19件・7シリーズ） |
 | [`../reviews/2026-05-10-product-review.md`](../reviews/2026-05-10-product-review.md) | Any Planner分析メモ + 実機バグTODO |
 | [`../reviews/2026-05-12-ui-research.md`](../reviews/2026-05-12-ui-research.md) | UIリサーチ30件・改善提案（即改善8件・中期・長期） |
+| [`../reviews/2026-05-14-ux-5layer.md`](../reviews/2026-05-14-ux-5layer.md) | UX 5レイヤー分析（Strategy〜Surface・総合評価） |
 | `docs/auth-integration.md` | （未作成・B完了時に作る） |
 | `eval/PLAN.md`, `eval/REPORT.md` | AI精度評価（完了済み） |
 | `AGENTS.md` | エージェント向けハンドオフ本体 |
@@ -170,8 +181,9 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 | 期日 | やること |
 |---|---|
-| **5/9〜5/15** | ✅ EAS iOS本番ビルド / App Store Connect提出 / TestFlight内部配布準備 → **残: build 5 提出・スモークテスト** |
-| **5/15〜5/20** | 実機スモークテスト / Apple・Googleログイン確認 / 課金UI SDK統合 / プライバシー対応 |
+| **5/9〜5/15** | ✅ EAS iOS本番ビルド / App Store Connect提出 / TestFlight内部配布準備・Webhook設定 |
+| **5/15** | **build 5 インストール → Sandbox課金フロー検証 / 初回実機スモークテスト** |
+| **5/15〜5/20** | Apple・Googleログイン実機確認 / オンボーディングUX確認 / プライバシー対応最終確認 |
 | **5/20〜5/28** | TestFlight配布 → β同僚2組+奥さん / フィードバック収集・致命バグ修正 / LP本番版 |
 | **5/28〜5/31** | 審査提出最終チェック |
 | **5/31** | **App Store審査提出** |

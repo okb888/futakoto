@@ -8,6 +8,10 @@
  *   4. 出力されたURLを support.html に貼る
  *
  * 回答は futakoto.app@gmail.com に通知メールが届く
+ *
+ * --- 作成済みフォーム情報（2026-05-14）---
+ * 公開URL: https://docs.google.com/forms/d/e/1FAIpQLSef1v2A7Gr1dhEm1vXxHvPcjiZQvQcx2MDUEWFYwnmdpqNh-A/viewform
+ * 編集URL: https://docs.google.com/forms/d/1TPqYhR0_x73H0XA7Lg5LzXDfcqR18PRKIOSO2T5jA5I/edit
  */
 
 const NOTIFY_EMAIL = "futakoto.app@gmail.com";
@@ -17,8 +21,6 @@ function createContactForm() {
   const form = FormApp.create(FORM_TITLE);
   form.setDescription("ふたことに関するお問い合わせはこちらからお送りください。\n通常2〜3営業日以内にご返信します。");
   form.setConfirmationMessage("お問い合わせありがとうございます。\n内容を確認のうえ、2〜3営業日以内にご返信します。");
-  form.setCollectEmail(true); // 送信者のGoogleアカウントメールを収集（任意入力に変更）
-
   // ---- 1. お問い合わせカテゴリ（必須・ラジオ） ----
   const category = form.addMultipleChoiceItem();
   category.setTitle("お問い合わせの種類");
