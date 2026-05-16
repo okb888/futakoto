@@ -265,6 +265,58 @@ export async function getPartnerSharedEntries(partnerUid: string, count = 50): P
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry));
 }
 
+/**
+ * 取得済みの自分のエントリ一覧から、今日または昨日を起点にした連続記録日数を返す。
+ * 同じ日の複数投稿は1日として数える。
+ */
+export function getConsecutiveDays(myEntries: Entry[]): number {
+  if (myEntries.length === 0) return 0;
+
+  function toDate(ts: any): Date | null {
+    if (!ts) return null;
+    if (ts.toDate) return ts.toDate();
+    if (typeof ts === 'number' || typeof ts === 'string' || ts instanceof Date) return new Date(ts);
+    if (typeof ts.seconds === 'number') {
+      return new Date(ts.seconds * 1000 + Math.floor((ts.nanoseconds ?? 0) / 1000000));
+    }
+    return null;
+  }
+
+  function dateKey(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  function daysBetween(newer: string, older: string): number {
+    const [newerYear, newerMonth, newerDay] = newer.split('-').map(Number);
+    const [olderYear, olderMonth, olderDay] = older.split('-').map(Number);
+    const newerMs = Date.UTC(newerYear, newerMonth - 1, newerDay);
+    const olderMs = Date.UTC(olderYear, olderMonth - 1, olderDay);
+    return Math.round((newerMs - olderMs) / 86400000);
+  }
+
+  const todayDate = new Date();
+  const yesterdayDate = new Date(todayDate);
+  yesterdayDate.setDate(todayDate.getDate() - 1);
+  const today = dateKey(todayDate);
+  const yesterday = dateKey(yesterdayDate);
+
+  const uniqueDates = [...new Set(
+    myEntries
+      .map((entry) => toDate(entry.createdAt))
+      .filter((date): date is Date => date !== null)
+      .map(dateKey)
+  )].sort().reverse();
+
+  if (uniqueDates[0] !== today && uniqueDates[0] !== yesterday) return 0;
+
+  let count = 1;
+  for (let i = 1; i < uniqueDates.length; i++) {
+    if (daysBetween(uniqueDates[i - 1], uniqueDates[i]) !== 1) break;
+    count++;
+  }
+  return count;
+}
+
 // ---- Consultation Sessions ----
 
 export async function createConsultationSession(

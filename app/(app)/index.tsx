@@ -1,20 +1,20 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   RefreshControl,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
-import { Plus, Heart, Sparkle } from 'phosphor-react-native';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import { Heart, Sparkle } from 'phosphor-react-native';
 import { aiInterpret } from '../../lib/ai';
 import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
-import { SourceConsultationLink } from '../../components/SourceConsultationLink';
+import { HomeMoodInput } from '../../components/HomeMoodInput';
 import { PaywallModal } from '../../components/PaywallModal';
 import { AiConsentModal } from '../../components/AiConsentModal';
 import { useAuth } from '../../lib/auth';
@@ -30,20 +30,24 @@ import {
   toggleFavoriteEntry,
   getAllInterpretationCaches,
   setAiConsentAcknowledged,
+  getConsecutiveDays,
   Entry,
   UserProfile,
 } from '../../lib/db';
 import { classifyError } from '../../lib/errors';
-import { formatEntryDate, sortMillis } from '../../lib/format';
+import { dateKey, formatEntryDate, todayKey } from '../../lib/format';
 import { getPartnerDisplayName } from '../../lib/profile';
 import { COLORS } from '../../lib/theme';
 
 export default function HomeScreen() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
   const router = useRouter();
-  const [entries, setEntries] = useState<Entry[]>([]);
+  const navigation = useNavigation();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [partnerProfile, setPartnerProfile] = useState<UserProfile | null>(null);
+  const [myTodayEntry, setMyTodayEntry] = useState<Entry | null>(null);
+  const [partnerTodayEntry, setPartnerTodayEntry] = useState<Entry | null>(null);
+  const [streak, setStreak] = useState(0);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const [interpretationsCache, setInterpretationsCache] = useState<Record<string, string[]>>({});
@@ -57,6 +61,14 @@ export default function HomeScreen() {
   function actionKey(entry: Entry): string {
     return `${entry.uid}_${entry.id ?? ''}`;
   }
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: streak >= 2
+        ? () => <Text style={styles.streakText}>{streak}日連続</Text>
+        : undefined,
+    });
+  }, [navigation, streak]);
 
   async function load(isCancelled: () => boolean = () => false) {
     if (!user) return;
@@ -93,19 +105,22 @@ export default function HomeScreen() {
       setInterpretationsCache(caches);
       if (isCancelled()) return;
 
-      let allEntries = myEntries;
+      const today = todayKey();
+      const nextMyTodayEntry = myEntries.find((entry) => dateKey(entry.createdAt) === today) ?? null;
+      let nextPartnerTodayEntry: Entry | null = null;
+
       if (p.partnerUid && partnerData) {
         setPartnerProfile(partnerData.pp);
         if (isCancelled()) return;
-        allEntries = [...myEntries, ...partnerData.pe]
-          .sort((a, b) => sortMillis(b.createdAt) - sortMillis(a.createdAt))
-          .slice(0, 100);
+        nextPartnerTodayEntry = partnerData.pe.find((entry) => dateKey(entry.createdAt) === today) ?? null;
       } else {
         setPartnerProfile(null);
       }
 
       if (isCancelled()) return;
-      setEntries(allEntries);
+      setMyTodayEntry(nextMyTodayEntry);
+      setPartnerTodayEntry(nextPartnerTodayEntry);
+      setStreak(getConsecutiveDays(myEntries));
     } catch (e: any) {
       console.error('[Home] load全体エラー:', e?.code, e?.message);
     }
@@ -243,138 +258,139 @@ export default function HomeScreen() {
     setPendingInterpret(null);
   }
 
-  function openSourceConsultation(entry: Entry) {
-    if (!entry.sourceConsultationSessionId) return;
-    router.push({
-      pathname: '/(app)/consult',
-      params: { sessionId: entry.sourceConsultationSessionId },
-    });
-  }
-
   const isPaired = !!profile?.partnerUid;
   const partnerName = getPartnerDisplayName(partnerProfile);
 
+  function renderPartnerFooter(entry: Entry) {
+    if (!entry.id || !entry.memo) return undefined;
+    const cacheKey = favoriteKey(entry.uid, entry.id);
+    const cachedInterps = interpretationsCache[cacheKey];
+    const isInterpreting = interpretLoadingIds.has(cacheKey);
+
+    return (
+      <View style={styles.interpretArea}>
+        {cachedInterps ? (
+          <>
+            <View style={styles.interpretResult}>
+              {cachedInterps.map((interp, i) => (
+                <View key={i} style={styles.interpretItem}>
+                  <Text style={styles.interpretBullet}>·</Text>
+                  <Text style={styles.interpretText}>{interp}</Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={styles.reInterpretButton}
+              onPress={() => handleInterpret(entry, true)}
+              disabled={isInterpreting}
+            >
+              {isInterpreting ? (
+                <ActivityIndicator color={COLORS.ai} size="small" />
+              ) : (
+                <Text style={styles.reInterpretButtonText}>もう一度読み解く</Text>
+              )}
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity
+            style={styles.interpretButton}
+            onPress={() => handleInterpret(entry)}
+            disabled={isInterpreting}
+          >
+            {isInterpreting ? (
+              <ActivityIndicator color={COLORS.ai} size="small" />
+            ) : (
+              <>
+                <Sparkle size={13} color={COLORS.ai} weight="fill" />
+                <Text style={styles.interpretButtonText}>気持ちを読み解く</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <FlatList
-        data={entries}
-        keyExtractor={(item) => item.id! + item.uid}
+      <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={styles.list}
-        ListHeaderComponent={
-          <View style={styles.connectionHeader}>
-            {isPaired ? (
-              <View style={styles.connectionPill}>
-                <Heart size={14} color={COLORS.partner} weight="fill" />
-                <Text style={styles.connectionText}>{partnerName} と繋がっています</Text>
-              </View>
-            ) : (
-              <View style={styles.connectionPillMuted}>
-                <Text style={styles.connectionMutedText}>設定タブからパートナーと繋がろう</Text>
-              </View>
-            )}
-          </View>
-        }
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🌿</Text>
-            <Text style={styles.emptyText}>今日の気持ちを記録しよう</Text>
-            <Text style={styles.emptyHint}>
-              毎日の気持ちを残すと{'\n'}パートナーに気持ちが届きます
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyAction}
-              onPress={() => router.push('/(app)/post')}
-            >
-              <Text style={styles.emptyActionText}>最初の記録をする</Text>
-            </TouchableOpacity>
-          </View>
-        }
-        renderItem={({ item }) => {
-          const isOwn = item.uid === user?.uid;
-          const authorName = isOwn ? '自分' : partnerName;
-          const isFavorite = item.id ? favoriteIds.has(favoriteKey(item.uid, item.id)) : false;
-          const cacheKey = item.id ? favoriteKey(item.uid, item.id) : '';
-          const isActionOpen = activeActionKey === actionKey(item);
-          const cachedInterps = !isOwn ? interpretationsCache[cacheKey] : undefined;
-          const isInterpreting = !isOwn && interpretLoadingIds.has(cacheKey);
-          const footer = isOwn && item.sourceConsultationSessionId ? (
-            <SourceConsultationLink onPress={() => openSourceConsultation(item)} />
-          ) : !isOwn && item.memo ? (
-            <View style={styles.interpretArea}>
-              {cachedInterps ? (
-                <>
-                  <View style={styles.interpretResult}>
-                    {cachedInterps.map((interp, i) => (
-                      <View key={i} style={styles.interpretItem}>
-                        <Text style={styles.interpretBullet}>·</Text>
-                        <Text style={styles.interpretText}>{interp}</Text>
-                      </View>
-                    ))}
-                  </View>
-                  <TouchableOpacity
-                    style={styles.reInterpretButton}
-                    onPress={() => handleInterpret(item, true)}
-                    disabled={isInterpreting}
-                  >
-                    {isInterpreting ? (
-                      <ActivityIndicator color={COLORS.ai} size="small" />
-                    ) : (
-                      <Text style={styles.reInterpretButtonText}>もう一度読み解く</Text>
-                    )}
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <TouchableOpacity
-                  style={styles.interpretButton}
-                  onPress={() => handleInterpret(item)}
-                  disabled={isInterpreting}
-                >
-                  {isInterpreting ? (
-                    <ActivityIndicator color={COLORS.ai} size="small" />
-                  ) : (
-                    <>
-                      <Sparkle size={13} color={COLORS.ai} weight="fill" />
-                      <Text style={styles.interpretButtonText}>気持ちを読み解く</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              )}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.connectionHeader}>
+          {isPaired ? (
+            <View style={styles.connectionPill}>
+              <Heart size={14} color={COLORS.partner} weight="fill" />
+              <Text style={styles.connectionText}>{partnerName} と繋がっています</Text>
             </View>
-          ) : undefined;
-          return (
+          ) : (
+            <View style={styles.connectionPillMuted}>
+              <Text style={styles.connectionMutedText}>設定タブからパートナーと繋がろう</Text>
+            </View>
+          )}
+        </View>
+
+        {user && profile ? (
+          <HomeMoodInput
+            uid={user.uid}
+            profile={profile}
+            partnerProfile={partnerProfile}
+            onSubmit={() => load()}
+          />
+        ) : null}
+
+        <View style={styles.todaySection}>
+          <Text style={styles.sectionLabel}>今日の記録</Text>
+
+          {myTodayEntry ? (
             <View>
               <EntryCard
-                entry={item}
-                authorName={authorName}
-                isOwn={isOwn}
-                isFavorite={isFavorite}
-                timeLabel={formatEntryDate(item.createdAt)}
-                onPressActions={isOwn ? () => showActions(item) : undefined}
-                onToggleFavorite={() => handleToggleFavorite(item)}
-                footer={footer}
+                entry={myTodayEntry}
+                authorName="自分"
+                isOwn
+                isFavorite={
+                  myTodayEntry.id
+                    ? favoriteIds.has(favoriteKey(myTodayEntry.uid, myTodayEntry.id))
+                    : false
+                }
+                timeLabel={formatEntryDate(myTodayEntry.createdAt)}
+                onPressActions={() => showActions(myTodayEntry)}
+                onToggleFavorite={() => handleToggleFavorite(myTodayEntry)}
               />
-              {isOwn && isActionOpen ? (
+              {activeActionKey === actionKey(myTodayEntry) ? (
                 <EntryActionPanel
-                  entry={item}
-                  onEdit={() => handleEdit(item)}
-                  onToggleVisibility={() => handleToggleVisibility(item)}
-                  onDelete={() => handleDelete(item)}
+                  entry={myTodayEntry}
+                  onEdit={() => handleEdit(myTodayEntry)}
+                  onToggleVisibility={() => handleToggleVisibility(myTodayEntry)}
+                  onDelete={() => handleDelete(myTodayEntry)}
                 />
               ) : null}
             </View>
-          );
-        }}
-      />
+          ) : (
+            <Text style={styles.noEntryText}>まだ今日の記録がありません</Text>
+          )}
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/(app)/post')}
-        accessibilityLabel="新しい記録を追加"
-        accessibilityRole="button"
-      >
-        <Plus size={28} color={COLORS.surface} weight="bold" />
-      </TouchableOpacity>
+          {isPaired && (
+            partnerTodayEntry ? (
+              <EntryCard
+                entry={partnerTodayEntry}
+                authorName={partnerName}
+                isOwn={false}
+                isFavorite={
+                  partnerTodayEntry.id
+                    ? favoriteIds.has(favoriteKey(partnerTodayEntry.uid, partnerTodayEntry.id))
+                    : false
+                }
+                timeLabel={formatEntryDate(partnerTodayEntry.createdAt)}
+                onToggleFavorite={() => handleToggleFavorite(partnerTodayEntry)}
+                footer={renderPartnerFooter(partnerTodayEntry)}
+              />
+            ) : (
+              <Text style={styles.noEntryText}>{partnerName}はまだ今日の記録がありません</Text>
+            )
+          )}
+        </View>
+      </ScrollView>
 
       <PaywallModal
         visible={paywallOpen}
@@ -397,7 +413,13 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  list: { paddingBottom: 100, paddingTop: 12 },
+  scrollContent: { paddingTop: 12, paddingBottom: 80 },
+  streakText: {
+    marginRight: 16,
+    fontSize: 12,
+    color: COLORS.textWeak,
+    fontWeight: '600',
+  },
   connectionHeader: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
   connectionPill: {
     alignSelf: 'flex-start',
@@ -422,35 +444,22 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   connectionMutedText: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
-  empty: { alignItems: 'center', paddingTop: 64, paddingHorizontal: 32 },
-  emptyEmoji: { fontSize: 48, marginBottom: 16 },
-  emptyText: { fontSize: 16, color: COLORS.textSubtle, fontWeight: '600', textAlign: 'center' },
-  emptyHint: { fontSize: 13, color: COLORS.textWeak, marginTop: 8, textAlign: 'center', lineHeight: 20 },
-  emptyAction: {
-    marginTop: 24,
-    backgroundColor: COLORS.primary,
+  todaySection: { paddingTop: 8, paddingBottom: 32 },
+  sectionLabel: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    fontSize: 12,
+    color: COLORS.textWeak,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  noEntryText: {
+    fontSize: 13,
+    color: COLORS.textWeak,
+    textAlign: 'center',
+    paddingVertical: 16,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 24,
   },
-  emptyActionText: { color: COLORS.surface, fontSize: 14, fontWeight: '700' },
-  fab: {
-    position: 'absolute',
-    bottom: 16,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  fabText: { fontSize: 28, color: COLORS.surface, lineHeight: 32 },
   interpretArea: {
     backgroundColor: COLORS.aiBgSoft,
     borderRadius: 10,
