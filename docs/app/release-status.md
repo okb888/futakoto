@@ -1,6 +1,6 @@
 # ふたこと リリースステータス
 
-**最終更新**: 2026-05-14（RevenueCat SDK有効化・Appleボタンバグ修正 → build 6 未提出）
+**最終更新**: 2026-05-16（Sandbox課金設定完了・Apple契約/税務/銀行全設定有効化・Sign-in実機確認済み・UX改善Codexに依頼中）
 **目標**: 2026年8月31日までに月額¥500の課金が1人発生
 **直近マイルストーン**: TestFlight内部配布 → β検証 → 5/31 App Store審査提出
 
@@ -9,26 +9,39 @@
 
 ---
 
-## 🎯 明日（2026-05-15）やること
+## 🎯 今日（2026-05-16）やること
 
-| 優先 | タスク | 完了条件 |
+| 優先 | タスク | 状態 |
 |---|---|---|
-| **1** | `eas build --platform ios --profile production` → build 6 提出 | `.ipa` 生成・App Store Connect アップロード完了 |
-| **2** | build 6 インストール → 初回実機スモークテスト（起動・ログイン・投稿・ペアリング・AI・通知） | 致命バグなし |
-| **3** | Apple処理完了次第 → Sandbox 課金フロー検証 | 購入→更新→解約→復元の一連が通る |
+| **1** | Sandbox課金フロー検証（Apple反映待ち明けに再挑戦） | ⏳ 明朝再試行 |
+| **2** | Codex Fix 1〜8 の進捗確認・レビュー | 🔄 進行中 |
+| **3** | β配布3組への声がけ（5/20週から招待予告） | 未着手 |
+
+### ✅ 5/16 完了済み
+- build 6 TestFlightインストール・初回スモークテスト実施
+- Google / Apple Sign-in 実機確認済み
+- Apple Small Business Program 申請完了（手取り30%→15%）
+- Paid Apps Agreement 署名・**有効化**（5/15付）
+- 銀行口座登録（OKABE HIROYUKI・JPY・Active）
+- W-8BEN / U.S. Certificate of Foreign Status 提出・Active
+- Digital Services Act Compliance 対応・Active
+- Sandboxテスター作成
+- サブスク `futakoto_premium_monthly` メタデータ完成・**提出準備完了**
+- App Version 1.0 に `futakoto_premium_monthly` を紐付け
+- UX改善23件を分析・Codex Fix 1〜8 として依頼
 
 ---
 
 ## 📊 全体状況
 
 ```
-A. AI精度改善 ───────✅ 完了（archive/done.md 参照）
-B. 認証拡張   ───────🟢 コード実装完了・webClientID投入済み → 実機確認待ち
-C. 課金UI    ───────🟡 SDK統合・EAS設定・Webhook設定完了 → Sandbox検証待ち
-D. リリース準備 ─────🟡 build 5 提出完了・Apple処理待ち・初回オンボーディング実装済み
-E. SNS運用   ───────🔴 未着手（別スレッド予定）
-F. LP修正    ───────🟡 仮ページ公開中・本番版未作成
-G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
+A. AI精度改善    ───────✅ 完了（archive/done.md 参照）
+B. 認証拡張      ───────✅ 実機確認済み（Google/Apple Sign-in 動作確認 5/16）
+C. 課金UI       ───────🟡 Apple設定全完了・Sandbox検証のみ残り（明朝再試行）
+D. リリース準備  ─────🟡 build 6インストール済み・UX改善Codex進行中・β配布待ち
+E. SNS運用      ───────🔴 未着手（β配布後に着手）
+F. LP修正       ───────🟡 仮ページ公開中・本番版は6月リリース時
+G. UIデザイン改善 ──────🟡 参考画像ベースの大規模改善をCodex Fix 1〜8で進行中
 ```
 
 ---
@@ -37,10 +50,9 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 | 項目 | 状態 |
 |---|---|
-| 現状 | **コード実装済み**（`lib/auth-providers.ts` + `login.tsx`）・EAS env 設定済み・実機確認待ち |
-| 次 | EAS build → 実機確認 |
-| デッドライン | TestFlight β配布前（5/20週） |
-| 実機確認 | Google / Apple Sign-in とアカウント連携の確認待ち |
+| 現状 | **✅ 完了**（5/16 実機確認済み） |
+| 次 | `docs/auth-integration.md` に記録を残す（任意） |
+| デッドライン | 完了 |
 
 - [x] Google Sign-in 実装（`lib/auth-providers.ts` の `signInWithGoogle` + `login.tsx` 組み込み）
 - [x] **Apple Sign-in 実装**（`expo-apple-authentication` + `lib/auth-providers.ts` の `signInWithApple` + `login.tsx` 組み込み）
@@ -48,8 +60,8 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 - [x] Google/Apple アカウント連携機能（`settings/account.tsx` + `auth-providers.ts` の `linkGoogleToCurrentUser` / `linkAppleToCurrentUser`）
 - [x] Google webClientID・iosClientId を EAS env に投入済み
 - [x] Appleボタンの `onPress={handleApple}` 設定を確認済み
-- [ ] 実機で Google/Apple Sign-in の動作確認
-- [ ] 実施記録を `docs/auth-integration.md` に残す
+- [x] **実機で Google/Apple Sign-in の動作確認（5/16 完了）**
+- [ ] 実施記録を `docs/auth-integration.md` に残す（任意）
 
 ---
 
@@ -57,20 +69,26 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 | 項目 | 状態 |
 |---|---|
-| 現状 | コード実装完了（詳細は [done.md](./archive/done.md)）・SDK統合とストア側設定待ち |
-| 次 | `react-native-purchases` 物理インストール → API キー投入 → Sandbox 実機検証 |
+| 現状 | コード実装完了（詳細は [done.md](./archive/done.md)）・SDK統合 / EAS Secret / App Store Connect / RevenueCat設定完了 |
+| 次 | build 6 をTestFlightでインストール → Sandbox 実機検証 |
 | デッドライン | **5/20までに実機課金フロー検証**（β配布で1ペア通る状態に） |
 | ⚠ 重要 | 事前検死v2 の最優先リスク R10（無料が便利すぎて課金しない） |
 
 ### 残作業（外部依存・実機要）
 - [x] `react-native-purchases` インストール → `lib/purchases.ts` の SDK インポート/`Purchases.configure` 行のコメントアウト解除
 - [x] App Store Connect でサブスクグループ `futakoto_main` + Product ID `futakoto_premium_monthly`（¥500 / Tier 5）作成
-- [ ] **Apple Small Business Program** 登録（手取り 30%→15%）
+- [x] **Apple Small Business Program** 登録（5/16 完了・手取り30%→15%）
 - [x] RevenueCat ダッシュボードで Entitlement `premium` にプロダクトをマップ
 - [x] EAS Secret に `EXPO_PUBLIC_REVENUECAT_IOS_KEY` を設定（+ Firebase/Google 全変数も登録済み）
 - [x] Cloud Functions Secret に `REVENUECAT_WEBHOOK_AUTH` を設定（version 1）→ `revenuecatWebhook` 関数デプロイ済み（asia-northeast1）
 - [x] RevenueCat ダッシュボードで Webhook URL / Authorization を登録 → TEST イベントで 200 OK 確認済み（5/14）
-- [ ] Sandbox アカウントで購入→更新→解約→復元の一連を検証
+- [x] Sandboxテスター作成完了（5/16）
+- [x] Paid Apps Agreement 署名・**有効**（5/15付・5/16確認）
+- [x] 銀行口座登録（OKABE HIROYUKI・JPY・Active）
+- [x] W-8BEN / U.S. Certificate of Foreign Status 提出・Active（5/16）
+- [x] サブスク `futakoto_premium_monthly` メタデータ完成・**提出準備完了**（5/16）
+- [x] App Version 1.0 に `futakoto_premium_monthly` を紐付け済み（5/16）
+- [ ] **Sandbox購入→更新→解約→復元の一連を検証**（Apple反映待ち・明朝再試行）
 
 ---
 
@@ -78,12 +96,11 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 | 項目 | 状態 |
 |---|---|
-| TestFlight | build 5（Apple/Google Sign-in実装・RevenueCat SDK **未有効**）提出済み / Apple処理待ち |
-| **build 6 必要** | commit `f7e4a35`（RevenueCat SDK有効化・Appleボタンバグ修正）未ビルド → **Sandbox検証前に build 6 要提出** |
+| TestFlight | build 6（RevenueCat SDK有効・Apple/Google Sign-in実装）**インストール済み・スモークテスト完了（5/16）** |
 | Apple Developer Program | 承認済み |
 | Bundle ID | `com.futakoto.app` 登録済み |
-| EAS iOS build | build 5 成功（production / `.ipa` 生成済み） |
-| App Store Connect | build 5 バイナリアップロード完了・Apple処理待ち |
+| EAS iOS build | **build 6 成功**（5/14 夜・commit `f7e4a35`・RevenueCat SDK有効化・Appleボタンバグ修正込み） |
+| App Store Connect | **build 6 アップロード完了**・Apple処理待ち（5〜10分） |
 | TestFlight URL | https://appstoreconnect.apple.com/apps/6768653868/testflight/ios |
 | App Privacy Manifest（iOS17+） | app.json に設定済み |
 | AI送信に関する同意UI | 実装済み・実機確認待ち |
@@ -93,10 +110,12 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 ### 残タスク
 - [x] build 5 をApp Store Connectへ提出
-- [ ] Apple処理完了後、TestFlightで build 5 をインストール
-- [ ] 初回実機スモークテスト（起動・ログイン・投稿・ペアリング・AI・通知）
-- [x] 初回起動オンボーディング実装（`components/OnboardingModal.tsx` + `app/(app)/index.tsx`、AsyncStorage `hasSeenOnboarding` で初回のみ表示）
-- [ ] **オンボーディングUX確認**（初回3枚スライド→設定で招待コード共有→パートナーインストール→ペアリング完了の流れが自然か）← UX分析より
+- [x] build 6 をApp Store Connectへ提出（RevenueCat SDK有効化・Appleボタンバグ修正込み）
+- [x] β前コードレビューP3/P4修正（`calendar.tsx` 相手投稿キャッシュ / 解釈キャッシュ200件制限 / `ai.ts` 型改善 / entry create rules強化）
+- [x] TestFlightで build 6 をインストール（5/16）
+- [x] 初回実機スモークテスト（起動・ログイン・投稿・ペアリング・AI・通知）（5/16）
+- [ ] 初回起動オンボーディング実装（**5/16時点で未実装**・[`../CODEX-TASK-ux-improvement.md`](../CODEX-TASK-ux-improvement.md) Fix 8 でCodexに依頼）
+- [ ] **オンボーディングUX確認**（初回3枚スライド→招待コード共有→パートナーインストール→ペアリング完了の流れが自然か）← Fix 8 完了後
 - [x] Firebase でプライバシーポリシー・利用規約ページ作成（リンク有効化）
 - [x] プライバシーポリシーにAI送信範囲を追記
 - [x] GAS でお問い合わせフォーム作成（`docs/gas-contact-form.gs`・通知先: futakoto.app@gmail.com）
@@ -171,6 +190,8 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 | [`../reviews/2026-05-10-product-review.md`](../reviews/2026-05-10-product-review.md) | Any Planner分析メモ + 実機バグTODO |
 | [`../reviews/2026-05-12-ui-research.md`](../reviews/2026-05-12-ui-research.md) | UIリサーチ30件・改善提案（即改善8件・中期・長期） |
 | [`../reviews/2026-05-14-ux-5layer.md`](../reviews/2026-05-14-ux-5layer.md) | UX 5レイヤー分析（Strategy〜Surface・総合評価） |
+| [`../reviews/2026-05-16-self-test-feedback.md`](../reviews/2026-05-16-self-test-feedback.md) | build 6 実機テスト後フィードバック整理（23件→5テーマ・アプローチ比較） |
+| [`../CODEX-TASK-ux-improvement.md`](../CODEX-TASK-ux-improvement.md) | Codex向けUX改善実装指示（Fix 1〜7・BEFORE/AFTER付き） |
 | `docs/auth-integration.md` | （未作成・B完了時に作る） |
 | `eval/PLAN.md`, `eval/REPORT.md` | AI精度評価（完了済み） |
 | `AGENTS.md` | エージェント向けハンドオフ本体 |
@@ -182,8 +203,8 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 | 期日 | やること |
 |---|---|
 | **5/9〜5/15** | ✅ EAS iOS本番ビルド / App Store Connect提出 / TestFlight内部配布準備・Webhook設定 |
-| **5/15** | **build 5 インストール → Sandbox課金フロー検証 / 初回実機スモークテスト** |
-| **5/15〜5/20** | Apple・Googleログイン実機確認 / オンボーディングUX確認 / プライバシー対応最終確認 |
+| **5/15〜5/16** | ✅ build 6 インストール・スモークテスト・Sign-in確認 / Apple契約・税務・銀行設定完了 / サブスク提出準備完了 / UX改善Codex依頼 |
+| **5/16〜5/20** | Sandbox課金フロー検証（明朝再試行）/ オンボーディング実装（Codex Fix 8）/ β配布3組への声がけ |
 | **5/20〜5/28** | TestFlight配布 → β同僚2組+奥さん / フィードバック収集・致命バグ修正 / LP本番版 |
 | **5/28〜5/31** | 審査提出最終チェック |
 | **5/31** | **App Store審査提出** |

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,17 +9,17 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
-import { Plus, Heart, Sparkle, Star, ArrowRight } from 'phosphor-react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { Plus, Heart, Sparkle } from 'phosphor-react-native';
 import { aiInterpret } from '../../lib/ai';
 import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
 import { SourceConsultationLink } from '../../components/SourceConsultationLink';
-import { AiQuotaChip } from '../../components/AiQuotaChip';
 import { PaywallModal } from '../../components/PaywallModal';
 import { AiConsentModal } from '../../components/AiConsentModal';
 import { useAuth } from '../../lib/auth';
 import {
+  AI_FREE_MONTHLY_LIMIT,
   getUserProfile,
   getRecentEntries,
   getPartnerSharedEntries,
@@ -41,7 +41,6 @@ import { COLORS } from '../../lib/theme';
 export default function HomeScreen() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
   const router = useRouter();
-  const navigation = useNavigation();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [partnerProfile, setPartnerProfile] = useState<UserProfile | null>(null);
@@ -66,44 +65,46 @@ export default function HomeScreen() {
       if (isCancelled() || !p) return;
       setProfile(p);
 
-      let favorites = new Set<string>();
-      try {
-        favorites = await getFavoriteEntryIds(user.uid);
-      } catch (e: any) {
-        console.error('[Home] favorites取得エラー:', e?.code, e?.message);
-      }
+      const [favorites, caches, myEntries, partnerData] = await Promise.all([
+        getFavoriteEntryIds(user.uid).catch((e: any) => {
+          console.error('[Home] favorites取得エラー:', e?.code, e?.message);
+          return new Set<string>();
+        }),
+        getAllInterpretationCaches(user.uid, 200).catch((e: any) => {
+          console.error('[Home] interpretationCache取得エラー:', e?.code, e?.message);
+          return {};
+        }),
+        getRecentEntries(user.uid, 100),
+        p.partnerUid
+          ? Promise.all([
+              getUserProfile(p.partnerUid),
+              getPartnerSharedEntries(p.partnerUid, 100),
+            ])
+              .then(([pp, pe]) => ({ pp, pe }))
+              .catch((e: any) => {
+                console.error('[Home] パートナーデータ取得エラー:', e?.code, e?.message);
+                return null;
+              })
+          : Promise.resolve(null),
+      ]);
+      if (isCancelled()) return;
       setFavoriteIds(favorites);
-
-      let caches: Record<string, string[]> = {};
-      try {
-        caches = await getAllInterpretationCaches(user.uid);
-      } catch (e: any) {
-        console.error('[Home] interpretationCache取得エラー:', e?.code, e?.message);
-      }
+      if (isCancelled()) return;
       setInterpretationsCache(caches);
-
-      const myEntries = await getRecentEntries(user.uid, 100);
       if (isCancelled()) return;
 
       let allEntries = myEntries;
-      if (p?.partnerUid) {
-        try {
-          const pp = await getUserProfile(p.partnerUid);
-          if (isCancelled()) return;
-          setPartnerProfile(pp);
-          const partnerEntries = await getPartnerSharedEntries(p.partnerUid, 100);
-          if (isCancelled()) return;
-          allEntries = [...myEntries, ...partnerEntries]
-            .sort((a, b) => sortMillis(b.createdAt) - sortMillis(a.createdAt))
-            .slice(0, 100);
-        } catch (e: any) {
-          console.error('[Home] パートナーデータ取得エラー:', e?.code, e?.message);
-          allEntries = myEntries;
-        }
+      if (p.partnerUid && partnerData) {
+        setPartnerProfile(partnerData.pp);
+        if (isCancelled()) return;
+        allEntries = [...myEntries, ...partnerData.pe]
+          .sort((a, b) => sortMillis(b.createdAt) - sortMillis(a.createdAt))
+          .slice(0, 100);
       } else {
         setPartnerProfile(null);
       }
 
+      if (isCancelled()) return;
       setEntries(allEntries);
     } catch (e: any) {
       console.error('[Home] load全体エラー:', e?.code, e?.message);
@@ -117,22 +118,6 @@ export default function HomeScreen() {
       cancelled = true;
     };
   }, [user, authProfile]));
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={{ marginRight: 12 }}>
-          <AiQuotaChip
-            profile={profile}
-            onPress={() => {
-              setPaywallReason(undefined);
-              setPaywallOpen(true);
-            }}
-          />
-        </View>
-      ),
-    });
-  }, [navigation, profile]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -217,6 +202,13 @@ export default function HomeScreen() {
 
   async function handleInterpret(entry: Entry, force = false) {
     if (!entry.id || !entry.memo) return;
+    const used = profile?.aiCreditsUsed ?? 0;
+    const limit = profile?.aiCreditsLimit ?? AI_FREE_MONTHLY_LIMIT;
+    if (!profile?.premium && used >= limit) {
+      setPaywallReason('気持ちを読み解く無料枠を使い切りました');
+      setPaywallOpen(true);
+      return;
+    }
     // AI同意が未取得なら同意モーダルを表示し、同意後に実行する
     if (profile?.aiConsentAcknowledged !== true) {
       setPendingInterpret({ entry, force });
@@ -281,15 +273,6 @@ export default function HomeScreen() {
                 <Text style={styles.connectionMutedText}>設定タブからパートナーと繋がろう</Text>
               </View>
             )}
-            <TouchableOpacity
-              style={styles.favoriteShortcut}
-              onPress={() => router.push('/(app)/favorites')}
-              activeOpacity={0.7}
-            >
-              <Star size={14} color={COLORS.primary} weight="fill" />
-              <Text style={styles.favoriteShortcutText}>お気に入り</Text>
-              <ArrowRight size={13} color={COLORS.primary} weight="bold" />
-            </TouchableOpacity>
           </View>
         }
         ListEmptyComponent={
@@ -439,18 +422,6 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   connectionMutedText: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
-  favoriteShortcut: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderRadius: 16,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.primaryBorder,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  favoriteShortcutText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
   empty: { alignItems: 'center', paddingTop: 64, paddingHorizontal: 32 },
   emptyEmoji: { fontSize: 48, marginBottom: 16 },
   emptyText: { fontSize: 16, color: COLORS.textSubtle, fontWeight: '600', textAlign: 'center' },

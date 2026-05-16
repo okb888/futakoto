@@ -4,7 +4,7 @@ import {
   query,
   orderBy,
   where,
-  limit,
+  limit as queryLimit,
   getDocs,
   getDoc,
   setDoc,
@@ -13,6 +13,7 @@ import {
   doc,
   serverTimestamp,
   Timestamp,
+  FieldValue,
   arrayUnion,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -83,6 +84,16 @@ export interface FavoriteEntry {
 export interface FavoriteEntryWithEntry extends FavoriteEntry {
   entry: Entry | null;
 }
+
+export type AiSummaryRecord = {
+  id?: string;
+  uid: string;
+  month: string;
+  target: 'me' | 'partner';
+  text: string;
+  entryCountAtGeneration: number;
+  createdAt: Timestamp | FieldValue;
+};
 
 export type AiPersona = 'soft' | 'friendly' | 'logical';
 
@@ -237,7 +248,7 @@ export async function getRecentEntries(uid: string, count = 50): Promise<Entry[]
   const q = query(
     collection(db, 'users', uid, 'entries'),
     orderBy('createdAt', 'desc'),
-    limit(count)
+    queryLimit(count)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry));
@@ -248,7 +259,7 @@ export async function getPartnerSharedEntries(partnerUid: string, count = 50): P
     collection(db, 'users', partnerUid, 'entries'),
     where('visibility', '==', 'shared'),
     orderBy('createdAt', 'desc'),
-    limit(count)
+    queryLimit(count)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry));
@@ -298,7 +309,7 @@ export async function getRecentConsultationSessions(
   const q = query(
     collection(db, 'users', uid, 'consultationSessions'),
     orderBy('createdAt', 'desc'),
-    limit(count)
+    queryLimit(count)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as ConsultationSession));
@@ -323,7 +334,7 @@ export async function getFavoriteEntries(uid: string): Promise<FavoriteEntryWith
   const q = query(
     collection(db, 'users', uid, 'favorites'),
     orderBy('createdAt', 'desc'),
-    limit(100)
+    queryLimit(100)
   );
   const snap = await getDocs(q);
   const favorites = snap.docs.map((d) => ({ id: d.id, ...d.data() } as FavoriteEntry));
@@ -359,8 +370,11 @@ export async function toggleFavoriteEntry(
 
 // ---- 解釈キャッシュ (P0-4) ----
 
-export async function getAllInterpretationCaches(uid: string): Promise<Record<string, string[]>> {
-  const snap = await getDocs(collection(db, 'users', uid, 'interpretationCache'));
+export async function getAllInterpretationCaches(uid: string, limit = 200): Promise<Record<string, string[]>> {
+  const snap = await getDocs(query(
+    collection(db, 'users', uid, 'interpretationCache'),
+    queryLimit(limit)
+  ));
   const result: Record<string, string[]> = {};
   snap.docs.forEach((d) => {
     result[d.id] = (d.data().interpretations ?? []) as string[];
@@ -376,10 +390,46 @@ export async function getEntriesInRange(uid: string, start: Date, end: Date): Pr
     where('createdAt', '>=', Timestamp.fromDate(start)),
     where('createdAt', '<', Timestamp.fromDate(end)),
     orderBy('createdAt', 'desc'),
-    limit(500)
+    queryLimit(500)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry));
+}
+
+// ---- AI要約履歴 ----
+
+export async function saveAiSummary(
+  uid: string,
+  month: string,
+  target: 'me' | 'partner',
+  text: string,
+  entryCount: number
+): Promise<void> {
+  await addDoc(collection(db, 'users', uid, 'aiSummaries'), {
+    month,
+    target,
+    text,
+    entryCountAtGeneration: entryCount,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function getLatestAiSummary(
+  uid: string,
+  month: string,
+  target: 'me' | 'partner'
+): Promise<AiSummaryRecord | null> {
+  const q = query(
+    collection(db, 'users', uid, 'aiSummaries'),
+    where('month', '==', month),
+    where('target', '==', target),
+    orderBy('createdAt', 'desc'),
+    queryLimit(1)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, uid, ...(d.data() as Omit<AiSummaryRecord, 'id' | 'uid'>) };
 }
 
 // ---- Data Export ----
@@ -392,9 +442,9 @@ export async function getUserExportData(uid: string): Promise<{
 }> {
   const [profile, entriesSnap, sessionsSnap, favoritesSnap] = await Promise.all([
     getUserProfile(uid),
-    getDocs(query(collection(db, 'users', uid, 'entries'), orderBy('createdAt', 'desc'), limit(1000))),
-    getDocs(query(collection(db, 'users', uid, 'consultationSessions'), orderBy('createdAt', 'desc'), limit(200))),
-    getDocs(query(collection(db, 'users', uid, 'favorites'), orderBy('createdAt', 'desc'), limit(500))),
+    getDocs(query(collection(db, 'users', uid, 'entries'), orderBy('createdAt', 'desc'), queryLimit(1000))),
+    getDocs(query(collection(db, 'users', uid, 'consultationSessions'), orderBy('createdAt', 'desc'), queryLimit(200))),
+    getDocs(query(collection(db, 'users', uid, 'favorites'), orderBy('createdAt', 'desc'), queryLimit(500))),
   ]);
 
   return {

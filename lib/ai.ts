@@ -41,14 +41,14 @@ export interface EnsureUserProfileResult {
   profile: UserProfile;
 }
 
-async function call<T>(name: string, data: any): Promise<T> {
+async function call<T>(name: string, data: Record<string, unknown>): Promise<T> {
   // 認証状態が確実に読み込まれるまで待つ
   await auth.authStateReady();
   if (!auth.currentUser) throw new Error('ログインが必要です');
   // トークンを強制リフレッシュ
   await auth.currentUser.getIdToken(true);
 
-  const fn = httpsCallable<any, T>(functions, name);
+  const fn = httpsCallable<Record<string, unknown>, T>(functions, name);
   const res = await fn(data);
   return res.data;
 }

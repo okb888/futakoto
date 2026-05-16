@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ふたこと — Icon Assets</title>
+<style>
+  :root {
+    --bg: #FAFAF8;
+    --card: #FFFFFF;
+    --sage: #7B9E87;
+    --sage-soft: #EDF4F0;
+    --text: #2D2D2D;
+    --text-2: #555;
+    --text-3: #888;
+    --border: #E0E0E0;
+    --border-light: #F0F0F0;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #ECECE8;
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1100px; margin: 0 auto; padding: 64px 32px 120px; }
+  .head { margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1px solid var(--border); }
+  .brand { font-size: 22px; font-weight: 700; letter-spacing: 4px; color: var(--sage); }
+  h1 { font-size: 32px; font-weight: 700; margin: 14px 0 8px; letter-spacing: 1px; }
+  .sub { color: var(--text-3); font-size: 13px; margin: 0; }
+
+  .section { background: white; border-radius: 16px; padding: 36px 36px 40px; margin-bottom: 24px; border: 1px solid var(--border-light); }
+  .section h2 { font-size: 18px; font-weight: 700; margin: 0 0 6px; letter-spacing: 1px; }
+  .section .desc { font-size: 12px; color: var(--text-3); margin: 0 0 28px; }
+
+  .hero {
+    background: linear-gradient(135deg, #ECECE8 0%, #DDDDD8 100%);
+    border-radius: 16px;
+    padding: 56px;
+    display: flex; gap: 48px; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+  }
+  .hero img { width: 320px; height: 320px; border-radius: 72px; box-shadow: 0 12px 32px rgba(0,0,0,0.1); }
+  .hero .info { font-size: 13px; color: var(--text-2); line-height: 1.8; }
+  .swatches { display: flex; gap: 14px; margin-top: 16px; }
+  .swatch { width: 36px; height: 36px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.08); }
+
+  table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  table th, table td {
+    padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border-light);
+  }
+  table th { color: var(--text-3); font-weight: 600; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  table td.size { color: var(--text-3); font-variant-numeric: tabular-nums; width: 90px; }
+  table td.purpose { color: var(--text-2); }
+  table td.preview { width: 80px; }
+  table td.preview img { width: 56px; height: 56px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); display: block; background: #f5f5f5; }
+  table td a { color: var(--sage); text-decoration: none; font-weight: 600; }
+  table td a:hover { text-decoration: underline; }
+
+  .colors { display: flex; gap: 12px; flex-wrap: wrap; }
+  .color {
+    background: white; border: 1px solid var(--border-light);
+    border-radius: 10px; padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px;
+  }
+  .color .chip { width: 20px; height: 20px; border-radius: 6px; }
+  .color .hex { font-variant-numeric: tabular-nums; color: var(--text-3); }
+
+  .download-cta {
+    background: var(--sage-soft);
+    border: 1px solid var(--sage);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-top: 24px;
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.7;
+  }
+  .download-cta strong { color: var(--sage); letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <div class="brand">ふたこと</div>
+    <h1>App Icon — Asset Pack</h1>
+    <p class="sub">確定したアプリアイコン（重なる二円・文字なし）の書き出しデータ</p>
+  </div>
+
+  <div class="hero">
+    <img src="png/futakoto-icon-1024-1024.png" alt="App Icon"/>
+    <div class="info">
+      <div style="font-size: 11px; letter-spacing: 2px; color: var(--text-3); margin-bottom: 8px;">CONCEPT</div>
+      <div style="font-size: 18px; font-weight: 700; line-height: 1.7; margin-bottom: 12px;">
+        重なる二つの円<br/>
+        <span style="font-weight: 400; color: var(--text-2);">ふたり・交わり</span>
+      </div>
+      <div>
+        左の濃い色が「自分」、右の淡い色が「相手」、<br/>
+        重なった深い色が「ふたりが交わる場所」。
+      </div>
+      <div class="swatches">
+        <div class="swatch" style="background: #7B9E87;" title="#7B9E87"></div>
+        <div class="swatch" style="background: #C8D8CC;" title="#C8D8CC"></div>
+        <div class="swatch" style="background: #5A7E68;" title="#5A7E68"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>マスター（SVG / ベクター）</h2>
+    <p class="desc">スケール無制限。ロゴや印刷物にはこちらを使用。</p>
+    <table>
+      <thead>
+        <tr><th></th><th>ファイル</th><th>用途</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="preview"><img src="futakoto-icon-1024.svg"/></td>
+          <td><a href="futakoto-icon-1024.svg" download>futakoto-icon-1024.svg</a></td>
+          <td class="purpose">デフォルト（背景グラデーションあり）</td>
+        </tr>
+        <tr>
+          <td class="preview"><img src="futakoto-icon-mark.svg" style="background: #ECECE8;"/></td>
+          <td><a href="futakoto-icon-mark.svg" download>futakoto-icon-mark.svg</a></td>
+          <td class="purpose">透過・マークのみ（Web ロゴ等）</td>
+        </tr>
+        <tr>
+          <td class="preview"><img src="futakoto-icon-dark.svg"/></td>
+          <td><a href="futakoto-icon-dark.svg" download>futakoto-icon-dark.svg</a></td>
+          <td class="purpose">ダーク背景版（スプラッシュ用）</td>
+        </tr>
+        <tr>
+          <td class="preview"><img src="futakoto-icon-android-foreground.svg" style="background:#ECECE8;"/></td>
+          <td><a href="futakoto-icon-android-foreground.svg" download>futakoto-icon-android-foreground.svg</a></td>
+          <td class="purpose">Android Adaptive Icon 前景</td>
+        </tr>
+        <tr>
+          <td class="preview"><img src="futakoto-icon-android-background.svg"/></td>
+          <td><a href="futakoto-icon-android-background.svg" download>futakoto-icon-android-background.svg</a></td>
+          <td class="purpose">Android Adaptive Icon 背景</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>iOS / 標準PNG</h2>
+    <p class="desc">App Store Connect 提出用 1024 と、各デバイス向けの書き出し済みサイズ。</p>
+    <table>
+      <thead>
+        <tr><th></th><th>ファイル</th><th>サイズ</th><th>用途</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="preview"><img src="png/futakoto-icon-1024-1024.png"/></td><td><a href="png/futakoto-icon-1024-1024.png" download>1024.png</a></td><td class="size">1024 × 1024</td><td class="purpose">App Store Connect</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-1024-512.png"/></td><td><a href="png/futakoto-icon-1024-512.png" download>512.png</a></td><td class="size">512 × 512</td><td class="purpose">汎用 / Play Store</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-1024-180.png"/></td><td><a href="png/futakoto-icon-1024-180.png" download>180.png</a></td><td class="size">180 × 180</td><td class="purpose">iPhone @3x ホーム</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-1024-167.png"/></td><td><a href="png/futakoto-icon-1024-167.png" download>167.png</a></td><td class="size">167 × 167</td><td class="purpose">iPad Pro @2x</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-1024-152.png"/></td><td><a href="png/futakoto-icon-1024-152.png" download>152.png</a></td><td class="size">152 × 152</td><td class="purpose">iPad @2x</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-1024-120.png"/></td><td><a href="png/futakoto-icon-1024-120.png" download>120.png</a></td><td class="size">120 × 120</td><td class="purpose">iPhone @2x</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-1024-88.png"/></td><td><a href="png/futakoto-icon-1024-88.png" download>88.png</a></td><td class="size">88 × 88</td><td class="purpose">Settings @3x</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-1024-60.png"/></td><td><a href="png/futakoto-icon-1024-60.png" download>60.png</a></td><td class="size">60 × 60</td><td class="purpose">Spotlight</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>透過マーク / ダーク版 / Android</h2>
+    <table>
+      <thead><tr><th></th><th>ファイル</th><th>サイズ</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td class="preview"><img src="png/futakoto-icon-mark-1024.png" style="background:#ECECE8;"/></td><td><a href="png/futakoto-icon-mark-1024.png" download>mark-1024.png</a></td><td class="size">1024 (透過)</td><td class="purpose">Web / OGP / 資料</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-mark-512.png" style="background:#ECECE8;"/></td><td><a href="png/futakoto-icon-mark-512.png" download>mark-512.png</a></td><td class="size">512 (透過)</td><td class="purpose">Web / OGP / 資料</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-mark-256.png" style="background:#ECECE8;"/></td><td><a href="png/futakoto-icon-mark-256.png" download>mark-256.png</a></td><td class="size">256 (透過)</td><td class="purpose">小サイズ用</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-dark-1024.png"/></td><td><a href="png/futakoto-icon-dark-1024.png" download>dark-1024.png</a></td><td class="size">1024 (ダーク)</td><td class="purpose">スプラッシュ</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-dark-512.png"/></td><td><a href="png/futakoto-icon-dark-512.png" download>dark-512.png</a></td><td class="size">512 (ダーク)</td><td class="purpose">スプラッシュ</td></tr>
+        <tr><td class="preview"><img src="png/futakoto-icon-android-foreground-432.png" style="background:#ECECE8;"/></td><td><a href="png/futakoto-icon-android-foreground-432.png" download>android-foreground-432.png</a></td><td class="size">432 × 432</td><td class="purpose">Android Adaptive 前景</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>カラー</h2>
+    <p class="desc">アプリ全体の基調色。</p>
+    <div class="colors">
+      <div class="color"><div class="chip" style="background:#7B9E87;"></div>セージ濃 <span class="hex">#7B9E87</span></div>
+      <div class="color"><div class="chip" style="background:#C8D8CC;"></div>セージ淡 <span class="hex">#C8D8CC</span></div>
+      <div class="color"><div class="chip" style="background:#5A7E68;"></div>セージ重なり <span class="hex">#5A7E68</span></div>
+      <div class="color"><div class="chip" style="background: linear-gradient(135deg,#FFFFFF,#EDF0EA);"></div>背景グラデ <span class="hex">#FFFFFF→#EDF0EA</span></div>
+      <div class="color"><div class="chip" style="background:#2D2D2D;"></div>ダーク背景 <span class="hex">#2D2D2D</span></div>
+    </div>
+  </div>
+
+  <div class="download-cta">
+    <strong>📦 ダウンロード</strong><br/>
+    下のチャットに表示される「icon-assets」のダウンロードカードから、フォルダ全体を一括ダウンロードできます。<br/>
+    個別ファイルは上の各リンクをクリック。
+  </div>
+</div>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -33,6 +33,7 @@ export default function LoginScreen() {
   const [socialLoading, setSocialLoading] = useState<'apple' | 'google' | null>(
     null
   );
+  const socialInFlightRef = useRef(false);
 
   async function handleSubmit() {
     if (!email || !password) return;
@@ -52,21 +53,25 @@ export default function LoginScreen() {
   }
 
   async function handleApple() {
-    if (socialLoading) return;
+    if (socialInFlightRef.current || loading) return;
+    socialInFlightRef.current = true;
     setSocialLoading('apple');
     try {
       await signInWithApple();
     } finally {
+      socialInFlightRef.current = false;
       setSocialLoading(null);
     }
   }
 
   async function handleGoogle() {
-    if (socialLoading) return;
+    if (socialInFlightRef.current || loading) return;
+    socialInFlightRef.current = true;
     setSocialLoading('google');
     try {
       await signInWithGoogle();
     } finally {
+      socialInFlightRef.current = false;
       setSocialLoading(null);
     }
   }
@@ -126,32 +131,32 @@ export default function LoginScreen() {
             </View>
 
             {showApple && (
-              <TouchableOpacity
-                style={[styles.appleButton, anyBusy && styles.buttonDisabled]}
-                onPress={handleApple}
-                disabled={anyBusy}
-                activeOpacity={0.8}
+              <View
+                style={[
+                  anyBusy && socialLoading !== 'apple' && styles.buttonDisabled,
+                ]}
+                pointerEvents={anyBusy ? 'none' : 'auto'}
               >
                 {socialLoading === 'apple' ? (
-                  <ActivityIndicator color={COLORS.surface} />
-                ) : (
-                  <View style={styles.socialInner}>
-                    <AppleAuthentication.AppleAuthenticationButton
-                      buttonType={
-                        AppleAuthentication.AppleAuthenticationButtonType
-                          .SIGN_IN
-                      }
-                      buttonStyle={
-                        AppleAuthentication.AppleAuthenticationButtonStyle
-                          .BLACK
-                      }
-                      cornerRadius={12}
-                      style={styles.appleNativeButton}
-                      onPress={handleApple}
-                    />
+                  <View style={styles.appleLoadingButton}>
+                    <ActivityIndicator color={COLORS.surface} />
                   </View>
+                ) : (
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={
+                      AppleAuthentication.AppleAuthenticationButtonType
+                        .SIGN_IN
+                    }
+                    buttonStyle={
+                      AppleAuthentication.AppleAuthenticationButtonStyle
+                        .BLACK
+                    }
+                    cornerRadius={12}
+                    style={styles.appleNativeButton}
+                    onPress={handleApple}
+                  />
                 )}
-              </TouchableOpacity>
+              </View>
             )}
 
             {showGoogle && (
@@ -255,18 +260,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginHorizontal: 12,
   },
-  // Apple HIG準拠: 黒背景・白文字 / ネイティブボタンを内包
-  appleButton: {
+  appleLoadingButton: {
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 10,
-    minHeight: 50,
+    height: 50,
     justifyContent: 'center',
     backgroundColor: '#000',
   },
   appleNativeButton: {
     width: '100%',
     height: 50,
+    marginBottom: 10,
   },
   socialInner: {
     flexDirection: 'row',
@@ -296,7 +301,7 @@ const styles = StyleSheet.create({
   },
   googleButtonText: {
     color: COLORS.text,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
   },
   toggle: {

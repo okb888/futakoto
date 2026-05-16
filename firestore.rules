@@ -43,7 +43,10 @@ service cloud.firestore {
             get(/databases/$(database)/documents/users/$(uid)).data.partnerUid == request.auth.uid &&
             resource.data.visibility == 'shared'
           );
-        allow write: if request.auth.uid == uid;
+        allow create: if request.auth.uid == uid
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.visibility in ['shared', 'private'];
+        allow update, delete: if request.auth.uid == uid;
       }
 
       // プッシュトークン・お気に入り・相談系: 自分のみ
@@ -57,6 +60,9 @@ service cloud.firestore {
         allow read, write: if request.auth.uid == uid;
       }
       match /consultationSessions/{sessionId} {
+        allow read, write: if request.auth.uid == uid;
+      }
+      match /aiSummaries/{summaryId} {
         allow read, write: if request.auth.uid == uid;
       }
 

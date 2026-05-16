@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1584 396" width="1584" height="396">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAFAF8"></stop>
+      <stop offset="100%" stop-color="#EDF4F0"></stop>
+    </linearGradient>
+    <clipPath id="leftClip">
+      <circle cx="1180" cy="198" r="135"></circle>
+    </clipPath>
+  </defs>
+
+  <rect width="1584" height="396" fill="url(#bg)"></rect>
+
+  <circle cx="1180" cy="198" r="135" fill="#7B9E87"></circle>
+  <circle cx="1320" cy="198" r="135" fill="#C8D8CC"></circle>
+  <g clip-path="url(#leftClip)">
+    <circle cx="1320" cy="198" r="135" fill="#5A7E68"></circle>
+  </g>
+
+  <g font-family="-apple-system, &#39;Hiragino Sans&#39;, &#39;Noto Sans JP&#39;, sans-serif">
+    <text x="120" y="160" font-size="22" font-weight="600" letter-spacing="5" fill="#7B9E87">@FUTAKOTO_APP</text>
+    <text x="120" y="252" font-size="86" font-weight="700" letter-spacing="12" fill="#2D2D2D">ふたこと</text>
+    <text x="124" y="298" font-size="24" font-weight="400" letter-spacing="6" fill="#555555">一言を、ふたりで。</text>
+  </g>
+</svg>

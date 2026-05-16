@@ -31,8 +31,16 @@ function showError(e: any, fallbackTitle = 'ログインエラー') {
 
 function isUserCancelled(e: any): boolean {
   const code = e?.code;
+  const message = e?.message ?? '';
   // Apple
-  if (code === 'ERR_REQUEST_CANCELED' || code === 'ERR_CANCELED') return true;
+  if (
+    code === 'ERR_REQUEST_CANCELED' ||
+    code === 'ERR_CANCELED' ||
+    code === 'ERR_REQUEST_IN_PROGRESS' ||
+    /already.*progress|request.*progress|authorization.*progress/i.test(message)
+  ) {
+    return true;
+  }
   // Google
   if (
     code === statusCodes?.SIGN_IN_CANCELLED ||

@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from 'react';
 import {
   View,
   Text,
@@ -9,12 +10,26 @@ import {
   StyleSheet as RN,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowRight } from 'phosphor-react-native';
+import {
+  ArrowRight,
+  Bell,
+  EnvelopeSimple,
+  FileText,
+  Heart,
+  Lock,
+  SignOut,
+  Sparkle,
+  Star,
+  Trash,
+  User,
+} from 'phosphor-react-native';
 import { signOut } from 'firebase/auth';
 import Constants from 'expo-constants';
+import { PaywallModal } from '../../../components/PaywallModal';
 import { auth } from '../../../lib/firebase';
 import { useSettingsProfile } from '../../../hooks/useSettingsProfile';
 import { DEFAULT_REMINDER_HOUR, DEFAULT_REMINDER_MINUTE } from '../../../lib/notifications';
+import { AI_FREE_MONTHLY_LIMIT } from '../../../lib/db';
 import { COLORS } from '../../../lib/theme';
 
 function formatTime(h: number, m: number) {
@@ -28,14 +43,16 @@ const PERSONA_LABEL: Record<string, string> = {
 };
 
 type SettingRowProps = {
+  icon?: ReactNode;
   label: string;
+  subtitle?: string;
   value?: string;
   showChevron?: boolean;
   danger?: boolean;
   onPress?: () => void;
 };
 
-function SettingRow({ label, value, showChevron = true, danger = false, onPress }: SettingRowProps) {
+function SettingRow({ icon, label, subtitle, value, showChevron = true, danger = false, onPress }: SettingRowProps) {
   return (
     <TouchableOpacity
       style={styles.row}
@@ -43,7 +60,13 @@ function SettingRow({ label, value, showChevron = true, danger = false, onPress 
       activeOpacity={onPress ? 0.6 : 1}
       disabled={!onPress}
     >
-      <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+      <View style={styles.rowLeft}>
+        {icon ? <View style={[styles.iconBox, danger && styles.iconBoxDanger]}>{icon}</View> : null}
+        <View style={styles.rowTextBlock}>
+          <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+          {subtitle ? <Text style={styles.rowSubtitle} numberOfLines={1}>{subtitle}</Text> : null}
+        </View>
+      </View>
       <View style={styles.rowRight}>
         {value ? <Text style={styles.rowValue} numberOfLines={1}>{value}</Text> : null}
         {showChevron && onPress ? (
@@ -58,9 +81,18 @@ function SectionDivider() {
   return <View style={styles.divider} />;
 }
 
+function hasActivePremium(profile: { premium?: boolean; premiumExpiresAt?: any } | null): boolean {
+  if (!profile?.premium) return false;
+  const expires = profile.premiumExpiresAt;
+  if (!expires) return true;
+  const ms = typeof expires?.toMillis === 'function' ? expires.toMillis() : 0;
+  return ms === 0 || ms > Date.now();
+}
+
 export default function SettingsIndexScreen() {
   const router = useRouter();
-  const { profile, partnerProfile } = useSettingsProfile();
+  const { profile, partnerProfile, load } = useSettingsProfile();
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   const notif = profile?.notificationSettings;
   const reminderOn = notif?.dailyReminderEnabled ?? false;
@@ -70,21 +102,25 @@ export default function SettingsIndexScreen() {
   );
   const partnerNotifOn = notif?.sharedPostNotificationsEnabled ?? false;
   const persona = PERSONA_LABEL[profile?.aiPersona ?? 'soft'] ?? 'ソフト';
+  const isPremium = hasActivePremium(profile) || hasActivePremium(partnerProfile);
+  const aiLimit = profile?.aiCreditsLimit ?? AI_FREE_MONTHLY_LIMIT;
+  const aiUsed = profile?.aiCreditsUsed ?? 0;
+  const aiRemaining = Math.max(0, aiLimit - aiUsed);
+  const premiumValue = isPremium ? '利用中' : `AI残り ${aiRemaining}/${aiLimit}回`;
+  const iconColor = COLORS.textMuted;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
       {/* アカウント */}
       <Text style={styles.sectionLabel}>アカウント</Text>
       <View style={styles.section}>
         <SettingRow
-          label="表示名"
+          icon={<User size={20} color={iconColor} weight="regular" />}
+          label="アカウント"
+          subtitle="表示名・ログイン方法・データ管理"
           value={profile?.displayName ?? '未設定'}
-          onPress={() => router.push('/(app)/settings/account')}
-        />
-        <SectionDivider />
-        <SettingRow
-          label="パスワード・データ管理"
           onPress={() => router.push('/(app)/settings/account')}
         />
       </View>
@@ -93,16 +129,25 @@ export default function SettingsIndexScreen() {
       <Text style={styles.sectionLabel}>パートナー連携</Text>
       <View style={styles.section}>
         <SettingRow
-          label="連携状況"
+          icon={<Heart size={20} color={iconColor} weight="regular" />}
+          label="パートナー連携"
+          subtitle="招待コード・連携状況"
           value={profile?.partnerUid
-            ? `❤ ${partnerProfile?.displayName ?? '連携中'}`
+            ? (partnerProfile?.displayName ?? '連携中')
             : '未連携'}
           onPress={() => router.push('/(app)/settings/partner')}
         />
-        <SectionDivider />
+      </View>
+
+      {/* サブスクリプション */}
+      <Text style={styles.sectionLabel}>サブスクリプション</Text>
+      <View style={styles.section}>
         <SettingRow
-          label="招待コード"
-          onPress={() => router.push('/(app)/settings/partner')}
+          icon={<Star size={20} color={iconColor} weight="regular" />}
+          label="プレミアム"
+          subtitle="AI機能を無制限で使う"
+          value={premiumValue}
+          onPress={() => setPaywallOpen(true)}
         />
       </View>
 
@@ -110,29 +155,22 @@ export default function SettingsIndexScreen() {
       <Text style={styles.sectionLabel}>通知</Text>
       <View style={styles.section}>
         <SettingRow
-          label="毎日のリマインダー"
+          icon={<Bell size={20} color={iconColor} weight="regular" />}
+          label="通知"
+          subtitle={`パートナー投稿通知 ${partnerNotifOn ? 'ON' : 'OFF'}`}
           value={reminderOn ? reminderTime : 'OFF'}
-          onPress={() => router.push('/(app)/settings/notifications')}
-        />
-        <SectionDivider />
-        <SettingRow
-          label="パートナー投稿通知"
-          value={partnerNotifOn ? 'ON' : 'OFF'}
           onPress={() => router.push('/(app)/settings/notifications')}
         />
       </View>
 
       {/* AI */}
-      <Text style={styles.sectionLabel}>AIアシスタント</Text>
+      <Text style={styles.sectionLabel}>AI</Text>
       <View style={styles.section}>
         <SettingRow
-          label="話し方スタイル"
+          icon={<Sparkle size={20} color={iconColor} weight="regular" />}
+          label="AI口調・送信範囲"
+          subtitle="話し方スタイルとAI利用量"
           value={persona}
-          onPress={() => router.push('/(app)/settings/ai')}
-        />
-        <SectionDivider />
-        <SettingRow
-          label="AI利用量・プレミアム"
           onPress={() => router.push('/(app)/settings/ai')}
         />
       </View>
@@ -141,13 +179,27 @@ export default function SettingsIndexScreen() {
       <Text style={styles.sectionLabel}>その他</Text>
       <View style={styles.section}>
         <SettingRow
+          icon={<EnvelopeSimple size={20} color={iconColor} weight="regular" />}
+          label="お問い合わせ"
+          onPress={() => Linking.openURL('https://futakoto.jp/support')}
+        />
+        <SectionDivider />
+        <SettingRow
+          icon={<FileText size={20} color={iconColor} weight="regular" />}
+          label="利用規約"
+          onPress={() => Linking.openURL('https://futakoto.jp/terms')}
+        />
+        <SectionDivider />
+        <SettingRow
+          icon={<Lock size={20} color={iconColor} weight="regular" />}
           label="プライバシーポリシー"
           onPress={() => Linking.openURL('https://futakoto.jp/privacy')}
         />
         <SectionDivider />
         <SettingRow
-          label="利用規約"
-          onPress={() => Linking.openURL('https://futakoto.jp/terms')}
+          icon={<Heart size={20} color={iconColor} weight="regular" />}
+          label="レビューで応援"
+          onPress={() => Alert.alert('正式リリース後にお願いします', 'App Store公開後、この行からレビューを書けるようにします。')}
         />
         <SectionDivider />
         <SettingRow
@@ -157,30 +209,42 @@ export default function SettingsIndexScreen() {
         />
       </View>
 
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={() =>
-          Alert.alert(
-            'ログアウトしますか？',
-            'もう一度ログインが必要になります',
-            [
-              { text: 'キャンセル', style: 'cancel' },
-              { text: 'ログアウト', style: 'destructive', onPress: () => signOut(auth) },
-            ]
-          )
-        }
-      >
-        <Text style={styles.logoutText}>ログアウト</Text>
-      </TouchableOpacity>
+      <Text style={styles.sectionLabel}>セッション</Text>
+      <View style={styles.section}>
+        <SettingRow
+          icon={<SignOut size={20} color={iconColor} weight="regular" />}
+          label="ログアウト"
+          onPress={() =>
+            Alert.alert(
+              'ログアウトしますか？',
+              'もう一度ログインが必要になります',
+              [
+                { text: 'キャンセル', style: 'cancel' },
+                { text: 'ログアウト', style: 'destructive', onPress: () => signOut(auth) },
+              ]
+            )
+          }
+        />
+        <SectionDivider />
+        <SettingRow
+          icon={<Trash size={20} color={COLORS.error} weight="regular" />}
+          label="アカウント削除"
+          danger
+          onPress={() => router.push('/(app)/settings/account')}
+        />
+      </View>
 
-      <TouchableOpacity
-        style={styles.dangerButton}
-        onPress={() => router.push('/(app)/settings/account')}
-      >
-        <Text style={styles.dangerText}>アカウントを削除</Text>
-      </TouchableOpacity>
+      </ScrollView>
 
-    </ScrollView>
+      <PaywallModal
+        visible={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        onPurchased={() => {
+          setPaywallOpen(false);
+          load();
+        }}
+      />
+    </>
   );
 }
 
@@ -212,21 +276,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 52,
+    paddingVertical: 12,
+    minHeight: 60,
     backgroundColor: COLORS.surface,
   },
-  rowLabel: { flex: 1, fontSize: 15, color: COLORS.text, fontWeight: '400' },
+  rowLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 0 },
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: COLORS.borderSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  iconBoxDanger: { backgroundColor: COLORS.errorBg },
+  rowTextBlock: { flex: 1, minWidth: 0 },
+  rowLabel: { fontSize: 15, color: COLORS.text, fontWeight: '500' },
   rowLabelDanger: { color: COLORS.error },
+  rowSubtitle: { marginTop: 3, fontSize: 12, color: COLORS.textWeak },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
   rowValue: { fontSize: 14, color: COLORS.textMuted, maxWidth: 140 },
   divider: {
     height: RN.hairlineWidth,
     backgroundColor: COLORS.borderSoft,
-    marginLeft: 16,
+    marginLeft: 68,
   },
-  logoutButton: { marginTop: 32, paddingVertical: 14, alignItems: 'center' },
-  logoutText: { fontSize: 15, color: COLORS.textWeak },
-  dangerButton: { paddingVertical: 10, alignItems: 'center', marginBottom: 8 },
-  dangerText: { fontSize: 14, color: COLORS.error },
 });

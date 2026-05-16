@@ -17,7 +17,7 @@ import { useConsultSession } from '../../hooks/useConsultSession';
 import { formatShortDate } from '../../lib/format';
 import { COLORS } from '../../lib/theme';
 import { useAuth } from '../../lib/auth';
-import { setAiConsentAcknowledged } from '../../lib/db';
+import { AI_FREE_MONTHLY_LIMIT, setAiConsentAcknowledged } from '../../lib/db';
 import { AiQuotaChip } from '../../components/AiQuotaChip';
 import { PaywallModal } from '../../components/PaywallModal';
 import { AiConsentModal } from '../../components/AiConsentModal';
@@ -75,6 +75,9 @@ export default function ConsultScreen() {
   const isBlank = (s: string) => /^[\s　 ]*$/.test(s);
   const contentLength = text.replace(/[\s　 ]+/g, ' ').trim().length;
   const tooShort = contentLength > 0 && contentLength < 50;
+  const isQuotaExceeded =
+    !profile?.premium &&
+    (profile?.aiCreditsUsed ?? 0) >= (profile?.aiCreditsLimit ?? AI_FREE_MONTHLY_LIMIT);
 
   useEffect(() => {
     navigation.setOptions({
@@ -94,6 +97,11 @@ export default function ConsultScreen() {
 
   // AI同意がまだなら確認モーダルを挟む
   async function ensureConsentAndConsult() {
+    if (isQuotaExceeded) {
+      setPaywallReason('AI相談の無料枠を使い切りました');
+      setPaywallOpen(true);
+      return;
+    }
     if (profile && profile.aiConsentAcknowledged !== true) {
       setPendingSend(true);
       setConsentOpen(true);

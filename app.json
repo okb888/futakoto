@@ -5,11 +5,11 @@
     "version": "1.0.0",
     "scheme": "futakoto",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-assets/png/futakoto-icon-1024-1024.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon-assets/png/futakoto-icon-1024-512.png",
       "resizeMode": "contain",
       "backgroundColor": "#FAFAF8"
     },
@@ -85,7 +85,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon-assets/png/futakoto-icon-android-foreground-432.png",
         "backgroundColor": "#FAFAF8"
       },
       "package": "com.futakoto.app"
