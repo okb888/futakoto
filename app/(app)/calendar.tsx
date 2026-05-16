@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Sparkle, Star } from 'phosphor-react-native';
 import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
@@ -57,6 +57,7 @@ type LogFavoriteFilter = 'all' | 'favorites';
 type LogVisibilityFilter = 'all' | 'shared' | 'private';
 type LogMoodFilter = 'all' | 1 | 2 | 3 | 4 | 5;
 type LogTypeFilter = 'all' | 'entry' | 'consultation';
+type LogMemoFilter = 'all' | 'hasMemo';
 type SortOrder = 'desc' | 'asc';
 type ViewMode = 'calendar' | 'log';
 
@@ -132,6 +133,7 @@ function latestByDate(entries: Entry[]): Record<string, Entry> {
 export default function CalendarScreen() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
   const router = useRouter();
+  const params = useLocalSearchParams<{ viewMode?: string; typeFilter?: string }>();
   const [myEntries, setMyEntries] = useState<Entry[]>([]);
   const [myEntriesCache, setMyEntriesCache] = useState<Record<string, Entry[]>>({});
   const [partnerEntries, setPartnerEntries] = useState<Entry[]>([]);
@@ -148,6 +150,7 @@ export default function CalendarScreen() {
   const [logVisibilityFilter, setLogVisibilityFilter] = useState<LogVisibilityFilter>('all');
   const [logMoodFilter, setLogMoodFilter] = useState<LogMoodFilter>('all');
   const [logTypeFilter, setLogTypeFilter] = useState<LogTypeFilter>('all');
+  const [logMemoFilter, setLogMemoFilter] = useState<LogMemoFilter>('all');
   const [logFiltersOpen, setLogFiltersOpen] = useState(false);
   const [logMyEntries, setLogMyEntries] = useState<Entry[]>([]);
   const [logLoading, setLogLoading] = useState(false);
@@ -258,10 +261,16 @@ export default function CalendarScreen() {
   useFocusEffect(useCallback(() => {
     let cancelled = false;
     load(() => cancelled);
+
+    if (params.viewMode === 'log') setViewMode('log');
+    if (params.typeFilter === 'consultation') setLogTypeFilter('consultation');
+
     return () => {
       cancelled = true;
+      if (params.viewMode === 'log') setViewMode('calendar');
+      if (params.typeFilter === 'consultation') setLogTypeFilter('all');
     };
-  }, [user, authProfile, currentMonth]));
+  }, [user, authProfile, currentMonth, params.viewMode, params.typeFilter]));
 
   useEffect(() => {
     if (!user) return;
@@ -521,6 +530,9 @@ export default function CalendarScreen() {
       if (logMoodFilter !== 'all') {
         if (record.kind !== 'entry' || record.entry.mood !== logMoodFilter) return false;
       }
+      if (logMemoFilter === 'hasMemo') {
+        if (record.kind !== 'entry' || !record.entry.memo?.trim()) return false;
+      }
       return true;
     });
     return records.sort((a, b) => sortOrder === 'desc' ? b.sortMs - a.sortMs : a.sortMs - b.sortMs);
@@ -529,6 +541,7 @@ export default function CalendarScreen() {
     favoriteIds,
     logMyEntries,
     logFavoriteFilter,
+    logMemoFilter,
     logMoodFilter,
     logPeriod,
     logTarget,
@@ -667,12 +680,14 @@ export default function CalendarScreen() {
     if (logVisibilityFilter === 'private') labels.push('自分だけ');
     if (logMoodFilter !== 'all') labels.push(MOOD_EMOJI[logMoodFilter]);
     if (logFavoriteFilter === 'favorites') labels.push('お気に入り');
+    if (logMemoFilter === 'hasMemo') labels.push('コメントあり');
     if (logTypeFilter === 'entry') labels.push('投稿');
     if (logTypeFilter === 'consultation') labels.push('相談');
     if (sortOrder === 'asc') labels.push('古い順');
     return labels;
   }, [
     logFavoriteFilter,
+    logMemoFilter,
     logMoodFilter,
     logTarget,
     logTypeFilter,
@@ -1096,6 +1111,14 @@ export default function CalendarScreen() {
                     </TouchableOpacity>
                   );
                 })}
+                <TouchableOpacity
+                  style={[styles.filterButton, logMemoFilter === 'hasMemo' && styles.filterButtonActive]}
+                  onPress={() => setLogMemoFilter(logMemoFilter === 'hasMemo' ? 'all' : 'hasMemo')}
+                >
+                  <Text style={[styles.filterText, logMemoFilter === 'hasMemo' && styles.filterTextActive]}>
+                    コメントあり
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               <Text style={styles.filterGroupLabel}>並び順</Text>

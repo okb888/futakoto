@@ -11,10 +11,9 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { ArrowRight, Sparkle, Star, Trash, X } from 'phosphor-react-native';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { ArrowRight, Sparkle, Star, X } from 'phosphor-react-native';
 import { useConsultSession } from '../../hooks/useConsultSession';
-import { formatShortDate } from '../../lib/format';
 import { COLORS } from '../../lib/theme';
 import { useAuth } from '../../lib/auth';
 import { AI_FREE_MONTHLY_LIMIT, setAiConsentAcknowledged } from '../../lib/db';
@@ -26,6 +25,7 @@ export default function ConsultScreen() {
   const params = useLocalSearchParams<{ sessionId?: string }>();
   const focusSessionId = typeof params.sessionId === 'string' ? params.sessionId : undefined;
   const navigation = useNavigation();
+  const router = useRouter();
   const { user, profile, refreshProfile } = useAuth();
 
   const [paywallOpen, setPaywallOpen] = useState(false);
@@ -40,8 +40,6 @@ export default function ConsultScreen() {
     sessionId,
     isFavorited,
     loading,
-    recentSessions,
-    expandedSessionId, setExpandedSessionId,
     togglingFavorite,
     optionsModalOpen, setOptionsModalOpen,
     draftOptions,
@@ -56,10 +54,7 @@ export default function ConsultScreen() {
     handleConsult,
     toggleCollapse,
     handleStartNewConversation,
-    handleResumeSession,
     handleToggleFavorite,
-    handleToggleSessionFavorite,
-    handleDeleteSession,
     useAsPost,
     openDraftOptions,
     handleSelectOption,
@@ -130,7 +125,7 @@ export default function ConsultScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>壁打ち</Text>
+        <Text style={styles.title}>AIに話す</Text>
 
         {/* 今の会話 */}
         {conversation.length > 0 && (
@@ -317,6 +312,8 @@ export default function ConsultScreen() {
               multiline
               numberOfLines={conversation.length === 0 ? 6 : 4}
               textAlignVertical="top"
+              autoCorrect={false}
+              spellCheck={false}
             />
             {tooShort ? (
               <Text style={styles.shortHint}>もう少し詳しく書くと、AIがより深く整理できます（目安50文字〜）</Text>
@@ -332,7 +329,7 @@ export default function ConsultScreen() {
                 <>
                   <Sparkle size={16} color={COLORS.ai} weight="fill" />
                   <Text style={styles.aiButtonText}>
-                    {conversation.length === 0 ? 'AIと壁打ちする' : 'さらに深める'}
+                    {conversation.length === 0 ? 'AIに話す' : 'さらに深める'}
                   </Text>
                 </>
               )}
@@ -346,107 +343,15 @@ export default function ConsultScreen() {
           </>
         )}
 
-        {/* 過去の記録 */}
-        <Text style={styles.lead}>過去の記録</Text>
-
-        {recentSessions.length === 0 ? (
-          <Text style={styles.empty}>まだ記録がありません</Text>
-        ) : (
-          <View style={styles.sessionList}>
-            {recentSessions.map((session) => {
-              const isExpanded = expandedSessionId === session.id;
-              const firstInput = session.turns[0]?.input ?? '';
-              return (
-                <View key={session.id} style={styles.sessionCard}>
-                  <TouchableOpacity
-                    style={styles.sessionHeader}
-                    onPress={() => setExpandedSessionId(isExpanded ? null : (session.id ?? null))}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.sessionHeaderLeft}>
-                      <Text style={styles.sessionDate}>{formatShortDate(session.createdAt)}</Text>
-                      <Text style={styles.sessionPreview} numberOfLines={1}>{firstInput}</Text>
-                    </View>
-                    <View style={styles.sessionHeaderRight}>
-                      <Text style={styles.sessionTurnsLabel}>{session.turns.length}往復</Text>
-                      <TouchableOpacity
-                        style={styles.resumeButton}
-                        onPress={() => handleResumeSession(session)}
-                        hitSlop={6}
-                      >
-                        <Text style={styles.resumeButtonText}>続きから話す</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleToggleSessionFavorite(session)}
-                        hitSlop={8}
-                      >
-                        <Star
-                          size={16}
-                          color={session.favored ? COLORS.primary : COLORS.disabled}
-                          weight={session.favored ? 'fill' : 'regular'}
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleDeleteSession(session)}
-                        hitSlop={8}
-                      >
-                        <Trash size={15} color={COLORS.textMuted} />
-                      </TouchableOpacity>
-                      <Text style={styles.collapseToggle}>{isExpanded ? '▲' : '▼'}</Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  {isExpanded && (
-                    <View style={styles.sessionBody}>
-                      {session.turns.map((turn, i) => (
-                        <View key={i} style={styles.sessionTurnItem}>
-                          <View style={styles.sessionTurnHeader}>
-                            <View style={styles.turnBadge}>
-                              <Text style={styles.turnBadgeText}>{i + 1}</Text>
-                            </View>
-                            <Text style={styles.sessionTurnInput}>{turn.input}</Text>
-                          </View>
-                          <View style={styles.aiCard}>
-                            <Text style={styles.aiCardLabel}>整理メモ</Text>
-                            <Text style={styles.cardText}>{turn.reflection}</Text>
-                          </View>
-                          {turn.messageDraft ? (
-                            <View style={styles.partnerDraftCard}>
-                              <Text style={styles.partnerDraftLabel}>{partnerName}に伝える文（旧）</Text>
-                              <Text style={styles.cardText}>{turn.messageDraft}</Text>
-                              <TouchableOpacity
-                                style={styles.usePostButton}
-                                onPress={() => useAsPost(turn.messageDraft!, session.id)}
-                              >
-                                <ArrowRight size={13} color={COLORS.primary} weight="bold" />
-                                <Text style={styles.usePostButtonText}>投稿に使う</Text>
-                              </TouchableOpacity>
-                            </View>
-                          ) : null}
-                        </View>
-                      ))}
-                      {session.lastDraft ? (
-                        <View style={styles.sessionLastDraft}>
-                          <Text style={styles.partnerDraftLabel}>
-                            最新の文案（{session.lastDraft.intent}）
-                          </Text>
-                          <Text style={styles.cardText}>{session.lastDraft.messageDraft}</Text>
-                          <TouchableOpacity
-                            style={styles.usePostButton}
-                            onPress={() => useAsPost(session.lastDraft!.messageDraft, session.id)}
-                          >
-                            <ArrowRight size={13} color={COLORS.primary} weight="bold" />
-                            <Text style={styles.usePostButtonText}>投稿に使う</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : null}
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        )}
+        {/* 過去の相談へのリンク */}
+        <TouchableOpacity
+          style={styles.pastSessionsButton}
+          onPress={() => router.push({ pathname: '/(app)/calendar', params: { viewMode: 'log', typeFilter: 'consultation' } })}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.pastSessionsButtonText}>過去の相談を見る</Text>
+          <ArrowRight size={14} color={COLORS.textSubtle} weight="bold" />
+        </TouchableOpacity>
       </ScrollView>
 
       {/* 伝え方の選択モーダル */}
@@ -462,7 +367,10 @@ export default function ConsultScreen() {
             activeOpacity={1}
             onPress={() => setOptionsModalOpen(false)}
           />
-          <View style={styles.optionsSheet}>
+          <KeyboardAvoidingView
+            style={styles.optionsSheet}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
             <View style={styles.optionsHeader}>
               <View style={styles.modalTitleRow}>
                 <Sparkle size={16} color={COLORS.ai} weight="fill" />
@@ -497,7 +405,7 @@ export default function ConsultScreen() {
 
                 <View style={styles.customIntentArea}>
                   <Text style={styles.customIntentLabel}>
-                    {draftSummary ? 'AIがまとめた内容を確認・編集' : '伝えたいことを自由に指定'}
+                    {draftSummary ? '会話をAIが要約しました（編集できます）' : '伝えたいことを自由に指定'}
                   </Text>
                   <TextInput
                     style={styles.customIntentInput}
@@ -507,6 +415,8 @@ export default function ConsultScreen() {
                     onChangeText={setCustomIntent}
                     maxLength={MAX_CUSTOM_INTENT}
                     multiline
+                    autoCorrect={false}
+                    spellCheck={false}
                   />
                   <TouchableOpacity
                     style={[
@@ -521,7 +431,7 @@ export default function ConsultScreen() {
                 </View>
               </>
             )}
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
@@ -756,46 +666,19 @@ const styles = StyleSheet.create({
   },
   usePostButtonText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
 
-  empty: { textAlign: 'center', color: COLORS.placeholder, fontSize: 13, paddingVertical: 20 },
-  sessionList: { gap: 10 },
-  sessionCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.ai,
-    overflow: 'hidden',
-  },
-  sessionHeader: {
+  pastSessionsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  sessionHeaderLeft: { flex: 1, gap: 3 },
-  sessionDate: { fontSize: 11, color: COLORS.textMuted },
-  sessionPreview: { fontSize: 13, color: COLORS.textBody, lineHeight: 19 },
-  sessionHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  sessionTurnsLabel: { fontSize: 11, color: COLORS.ai, fontWeight: '700' },
-  resumeButton: {
-    backgroundColor: COLORS.primarySoft,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  resumeButtonText: { fontSize: 11, color: COLORS.primaryDeep, fontWeight: '700' },
-  sessionBody: { borderTopWidth: 1, borderTopColor: COLORS.aiDivider, paddingHorizontal: 14, paddingBottom: 14 },
-  sessionTurnItem: { marginTop: 14 },
-  sessionTurnHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 4 },
-  sessionTurnInput: { flex: 1, fontSize: 13, color: COLORS.textSubtle, lineHeight: 19 },
-  sessionLastDraft: {
-    marginTop: 14,
-    backgroundColor: COLORS.primarySoft,
-    borderRadius: 10,
+    justifyContent: 'space-between',
+    marginTop: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.primaryBorder,
-    padding: 14,
+    borderColor: COLORS.border,
   },
+  pastSessionsButtonText: { fontSize: 14, color: COLORS.textSubtle, fontWeight: '600' },
 
   modalOverlay: {
     flex: 1,

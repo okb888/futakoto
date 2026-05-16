@@ -1,6 +1,6 @@
 # ふたこと リリースステータス
 
-**最終更新**: 2026-05-16（Sandbox課金設定完了・Apple契約/税務/銀行全設定有効化・Sign-in実機確認済み・UX改善Codexに依頼中）
+**最終更新**: 2026-05-16（相談タブUI改善・過去の相談を振り返りタブに統合・build 11 ビルド中）
 **目標**: 2026年8月31日までに月額¥500の課金が1人発生
 **直近マイルストーン**: TestFlight内部配布 → β検証 → 5/31 App Store審査提出
 
@@ -17,7 +17,11 @@
 | **2** | Codex Fix 1〜8 の進捗確認・レビュー | 🔄 進行中 |
 | **3** | β配布3組への声がけ（5/20週から招待予告） | 未着手 |
 
-### ✅ 5/16 完了済み
+### ✅ 5/16 完了済み（追記）
+- 相談タブUI改善：「過去の記録」セクションを削除し「過去の相談を見る」ボタンに置き換え → 振り返りタブ（相談フィルター自動適用）に遷移
+- 振り返りタブ：URL params（`viewMode=log`, `typeFilter=consultation`）を受け取りフォーカス時に自動適用・離脱時リセット
+
+### ✅ 5/16 完了済み（当初）
 - build 6 TestFlightインストール・初回スモークテスト実施
 - Google / Apple Sign-in 実機確認済み
 - Apple Small Business Program 申請完了（手取り30%→15%）
@@ -29,6 +33,9 @@
 - サブスク `futakoto_premium_monthly` メタデータ完成・**提出準備完了**
 - App Version 1.0 に `futakoto_premium_monthly` を紐付け
 - UX改善23件を分析・Codex Fix 1〜8 として依頼
+- ホーム画面リデザイン実装（全件フィード廃止 → インライン入力 + 今日の自分/パートナー各最新1件）
+- EAS iOS production build 10 成功（commit `a343916b`）
+- build 10 を App Store Connect / TestFlight にアップロード完了（Apple処理待ち）
 
 ---
 
@@ -38,7 +45,7 @@
 A. AI精度改善    ───────✅ 完了（archive/done.md 参照）
 B. 認証拡張      ───────✅ 実機確認済み（Google/Apple Sign-in 動作確認 5/16）
 C. 課金UI       ───────🟡 Apple設定全完了・Sandbox検証のみ残り（明朝再試行）
-D. リリース準備  ─────🟡 build 6インストール済み・UX改善Codex進行中・β配布待ち
+D. リリース準備  ─────🟡 build 10アップロード完了・Apple処理待ち・β配布待ち
 E. SNS運用      ───────🔴 未着手（β配布後に着手）
 F. LP修正       ───────🟡 仮ページ公開中・本番版は6月リリース時
 G. UIデザイン改善 ──────🟡 参考画像ベースの大規模改善をCodex Fix 1〜8で進行中
@@ -96,11 +103,11 @@ G. UIデザイン改善 ──────🟡 参考画像ベースの大規模
 
 | 項目 | 状態 |
 |---|---|
-| TestFlight | build 6（RevenueCat SDK有効・Apple/Google Sign-in実装）**インストール済み・スモークテスト完了（5/16）** |
+| TestFlight | build 6 **インストール済み・スモークテスト完了（5/16）** / build 10 **アップロード完了** / build 11 **ビルド中（相談タブUI改善）** |
 | Apple Developer Program | 承認済み |
 | Bundle ID | `com.futakoto.app` 登録済み |
-| EAS iOS build | **build 6 成功**（5/14 夜・commit `f7e4a35`・RevenueCat SDK有効化・Appleボタンバグ修正込み） |
-| App Store Connect | **build 6 アップロード完了**・Apple処理待ち（5〜10分） |
+| EAS iOS build | **build 10 成功**（5/16・commit `a343916b`・ホーム画面リデザイン込み）/ **build 11 ビルド中**（相談タブUI改善） |
+| App Store Connect | build 10 アップロード完了済み / build 11 提出予定 |
 | TestFlight URL | https://appstoreconnect.apple.com/apps/6768653868/testflight/ios |
 | App Privacy Manifest（iOS17+） | app.json に設定済み |
 | AI送信に関する同意UI | 実装済み・実機確認待ち |
@@ -111,7 +118,10 @@ G. UIデザイン改善 ──────🟡 参考画像ベースの大規模
 ### 残タスク
 - [x] build 5 をApp Store Connectへ提出
 - [x] build 6 をApp Store Connectへ提出（RevenueCat SDK有効化・Appleボタンバグ修正込み）
+- [x] build 10 をApp Store Connectへ提出（ホーム画面リデザイン込み・5/16）
+- [x] build 11 をApp Store Connectへ提出（相談タブUI改善・過去の相談を振り返りタブに統合・5/16）
 - [x] β前コードレビューP3/P4修正（`calendar.tsx` 相手投稿キャッシュ / 解釈キャッシュ200件制限 / `ai.ts` 型改善 / entry create rules強化）
+- [x] ホーム画面リデザイン（インライン気持ち入力 / 今日の記録2件表示 / FAB廃止 / 連続記録表示）
 - [x] TestFlightで build 6 をインストール（5/16）
 - [x] 初回実機スモークテスト（起動・ログイン・投稿・ペアリング・AI・通知）（5/16）
 - [ ] 初回起動オンボーディング実装（**5/16時点で未実装**・[`../CODEX-TASK-ux-improvement.md`](../CODEX-TASK-ux-improvement.md) Fix 8 でCodexに依頼）
