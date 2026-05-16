@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Plus, Heart, Sparkle, Star, ArrowRight } from 'phosphor-react-native';
 import { aiInterpret } from '../../lib/ai';
 import { EntryCard } from '../../components/EntryCard';
@@ -19,6 +20,7 @@ import { AiQuotaChip } from '../../components/AiQuotaChip';
 import { PaywallModal } from '../../components/PaywallModal';
 import { AiConsentModal } from '../../components/AiConsentModal';
 import { useAuth } from '../../lib/auth';
+import OnboardingModal from '../../components/OnboardingModal';
 import {
   getUserProfile,
   getRecentEntries,
@@ -54,6 +56,18 @@ export default function HomeScreen() {
   const [paywallReason, setPaywallReason] = useState<string | undefined>(undefined);
   const [consentOpen, setConsentOpen] = useState(false);
   const [pendingInterpret, setPendingInterpret] = useState<{ entry: Entry; force: boolean } | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('hasSeenOnboarding').then((val) => {
+      if (val === null) setShowOnboarding(true);
+    });
+  }, []);
+
+  async function handleOnboardingDone() {
+    await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+    setShowOnboarding(false);
+  }
 
   function actionKey(entry: Entry): string {
     return `${entry.uid}_${entry.id ?? ''}`;
@@ -408,6 +422,8 @@ export default function HomeScreen() {
         onAgree={handleConsentAgree}
         onCancel={handleConsentCancel}
       />
+
+      <OnboardingModal visible={showOnboarding} onDone={handleOnboardingDone} />
     </View>
   );
 }
