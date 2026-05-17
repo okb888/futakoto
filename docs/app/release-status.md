@@ -1,6 +1,6 @@
 # ふたこと リリースステータス
 
-**最終更新**: 2026-05-16（相談タブUI改善・過去の相談を振り返りタブに統合・build 11 ビルド中）
+**最終更新**: 2026-05-17（CodexレビューP0/P1修正をpush・build 15 をTestFlight向けにEAS build/auto-submit予約）
 **目標**: 2026年8月31日までに月額¥500の課金が1人発生
 **直近マイルストーン**: TestFlight内部配布 → β検証 → 5/31 App Store審査提出
 
@@ -9,13 +9,24 @@
 
 ---
 
-## 🎯 今日（2026-05-16）やること
+## 🎯 今日（2026-05-17）やること
 
 | 優先 | タスク | 状態 |
 |---|---|---|
-| **1** | Sandbox課金フロー検証（Apple反映待ち明けに再挑戦） | ⏳ 明朝再試行 |
-| **2** | Codex Fix 1〜8 の進捗確認・レビュー | 🔄 進行中 |
+| **1** | build 15 のTestFlight処理完了後、実機確認 | ⏳ EAS build / auto-submit 予約済み |
+| **2** | Sandbox課金フロー検証 | 未着手 |
 | **3** | β配布3組への声がけ（5/20週から招待予告） | 未着手 |
+
+### ✅ 5/17 完了済み
+- CodexレビューP0/P1修正を実装・レビュー後の追加指摘3点も修正
+  - `partnerCallName` 保存をFirestore rulesで許可し、保存失敗時のAlertを追加
+  - ホーム入力を投稿画面遷移ではなくインライン入力（絵文字選択 → メモ → 伝える）へ復元
+  - Firebase Analytics の `measurementId` をFirebase configにも含めるよう修正
+- `functions` TypeScript build 成功、`git diff --check` 問題なし
+- Git push 完了: branch `codex/fix-review-p3-p4`, commit `4299571`
+- EAS iOS production build 15 をTestFlight向けに起動し、auto-submitを予約
+  - Build: https://expo.dev/accounts/h.okb/projects/futakoto/builds/a94d3920-7899-4ea3-900e-5e168ed63832
+  - Submission: https://expo.dev/accounts/h.okb/projects/futakoto/submissions/d8732529-4470-4b34-8353-ed89a74bdf39
 
 ### ✅ 5/16 完了済み（追記）
 - 相談タブUI改善：「過去の記録」セクションを削除し「過去の相談を見る」ボタンに置き換え → 振り返りタブ（相談フィルター自動適用）に遷移
@@ -45,7 +56,7 @@
 A. AI精度改善    ───────✅ 完了（archive/done.md 参照）
 B. 認証拡張      ───────✅ 実機確認済み（Google/Apple Sign-in 動作確認 5/16）
 C. 課金UI       ───────🟡 Apple設定全完了・Sandbox検証のみ残り（明朝再試行）
-D. リリース準備  ─────🟡 build 10アップロード完了・Apple処理待ち・β配布待ち
+D. リリース準備  ─────🟡 build 15 EAS build/auto-submit予約済み・TestFlight処理待ち
 E. SNS運用      ───────🔴 未着手（β配布後に着手）
 F. LP修正       ───────🟡 仮ページ公開中・本番版は6月リリース時
 G. UIデザイン改善 ──────🟡 参考画像ベースの大規模改善をCodex Fix 1〜8で進行中
@@ -103,11 +114,11 @@ G. UIデザイン改善 ──────🟡 参考画像ベースの大規模
 
 | 項目 | 状態 |
 |---|---|
-| TestFlight | build 6 **インストール済み・スモークテスト完了（5/16）** / build 10 **アップロード完了** / build 11 **ビルド中（相談タブUI改善）** |
+| TestFlight | build 6 **インストール済み・スモークテスト完了（5/16）** / build 13 **EAS成功** / build 15 **EAS build + auto-submit予約済み（5/17）** |
 | Apple Developer Program | 承認済み |
 | Bundle ID | `com.futakoto.app` 登録済み |
-| EAS iOS build | **build 10 成功**（5/16・commit `a343916b`・ホーム画面リデザイン込み）/ **build 11 ビルド中**（相談タブUI改善） |
-| App Store Connect | build 10 アップロード完了済み / build 11 提出予定 |
+| EAS iOS build | **build 15 実行中/予約済み**（5/17・commit `4299571`・CodexレビューP0/P1修正込み） |
+| App Store Connect | build 15 auto-submit予約済み / TestFlight処理待ち |
 | TestFlight URL | https://appstoreconnect.apple.com/apps/6768653868/testflight/ios |
 | App Privacy Manifest（iOS17+） | app.json に設定済み |
 | AI送信に関する同意UI | 実装済み・実機確認待ち |
@@ -120,6 +131,7 @@ G. UIデザイン改善 ──────🟡 参考画像ベースの大規模
 - [x] build 6 をApp Store Connectへ提出（RevenueCat SDK有効化・Appleボタンバグ修正込み）
 - [x] build 10 をApp Store Connectへ提出（ホーム画面リデザイン込み・5/16）
 - [x] build 11 をApp Store Connectへ提出（相談タブUI改善・過去の相談を振り返りタブに統合・5/16）
+- [x] build 15 をEAS production build + auto-submit予約（CodexレビューP0/P1修正込み・5/17）
 - [x] β前コードレビューP3/P4修正（`calendar.tsx` 相手投稿キャッシュ / 解釈キャッシュ200件制限 / `ai.ts` 型改善 / entry create rules強化）
 - [x] ホーム画面リデザイン（インライン気持ち入力 / 今日の記録2件表示 / FAB廃止 / 連続記録表示）
 - [x] TestFlightで build 6 をインストール（5/16）
