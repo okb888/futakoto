@@ -105,6 +105,31 @@ build 16でログインとチュートリアルは動作確認できた一方、
   - Message: `Restore UI for build 17 runtime`
   - EAS Dashboard: https://expo.dev/accounts/h.okb/projects/futakoto/updates/7b83ad3e-7d9f-4d7b-8c72-a0b401bb8e36
 
+### build 17でUIが直らなかった原因とbuild 18対応
+
+build 17は `7523fac` から作られており、`expo-updates` / `updates.url` / `runtimeVersion` を追加した `cc2f03c` より前のバイナリだった。  
+そのため、productionにEAS Updateを配信しても、端末上のbuild 17が更新を取りに行けず、アプリ再起動ではUI復旧しなかった。
+
+- build 18 提出
+  - Build ID: `6c60a5b0-5591-49bb-8893-4cf59ef418f6`
+  - Build number: `18`
+  - Commit: `9628338cf344fd9263bd0aac4b8c88bd865799d4`
+  - Channel: `production`
+  - Runtime version: `e280be80dd3550633d384df93ef7837afe1b2bf0`
+  - Build logs: https://expo.dev/accounts/h.okb/projects/futakoto/builds/6c60a5b0-5591-49bb-8893-4cf59ef418f6
+  - IPA: https://expo.dev/artifacts/eas/eod98QHR2LBYcQfZgwfqs3.ipa
+- EAS Submit 成功
+  - Submission ID: `2ed03d2c-1477-418b-bea7-cd1ae35c8ad2`
+  - Submission details: https://expo.dev/accounts/h.okb/projects/futakoto/submissions/2ed03d2c-1477-418b-bea7-cd1ae35c8ad2
+  - App Store Connect / TestFlight: https://appstoreconnect.apple.com/apps/6768653868/testflight/ios
+- EAS Update 配信（build 18 runtimeVersion一致版）
+  - Channel / branch: `production`
+  - Runtime version: `e280be80dd3550633d384df93ef7837afe1b2bf0`
+  - Update group ID: `e751a3fa-7040-49ec-ae04-e45fd981ee31`
+  - iOS update ID: `019e35c0-c099-7efc-b183-cf3fa0c72d93`
+  - Message: `Initialize build 18 runtime exact`
+  - EAS Dashboard: https://expo.dev/accounts/h.okb/projects/futakoto/updates/e751a3fa-7040-49ec-ae04-e45fd981ee31
+
 ---
 
 ## 確認
