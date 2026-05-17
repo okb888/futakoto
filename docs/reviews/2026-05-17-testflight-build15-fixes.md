@@ -65,5 +65,13 @@
 ## 確認
 
 - `npx expo export --platform ios --output-dir /tmp/futakoto-export-check` 成功
+- EAS production build 成功
+  - Build ID: `52de6598-a8f5-4e1b-8ef5-91a34d0a1d6c`
+  - Build number: `16`
+  - Build logs: https://expo.dev/accounts/h.okb/projects/futakoto/builds/52de6598-a8f5-4e1b-8ef5-91a34d0a1d6c
+  - IPA: https://expo.dev/artifacts/eas/bevLb6rJxdpmUvwaTsGYm5.ipa
+- EAS Submit 成功
+  - Submission ID: `5cab2fbf-40b9-4300-989e-7768420d70dc`
+  - Submission details: https://expo.dev/accounts/h.okb/projects/futakoto/submissions/5cab2fbf-40b9-4300-989e-7768420d70dc
+  - App Store Connect / TestFlight: https://appstoreconnect.apple.com/apps/6768653868/testflight/ios
 - `npx tsc --noEmit` は既存の `eval/` と `functions/__tests__/` 側の未設定依存で失敗。今回の変更箇所由来のMetroバンドルエラーはなし。
-
