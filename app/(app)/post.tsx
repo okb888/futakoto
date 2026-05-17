@@ -346,7 +346,7 @@ export default function PostScreen() {
 
         <View style={styles.messageHeader}>
           <Text style={[styles.label, styles.messageLabel]}>
-            そのときの気持ち・{partnerName}に伝えたいこと
+            いまの気持ちや{partnerName}に伝えたいこと
           </Text>
           <TouchableOpacity
             style={styles.aiButton}

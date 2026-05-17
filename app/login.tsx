@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { COLORS } from '../lib/theme';
 import {
   signInWithApple,
@@ -47,26 +47,26 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.inner}>
+        <Image source={require('../assets/icon.png')} style={styles.appIcon} />
         <Text style={styles.logo}>ふたこと</Text>
         <Text style={styles.tagline}>一言を、ふたりで。</Text>
 
         {showApple ? (
-          <View
+          <TouchableOpacity
             style={[styles.appleButton, anyBusy && styles.buttonDisabled]}
-            pointerEvents={anyBusy ? 'none' : 'auto'}
+            onPress={handleApple}
+            disabled={anyBusy}
+            activeOpacity={0.8}
           >
             {socialLoading === 'apple' ? (
-              <ActivityIndicator color={COLORS.surface} />
+              <ActivityIndicator color={COLORS.text} />
             ) : (
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                cornerRadius={12}
-                style={styles.appleNativeButton}
-                onPress={handleApple}
-              />
+              <View style={styles.socialInner}>
+                <Text style={styles.appleLogo}></Text>
+                <Text style={styles.appleButtonText}>Appleではじめる</Text>
+              </View>
             )}
-          </View>
+          </TouchableOpacity>
         ) : null}
 
         {showGoogle ? (
@@ -81,7 +81,7 @@ export default function LoginScreen() {
             ) : (
               <View style={styles.socialInner}>
                 <Text style={styles.googleLogo}>G</Text>
-                <Text style={styles.googleButtonText}>Googleでログイン</Text>
+                <Text style={styles.googleButtonText}>Googleではじめる</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -122,20 +122,39 @@ const styles = StyleSheet.create({
     marginBottom: 48,
     letterSpacing: 1,
   },
+  appIcon: {
+    width: 80,
+    height: 80,
+    alignSelf: 'center',
+    marginBottom: 16,
+    borderRadius: 18,
+  },
   buttonDisabled: {
     opacity: 0.5,
   },
   appleButton: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#000',
     marginBottom: 10,
     minHeight: 50,
     justifyContent: 'center',
-    backgroundColor: '#000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  appleNativeButton: {
-    width: '100%',
-    height: 50,
+  appleLogo: {
+    fontSize: 18,
+    color: '#000',
+    marginRight: 10,
+  },
+  appleButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
   },
   socialInner: {
     flexDirection: 'row',
@@ -144,10 +163,10 @@ const styles = StyleSheet.create({
     height: 50,
   },
   googleButton: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#DADCE0',
+    borderColor: '#000',
     marginBottom: 10,
     minHeight: 50,
     justifyContent: 'center',
@@ -164,8 +183,8 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   googleButtonText: {
-    color: COLORS.text,
-    fontSize: 15,
+    color: '#000',
+    fontSize: 16,
     fontWeight: '600',
   },
   unavailableText: {

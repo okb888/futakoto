@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { Sparkle } from 'phosphor-react-native';
 import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
@@ -23,6 +23,7 @@ import {
   getEntriesInRange,
   getPartnerSharedEntries,
   getRecentConsultationSessions,
+  getRecentEntries,
   getFavoriteEntryIds,
   deleteEntry,
   favoriteKey,
@@ -45,8 +46,12 @@ LocaleConfig.locales['ja'] = {
 };
 LocaleConfig.defaultLocale = 'ja';
 
+type ViewMode = 'calendar' | 'log';
 type FilterType = 'all' | 'me' | 'partner' | 'favorite' | 'consultation';
 type SortOrder = 'desc' | 'asc';
+type PeriodFilter = 'thisMonth' | 'lastMonth' | 'past3Months' | 'all';
+type VisibilityFilter = 'all' | 'shared' | 'private';
+type MoodFilter = 0 | 1 | 2 | 3 | 4 | 5;
 
 const MAX_CACHE_MONTHS = 6;
 
@@ -93,13 +98,32 @@ function latestByDate(entries: Entry[]): Record<string, Entry> {
 export default function CalendarScreen() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
   const router = useRouter();
+  const navigation = useNavigation();
+  const params = useLocalSearchParams<{ viewMode?: string; typeFilter?: string }>();
+
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+
+  // ログビュー用の状態
+  const [logEntries, setLogEntries] = useState<Entry[]>([]);
+  const [logPartnerEntries, setLogPartnerEntries] = useState<Entry[]>([]);
+  const [logConsultations, setLogConsultations] = useState<ConsultationSession[]>([]);
+  const [logLoading, setLogLoading] = useState(false);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('thisMonth');
+  const [logAuthorFilter, setLogAuthorFilter] = useState<'all' | 'me' | 'partner'>('all');
+  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>('all');
+  const [moodFilter, setMoodFilter] = useState<MoodFilter>(0);
+  const [logTypeFilter, setLogTypeFilter] = useState<'all' | 'entry' | 'consultation'>('all');
+  const [logSortOrder, setLogSortOrder] = useState<SortOrder>('desc');
+  const [logFavoriteOnly, setLogFavoriteOnly] = useState(false);
+
   const [myEntries, setMyEntries] = useState<Entry[]>([]);
   const [myEntriesCache, setMyEntriesCache] = useState<Record<string, Entry[]>>({});
   const [partnerEntries, setPartnerEntries] = useState<Entry[]>([]);
   const [consultations, setConsultations] = useState<ConsultationSession[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [partnerProfile, setPartnerProfile] = useState<UserProfile | null>(null);
-  const [selected, setSelected] = useState(todayKey());
+  const [selected, setSelected] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [loading, setLoading] = useState(true);
@@ -186,6 +210,81 @@ export default function CalendarScreen() {
     if (!isCancelled()) setLoading(false);
   }
 
+  // URLパラメータでviewModeとtypeFilterを受け取る
+  useFocusEffect(useCallback(() => {
+    if (params.viewMode === 'log') {
+      setViewMode('log');
+      if (params.typeFilter === 'consultation') {
+        setLogTypeFilter('consultation');
+        setFilterPanelOpen(false);
+      }
+    } else if (params.viewMode === undefined) {
+      setLogTypeFilter('all');
+    }
+  }, [params.viewMode, params.typeFilter]));
+
+  // ナビゲーションヘッダーにタブ切り替えボタン
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={styles.tabSwitch}>
+          <TouchableOpacity
+            style={[styles.tabSwitchBtn, viewMode === 'calendar' && styles.tabSwitchBtnActive]}
+            onPress={() => setViewMode('calendar')}
+          >
+            <Text style={[styles.tabSwitchText, viewMode === 'calendar' && styles.tabSwitchTextActive]}>
+              カレンダー
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabSwitchBtn, viewMode === 'log' && styles.tabSwitchBtnActive]}
+            onPress={() => setViewMode('log')}
+          >
+            <Text style={[styles.tabSwitchText, viewMode === 'log' && styles.tabSwitchTextActive]}>
+              ログ
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, [navigation, viewMode]);
+
+  // ログデータ読み込み
+  async function loadLog(isCancelled: () => boolean = () => false) {
+    if (!user) return;
+    setLogLoading(true);
+    try {
+      const p = authProfile ?? await refreshProfile();
+      if (isCancelled() || !p) return;
+
+      const [myAll, savedConsultations, favorites] = await Promise.all([
+        getRecentEntries(user.uid, 500),
+        getRecentConsultationSessions(user.uid, 200),
+        getFavoriteEntryIds(user.uid),
+      ]);
+      if (isCancelled()) return;
+      setLogEntries(myAll);
+      setLogConsultations(savedConsultations);
+      setFavoriteIds(favorites);
+
+      if (p?.partnerUid) {
+        const pp = await getUserProfile(p.partnerUid);
+        if (isCancelled()) return;
+        setPartnerProfile(pp);
+        const partnerAll = await getPartnerSharedEntries(p.partnerUid, 500);
+        if (isCancelled()) return;
+        setLogPartnerEntries(partnerAll);
+      } else {
+        setPartnerProfile(null);
+        setLogPartnerEntries([]);
+      }
+    } catch (e: any) {
+      Alert.alert('エラー', '読み込みに失敗しました');
+    } finally {
+      if (!isCancelled()) setLogLoading(false);
+    }
+  }
+
   useFocusEffect(useCallback(() => {
     let cancelled = false;
     load(() => cancelled);
@@ -194,6 +293,94 @@ export default function CalendarScreen() {
     };
   }, [user, authProfile, currentMonth]));
 
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    loadLog(() => cancelled);
+    return () => { cancelled = true; };
+  }, [user, authProfile]));
+
+  function filterByPeriod(entries: Entry[]): Entry[] {
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonth = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+    return entries.filter((e) => {
+      const dk = dateKey(e.createdAt);
+      if (periodFilter === 'thisMonth') return dk.startsWith(thisMonth);
+      if (periodFilter === 'lastMonth') return dk.startsWith(lastMonth);
+      if (periodFilter === 'past3Months') {
+        const cutoff = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        return sortMillis(e.createdAt) >= cutoff.getTime();
+      }
+      return true;
+    });
+  }
+
+  function filterConsultsByPeriod(sessions: ConsultationSession[]): ConsultationSession[] {
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonth = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+    return sessions.filter((s) => {
+      const dk = dateKey(s.createdAt);
+      if (periodFilter === 'thisMonth') return dk.startsWith(thisMonth);
+      if (periodFilter === 'lastMonth') return dk.startsWith(lastMonth);
+      if (periodFilter === 'past3Months') {
+        const cutoff = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        return sortMillis(s.createdAt) >= cutoff.getTime();
+      }
+      return true;
+    });
+  }
+
+  const filteredLogRecords = useMemo(() => {
+    const myFiltered = filterByPeriod(logEntries).filter((e) => {
+      if (logAuthorFilter === 'partner') return false;
+      if (visibilityFilter === 'shared' && e.visibility !== 'shared') return false;
+      if (visibilityFilter === 'private' && e.visibility !== 'private') return false;
+      if (moodFilter !== 0 && e.mood !== moodFilter) return false;
+      if (logFavoriteOnly && e.id && !favoriteIds.has(favoriteKey(e.uid, e.id))) return false;
+      return true;
+    }).map((e) => ({
+      kind: 'entry' as const,
+      entry: e,
+      authorName: '自分',
+      isOwn: true,
+      isFavorite: e.id ? favoriteIds.has(favoriteKey(e.uid, e.id)) : false,
+      sortMs: sortMillis(e.createdAt),
+    }));
+
+    const partnerFiltered = filterByPeriod(logPartnerEntries).filter((e) => {
+      if (logAuthorFilter === 'me') return false;
+      if (moodFilter !== 0 && e.mood !== moodFilter) return false;
+      if (logFavoriteOnly && e.id && !favoriteIds.has(favoriteKey(e.uid, e.id))) return false;
+      return true;
+    }).map((e) => ({
+      kind: 'entry' as const,
+      entry: e,
+      authorName: getPartnerDisplayName(partnerProfile),
+      isOwn: false,
+      isFavorite: e.id ? favoriteIds.has(favoriteKey(e.uid, e.id)) : false,
+      sortMs: sortMillis(e.createdAt),
+    }));
+
+    const consultFiltered = logFavoriteOnly ? [] : filterConsultsByPeriod(logConsultations).map((s) => ({
+      kind: 'consultation' as const,
+      consultation: s,
+      sortMs: sortMillis(s.createdAt),
+    }));
+
+    type LogRecord =
+      | { kind: 'entry'; entry: Entry; authorName: string; isOwn: boolean; isFavorite: boolean; sortMs: number }
+      | { kind: 'consultation'; consultation: ConsultationSession; sortMs: number };
+
+    let all: LogRecord[] = [];
+    if (logTypeFilter === 'all' || logTypeFilter === 'entry') all = [...all, ...myFiltered, ...partnerFiltered];
+    if (logTypeFilter === 'all' || logTypeFilter === 'consultation') all = [...all, ...consultFiltered];
+
+    return all.sort((a, b) => logSortOrder === 'desc' ? b.sortMs - a.sortMs : a.sortMs - b.sortMs);
+  }, [logEntries, logPartnerEntries, logConsultations, favoriteIds, periodFilter, logAuthorFilter, visibilityFilter, moodFilter, logTypeFilter, logSortOrder, logFavoriteOnly, partnerProfile]);
+
   function switchSummaryTarget(target: 'me' | 'partner') {
     setSummaryTarget(target);
     const key = `${currentMonth}-${target}`;
@@ -201,28 +388,28 @@ export default function CalendarScreen() {
     setSummaryExpanded(false);
   }
 
+  const isPastMonthLocked = !premium && isPastMonth(currentMonth);
+
   function handleMonthChange(date: { year: number; month: number }) {
     const newMonth = `${date.year}-${String(date.month).padStart(2, '0')}`;
     if (newMonth === currentMonth) return;
-
-    // 無料ユーザーは過去月を閲覧できない（Premium 特典: 全期間振り返り）
-    if (!premium && isPastMonth(newMonth)) {
-      setPaywallReason('過去の月を振り返れるのはプレミアム特典です');
-      setPaywallOpen(true);
-      // 月表示を当月に戻す（react-native-calendars は内部状態を持つので key で再描画）
-      setCurrentMonth(thisMonthKey());
-      setCalendarKey((k) => k + 1);
-      return;
-    }
 
     setCurrentMonth(newMonth);
     const key = `${newMonth}-${summaryTarget}`;
     setAiSummaryText(aiSummaryCache[key] ?? null);
     setSummaryExpanded(false);
+
+    // 無料ユーザーは過去月のデータを取得しない（オーバーレイで隠す）
+    if (!premium && isPastMonth(newMonth)) return;
     loadMonthEntries(newMonth, myEntriesCache);
   }
 
   async function handleAiSummary() {
+    if (!premium) {
+      setPaywallReason('AI要約はプレミアム機能です');
+      setPaywallOpen(true);
+      return;
+    }
     const cacheKey = `${currentMonth}-${summaryTarget}`;
     if (aiSummaryCache[cacheKey]) {
       setAiSummaryText(aiSummaryCache[cacheKey]);
@@ -435,6 +622,211 @@ export default function CalendarScreen() {
     { key: 'consultation', label: '相談' },
   ];
 
+  if (viewMode === 'log') {
+    const periodLabels: { key: PeriodFilter; label: string; premium?: boolean }[] = [
+      { key: 'thisMonth', label: '今月' },
+      { key: 'lastMonth', label: '先月', premium: true },
+      { key: 'past3Months', label: '過去3ヶ月', premium: true },
+      { key: 'all', label: '全期間', premium: true },
+    ];
+    const MOOD_EMOJIS = ['', '😣', '😔', '😐', '🙂', '😊'] as const;
+
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.logHeader}>
+          <Text style={styles.logTitle}>
+            {periodFilter === 'thisMonth' ? '今月' : periodFilter === 'lastMonth' ? '先月' : periodFilter === 'past3Months' ? '過去3ヶ月' : '全期間'}のログ
+          </Text>
+          <View style={styles.logHeaderRight}>
+            <TouchableOpacity
+              style={styles.sortChip}
+              onPress={() => setLogSortOrder((o) => o === 'desc' ? 'asc' : 'desc')}
+            >
+              <Text style={styles.sortChipText}>{logSortOrder === 'desc' ? '新しい順' : '古い順'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.filterToggleBtn}
+              onPress={() => setFilterPanelOpen(!filterPanelOpen)}
+            >
+              <Text style={styles.filterToggleText}>フィルター {filterPanelOpen ? '▲' : '▼'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {filterPanelOpen && (
+          <View style={styles.filterPanel}>
+            <Text style={styles.filterGroupLabel}>期間</Text>
+            <View style={styles.filterRow}>
+              {periodLabels.map((p) => {
+                const isPremiumChip = !!p.premium;
+                const isActive = periodFilter === p.key;
+                return (
+                  <TouchableOpacity
+                    key={p.key}
+                    style={[
+                      styles.filterChip,
+                      isPremiumChip && styles.filterChipPremium,
+                      isActive && (isPremiumChip ? styles.filterChipPremiumActive : styles.filterChipActive),
+                    ]}
+                    onPress={() => {
+                      if (isPremiumChip && !premium) {
+                        setPaywallReason('先月以前のログはプレミアム機能です');
+                        setPaywallOpen(true);
+                        return;
+                      }
+                      setPeriodFilter(p.key);
+                    }}
+                  >
+                    <Text style={[
+                      styles.filterChipText,
+                      isPremiumChip && styles.filterChipPremiumText,
+                      isActive && (isPremiumChip ? styles.filterChipPremiumTextActive : styles.filterChipTextActive),
+                    ]}>
+                      {isPremiumChip ? '★ ' : ''}{p.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={styles.filterGroupLabel}>投稿者</Text>
+            <View style={styles.filterRow}>
+              {([['all', '両方'], ['me', '自分'], ['partner', '相手']] as const).map(([key, label]) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.filterChip, logAuthorFilter === key && styles.filterChipActive]}
+                  onPress={() => setLogAuthorFilter(key)}
+                >
+                  <Text style={[styles.filterChipText, logAuthorFilter === key && styles.filterChipTextActive]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.filterGroupLabel}>公開範囲</Text>
+            <View style={styles.filterRow}>
+              {([['all', 'すべて'], ['shared', 'ふたりに共有'], ['private', '自分だけ']] as const).map(([key, label]) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.filterChip, visibilityFilter === key && styles.filterChipActive]}
+                  onPress={() => setVisibilityFilter(key)}
+                >
+                  <Text style={[styles.filterChipText, visibilityFilter === key && styles.filterChipTextActive]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.filterGroupLabel}>感情</Text>
+            <View style={styles.filterRow}>
+              <TouchableOpacity
+                style={[styles.filterChip, moodFilter === 0 && styles.filterChipActive]}
+                onPress={() => setMoodFilter(0)}
+              >
+                <Text style={[styles.filterChipText, moodFilter === 0 && styles.filterChipTextActive]}>全部</Text>
+              </TouchableOpacity>
+              {([1, 2, 3, 4, 5] as const).map((m) => (
+                <TouchableOpacity
+                  key={m}
+                  style={[styles.filterChip, moodFilter === m && styles.filterChipActive]}
+                  onPress={() => setMoodFilter(moodFilter === m ? 0 : m)}
+                >
+                  <Text style={styles.filterChipEmoji}>{MOOD_EMOJIS[m]}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.filterGroupLabel}>種別</Text>
+            <View style={styles.filterRow}>
+              {([['all', 'すべて'], ['entry', '投稿'], ['consultation', '相談']] as const).map(([key, label]) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.filterChip, logTypeFilter === key && styles.filterChipActive]}
+                  onPress={() => setLogTypeFilter(key)}
+                >
+                  <Text style={[styles.filterChipText, logTypeFilter === key && styles.filterChipTextActive]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.filterGroupLabel}>その他</Text>
+            <View style={styles.filterRow}>
+              <TouchableOpacity
+                style={[styles.filterChip, logFavoriteOnly && styles.filterChipActive]}
+                onPress={() => setLogFavoriteOnly(!logFavoriteOnly)}
+              >
+                <Text style={[styles.filterChipText, logFavoriteOnly && styles.filterChipTextActive]}>★ お気に入りのみ</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.filterResetBtn}
+              onPress={() => {
+                setPeriodFilter('thisMonth');
+                setLogAuthorFilter('all');
+                setVisibilityFilter('all');
+                setMoodFilter(0);
+                setLogTypeFilter('all');
+                setLogSortOrder('desc');
+                setLogFavoriteOnly(false);
+              }}
+            >
+              <Text style={styles.filterResetText}>フィルターをリセット</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {logLoading ? (
+          <ActivityIndicator color={COLORS.primary} style={{ marginTop: 40 }} />
+        ) : filteredLogRecords.length === 0 ? (
+          <Text style={styles.empty}>この期間の記録はありません</Text>
+        ) : (
+          filteredLogRecords.map((record) => {
+            if (record.kind === 'consultation') {
+              const session = record.consultation;
+              const firstTurn = session.turns?.[0];
+              if (!firstTurn) return null;
+              return (
+                <View key={`c-${session.id}`} style={[styles.card, styles.consultationCard]}>
+                  <View style={styles.cardTop}>
+                    <Sparkle size={20} color={COLORS.ai} weight="fill" />
+                    <View style={styles.cardMeta}>
+                      <Text style={styles.cardAuthor}>相談</Text>
+                      <Text style={styles.cardTime}>{dateKey(session.createdAt).replace(/-/g, '/')}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.cardMemo}>{firstTurn.reflection}</Text>
+                  <TouchableOpacity
+                    style={styles.usePostButton}
+                    onPress={() => router.push({ pathname: '/(app)/consult', params: { sessionId: session.id ?? '' } })}
+                  >
+                    <Text style={styles.usePostButtonText}>セッションを開く</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            }
+            return (
+              <EntryCard
+                key={`e-${record.entry.id ?? ''}-${record.entry.uid}`}
+                entry={record.entry}
+                authorName={record.authorName}
+                isOwn={record.isOwn}
+                isFavorite={record.isFavorite}
+                timeLabel={dateKey(record.entry.createdAt).replace(/-/g, '/')}
+                onToggleFavorite={() => handleToggleFavorite(record.entry)}
+              />
+            );
+          })
+        )}
+
+        <PaywallModal
+          visible={paywallOpen}
+          reason={paywallReason}
+          onClose={() => setPaywallOpen(false)}
+          onPurchased={() => {}}
+        />
+      </ScrollView>
+    );
+  }
+
   if (loading) {
     return (
       <View style={styles.loading}>
@@ -445,24 +837,41 @@ export default function CalendarScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Calendar
-        key={calendarKey}
-        current={`${currentMonth}-01`}
-        markedDates={markedDates}
-        onDayPress={(d) => setSelected(d.dateString)}
-        onMonthChange={handleMonthChange}
-        dayComponent={({ date, state }) => renderDay(date, state)}
-        theme={{
-          backgroundColor: COLORS.background,
-          calendarBackground: COLORS.background,
-          todayTextColor: COLORS.primary,
-          arrowColor: COLORS.primary,
-          monthTextColor: COLORS.text,
-          textDayFontSize: 14,
-          textMonthFontSize: 16,
-          textDayHeaderFontSize: 12,
-        }}
-      />
+      <View style={{ position: 'relative' }}>
+        <Calendar
+          key={calendarKey}
+          current={`${currentMonth}-01`}
+          markedDates={markedDates}
+          onDayPress={(d) => setSelected(d.dateString)}
+          onMonthChange={handleMonthChange}
+          dayComponent={({ date, state }) => renderDay(date, state)}
+          theme={{
+            backgroundColor: COLORS.background,
+            calendarBackground: COLORS.background,
+            todayTextColor: COLORS.primary,
+            arrowColor: COLORS.primary,
+            monthTextColor: COLORS.text,
+            textDayFontSize: 14,
+            textMonthFontSize: 16,
+            textDayHeaderFontSize: 12,
+          }}
+        />
+        {isPastMonthLocked && (
+          <View style={styles.calendarOverlay}>
+            <Sparkle size={28} color={COLORS.ai} weight="fill" />
+            <Text style={styles.calendarOverlayText}>過去月の振り返りはプレミアム機能です</Text>
+            <TouchableOpacity
+              style={styles.calendarOverlayBtn}
+              onPress={() => {
+                setPaywallReason('過去の月を振り返れるのはプレミアム特典です');
+                setPaywallOpen(true);
+              }}
+            >
+              <Text style={styles.calendarOverlayBtnText}>プレミアムを見る</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
 
       <View style={styles.legend}>
         <View style={styles.ownerLegendRow}>
@@ -557,7 +966,7 @@ export default function CalendarScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
+        contentContainerStyle={styles.calendarFilterRow}
       >
         {filters.map((item) => {
           const active = filter === item.key;
@@ -587,13 +996,17 @@ export default function CalendarScreen() {
       </ScrollView>
 
       <View style={styles.sortRow}>
-        <Text style={styles.dateTitle}>{selected.replace(/-/g, '/')}</Text>
-        <TouchableOpacity
-          style={styles.sortButton}
-          onPress={() => setSortOrder((current) => current === 'desc' ? 'asc' : 'desc')}
-        >
-          <Text style={styles.sortButtonText}>{sortOrder === 'desc' ? '新しい順' : '古い順'}</Text>
-        </TouchableOpacity>
+        <Text style={styles.dateTitle}>
+          {selected === '' ? '日付を選択してください' : selected.replace(/-/g, '/')}
+        </Text>
+        {selected !== '' && (
+          <TouchableOpacity
+            style={styles.sortButton}
+            onPress={() => setSortOrder((current) => current === 'desc' ? 'asc' : 'desc')}
+          >
+            <Text style={styles.sortButtonText}>{sortOrder === 'desc' ? '新しい順' : '古い順'}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {!premium ? (
@@ -612,7 +1025,7 @@ export default function CalendarScreen() {
         </TouchableOpacity>
       ) : null}
 
-      {selectedDayRecords.length === 0 ? (
+      {selected === '' ? null : selectedDayRecords.length === 0 ? (
         <Text style={styles.empty}>この日の記録はありません</Text>
       ) : (
         selectedDayRecords.map((record) => {
@@ -706,6 +1119,36 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   content: { paddingBottom: 64 },
+
+  // ヘッダータブ切り替え
+  tabSwitch: { flexDirection: 'row', marginRight: 12, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: COLORS.border },
+  tabSwitchBtn: { paddingHorizontal: 10, paddingVertical: 5, backgroundColor: COLORS.surface },
+  tabSwitchBtnActive: { backgroundColor: COLORS.primary },
+  tabSwitchText: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
+  tabSwitchTextActive: { color: COLORS.surface },
+
+  // ログビュー
+  logHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  logTitle: { fontSize: 15, fontWeight: '700', color: COLORS.text },
+  logHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sortChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface },
+  sortChipText: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
+  filterToggleBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface },
+  filterToggleText: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
+  filterPanel: { backgroundColor: COLORS.surface, margin: 16, marginTop: 0, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: COLORS.border, gap: 8 },
+  filterGroupLabel: { fontSize: 11, color: COLORS.textWeak, fontWeight: '700', marginTop: 6 },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  filterChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.background },
+  filterChipActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '18' },
+  filterChipPremium: { borderColor: COLORS.aiBorder, backgroundColor: COLORS.aiBgSoft },
+  filterChipPremiumActive: { borderColor: COLORS.ai, backgroundColor: COLORS.aiBg },
+  filterChipText: { fontSize: 13, color: COLORS.textMuted },
+  filterChipTextActive: { color: COLORS.primary, fontWeight: '700' },
+  filterChipPremiumText: { fontSize: 13, color: COLORS.ai },
+  filterChipPremiumTextActive: { color: COLORS.ai, fontWeight: '700' },
+  filterChipEmoji: { fontSize: 18 },
+  filterResetBtn: { marginTop: 8, paddingVertical: 8, alignItems: 'center' },
+  filterResetText: { fontSize: 13, color: COLORS.textWeak, fontWeight: '600' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.background },
   legend: { paddingHorizontal: 24, paddingVertical: 12 },
   ownerLegendRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 10 },
@@ -751,7 +1194,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: COLORS.ai,
   },
-  filterRow: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 8, gap: 8 },
+  calendarFilterRow: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 8, gap: 8 },
   filterButton: {
     paddingHorizontal: 12,
     paddingVertical: 7,
@@ -860,4 +1303,16 @@ const styles = StyleSheet.create({
     borderColor: COLORS.aiBorderSoft,
   },
   premiumHintText: { fontSize: 12, color: COLORS.ai, fontWeight: '600' },
+  calendarOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    zIndex: 10,
+  },
+  calendarOverlayText: { fontSize: 14, color: COLORS.ai, fontWeight: '600', textAlign: 'center', paddingHorizontal: 24 },
+  calendarOverlayBtn: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.ai },
+  calendarOverlayBtnText: { fontSize: 13, color: '#fff', fontWeight: '700' },
 });

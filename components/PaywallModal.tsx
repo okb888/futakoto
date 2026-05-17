@@ -33,6 +33,7 @@ const FEATURES = [
   '相手の投稿の「気持ちを読み解く」 無制限',
   '月次振り返りサマリーがいつでも見られる',
   '過去の壁打ち履歴をすべて参照可能',
+  '月次レポートをPDF/画像でエクスポート',
 ];
 
 export function PaywallModal({ visible, onClose, reason, onPurchased }: Props) {

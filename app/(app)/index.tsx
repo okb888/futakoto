@@ -3,60 +3,55 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  TextInput,
   TouchableOpacity,
   RefreshControl,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Plus, Heart, Sparkle, Star, ArrowRight } from 'phosphor-react-native';
-import { aiInterpret } from '../../lib/ai';
+import { Heart } from 'phosphor-react-native';
+import { addEntry, getRecentEntries, getPartnerSharedEntries, getUserProfile, Entry, UserProfile } from '../../lib/db';
 import { EntryCard } from '../../components/EntryCard';
-import { EntryActionPanel } from '../../components/EntryActionPanel';
-import { SourceConsultationLink } from '../../components/SourceConsultationLink';
-import { AiQuotaChip } from '../../components/AiQuotaChip';
 import { PaywallModal } from '../../components/PaywallModal';
 import { AiConsentModal } from '../../components/AiConsentModal';
 import { useAuth } from '../../lib/auth';
 import OnboardingModal from '../../components/OnboardingModal';
-import {
-  getUserProfile,
-  getRecentEntries,
-  getPartnerSharedEntries,
-  deleteEntry,
-  updateEntryVisibility,
-  favoriteKey,
-  getFavoriteEntryIds,
-  toggleFavoriteEntry,
-  getAllInterpretationCaches,
-  setAiConsentAcknowledged,
-  Entry,
-  UserProfile,
-} from '../../lib/db';
-import { classifyError } from '../../lib/errors';
-import { formatEntryDate, sortMillis } from '../../lib/format';
+import { dateKey, todayKey, sortMillis } from '../../lib/format';
 import { getPartnerDisplayName } from '../../lib/profile';
+import { MOODS } from '../../lib/mood';
 import { COLORS } from '../../lib/theme';
 
 export default function HomeScreen() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
   const router = useRouter();
   const navigation = useNavigation();
-  const [entries, setEntries] = useState<Entry[]>([]);
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [partnerProfile, setPartnerProfile] = useState<UserProfile | null>(null);
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [myTodayEntries, setMyTodayEntries] = useState<Entry[]>([]);
+  const [partnerTodayEntries, setPartnerTodayEntries] = useState<Entry[]>([]);
+  const [showAllMy, setShowAllMy] = useState(false);
+  const [showAllPartner, setShowAllPartner] = useState(false);
+  const [streak, setStreak] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [interpretationsCache, setInterpretationsCache] = useState<Record<string, string[]>>({});
-  const [interpretLoadingIds, setInterpretLoadingIds] = useState<Set<string>>(new Set());
-  const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
+  const [selectedMood, setSelectedMood] = useState<number | null>(null);
+  const [memo, setMemo] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
-  const [paywallReason, setPaywallReason] = useState<string | undefined>(undefined);
   const [consentOpen, setConsentOpen] = useState(false);
-  const [pendingInterpret, setPendingInterpret] = useState<{ entry: Entry; force: boolean } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // 顔文字モーダル
+  const [moodModalOpen, setMoodModalOpen] = useState(false);
+  const [moodModalMood, setMoodModalMood] = useState<number | null>(null);
+  const [moodModalMemo, setMoodModalMemo] = useState('');
+  const [moodModalSubmitting, setMoodModalSubmitting] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem('hasSeenOnboarding').then((val) => {
@@ -69,10 +64,6 @@ export default function HomeScreen() {
     setShowOnboarding(false);
   }
 
-  function actionKey(entry: Entry): string {
-    return `${entry.uid}_${entry.id ?? ''}`;
-  }
-
   async function load(isCancelled: () => boolean = () => false) {
     if (!user) return;
     try {
@@ -80,73 +71,61 @@ export default function HomeScreen() {
       if (isCancelled() || !p) return;
       setProfile(p);
 
-      let favorites = new Set<string>();
-      try {
-        favorites = await getFavoriteEntryIds(user.uid);
-      } catch (e: any) {
-        console.error('[Home] favorites取得エラー:', e?.code, e?.message);
-      }
-      setFavoriteIds(favorites);
-
-      let caches: Record<string, string[]> = {};
-      try {
-        caches = await getAllInterpretationCaches(user.uid);
-      } catch (e: any) {
-        console.error('[Home] interpretationCache取得エラー:', e?.code, e?.message);
-      }
-      setInterpretationsCache(caches);
-
-      const myEntries = await getRecentEntries(user.uid, 100);
+      const myEntries = await getRecentEntries(user.uid, 60);
       if (isCancelled()) return;
 
-      let allEntries = myEntries;
+      const today = todayKey();
+      const todayMy = myEntries.filter((e) => dateKey(e.createdAt) === today);
+      setMyTodayEntries(todayMy);
+
+      const consecutiveDays = calcStreak(myEntries);
+      setStreak(consecutiveDays);
+
       if (p?.partnerUid) {
-        try {
-          const pp = await getUserProfile(p.partnerUid);
-          if (isCancelled()) return;
-          setPartnerProfile(pp);
-          const partnerEntries = await getPartnerSharedEntries(p.partnerUid, 100);
-          if (isCancelled()) return;
-          allEntries = [...myEntries, ...partnerEntries]
-            .sort((a, b) => sortMillis(b.createdAt) - sortMillis(a.createdAt))
-            .slice(0, 100);
-        } catch (e: any) {
-          console.error('[Home] パートナーデータ取得エラー:', e?.code, e?.message);
-          allEntries = myEntries;
-        }
+        const pp = await getUserProfile(p.partnerUid);
+        if (isCancelled()) return;
+        setPartnerProfile(pp);
+        const partnerEntries = await getPartnerSharedEntries(p.partnerUid, 60);
+        if (isCancelled()) return;
+        const todayPartner = partnerEntries.filter((e) => dateKey(e.createdAt) === today);
+        setPartnerTodayEntries(todayPartner);
       } else {
         setPartnerProfile(null);
+        setPartnerTodayEntries([]);
       }
-
-      setEntries(allEntries);
     } catch (e: any) {
-      console.error('[Home] load全体エラー:', e?.code, e?.message);
+      console.error('[Home] load error:', e?.code, e?.message);
     }
+  }
+
+  function calcStreak(entries: Entry[]): number {
+    const days = new Set(entries.map((e) => dateKey(e.createdAt)).filter(Boolean));
+    let count = 0;
+    const d = new Date();
+    while (true) {
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!days.has(key)) break;
+      count++;
+      d.setDate(d.getDate() - 1);
+    }
+    return count;
   }
 
   useFocusEffect(useCallback(() => {
     let cancelled = false;
     load(() => cancelled);
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [user, authProfile]));
 
   useEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <View style={{ marginRight: 12 }}>
-          <AiQuotaChip
-            profile={profile}
-            onPress={() => {
-              setPaywallReason(undefined);
-              setPaywallOpen(true);
-            }}
-          />
-        </View>
-      ),
+      title: 'ふたこと',
+      headerRight: () =>
+        streak > 0 ? (
+          <Text style={styles.streakLabel}>{streak}日連続</Text>
+        ) : null,
     });
-  }, [navigation, profile]);
+  }, [navigation, streak]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -154,295 +133,225 @@ export default function HomeScreen() {
     setRefreshing(false);
   }
 
-  async function handleToggleVisibility(entry: Entry) {
-    if (!user || !entry.id) return;
-    const newVisibility = entry.visibility === 'shared' ? 'private' : 'shared';
-    await updateEntryVisibility(user.uid, entry.id, newVisibility);
-    setActiveActionKey(null);
-    await load();
-  }
-
-  function handleDelete(entry: Entry) {
-    if (!user || !entry.id) return;
-    Alert.alert('削除しますか？', 'この投稿は完全に削除されます', [
-      { text: 'キャンセル', style: 'cancel' },
-      {
-        text: '削除',
-        style: 'destructive',
-        onPress: async () => {
-          setActiveActionKey(null);
-          await deleteEntry(user.uid, entry.id!);
-          await load();
-        },
-      },
-    ]);
-  }
-
-  function handleEdit(entry: Entry) {
-    if (!entry.id) return;
-    setActiveActionKey(null);
-    router.push({ pathname: '/(app)/post', params: { entryId: entry.id } });
-  }
-
-  function showActions(entry: Entry) {
-    if (entry.uid !== user?.uid) return;
-    const key = actionKey(entry);
-    setActiveActionKey((current) => current === key ? null : key);
-  }
-
-  async function handleToggleFavorite(entry: Entry) {
-    if (!user || !entry.id) return;
-    const key = favoriteKey(entry.uid, entry.id);
-    const isFavorite = favoriteIds.has(key);
-    await toggleFavoriteEntry(user.uid, entry.uid, entry.id, isFavorite);
-    setFavoriteIds((prev) => {
-      const next = new Set(prev);
-      if (isFavorite) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }
-
-  async function runInterpret(entry: Entry, force = false) {
-    if (!entry.id || !entry.memo) return;
-    const cacheKey = favoriteKey(entry.uid, entry.id);
-    setInterpretLoadingIds((prev) => new Set([...prev, cacheKey]));
+  async function handleSubmit() {
+    if (!user || selectedMood === null) return;
+    setSubmitting(true);
     try {
-      const res = await aiInterpret(entry.memo, entry.mood, partnerName, entry.id, entry.uid, force);
-      setInterpretationsCache((prev) => ({ ...prev, [cacheKey]: res.interpretations }));
+      await addEntry(user.uid, selectedMood, memo.trim(), 'shared');
+      setSelectedMood(null);
+      setMemo('');
+      await load();
     } catch (e: any) {
-      const classified = classifyError(e);
-      if (classified.kind === 'quota') {
-        setPaywallReason(classified.message);
-        setPaywallOpen(true);
-      } else if (classified.kind === 'network') {
-        Alert.alert(classified.title, classified.message);
-      } else {
-        Alert.alert(classified.title, classified.message);
-      }
+      Alert.alert('エラー', '記録できませんでした');
     } finally {
-      setInterpretLoadingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(cacheKey);
-        return next;
-      });
+      setSubmitting(false);
     }
-  }
-
-  async function handleInterpret(entry: Entry, force = false) {
-    if (!entry.id || !entry.memo) return;
-    // AI同意が未取得なら同意モーダルを表示し、同意後に実行する
-    if (profile?.aiConsentAcknowledged !== true) {
-      setPendingInterpret({ entry, force });
-      setConsentOpen(true);
-      return;
-    }
-    await runInterpret(entry, force);
-  }
-
-  async function handleConsentAgree() {
-    if (!user) return;
-    try {
-      await setAiConsentAcknowledged(user.uid);
-      await refreshProfile();
-    } catch (e: any) {
-      const classified = classifyError(e);
-      Alert.alert(classified.title, classified.message);
-      setConsentOpen(false);
-      setPendingInterpret(null);
-      return;
-    }
-    setConsentOpen(false);
-    const next = pendingInterpret;
-    setPendingInterpret(null);
-    if (next) {
-      await runInterpret(next.entry, next.force);
-    }
-  }
-
-  function handleConsentCancel() {
-    setConsentOpen(false);
-    setPendingInterpret(null);
-  }
-
-  function openSourceConsultation(entry: Entry) {
-    if (!entry.sourceConsultationSessionId) return;
-    router.push({
-      pathname: '/(app)/consult',
-      params: { sessionId: entry.sourceConsultationSessionId },
-    });
   }
 
   const isPaired = !!profile?.partnerUid;
   const partnerName = getPartnerDisplayName(partnerProfile);
 
+  // 表示する自分の記録（折りたたみ制御）
+  const myDisplayEntries = showAllMy ? myTodayEntries : myTodayEntries.slice(0, 3);
+  const myHiddenCount = myTodayEntries.length - 3;
+
+  // 表示するパートナーの記録（折りたたみ制御）
+  const partnerDisplayEntries = showAllPartner ? partnerTodayEntries : partnerTodayEntries.slice(0, 3);
+  const partnerHiddenCount = partnerTodayEntries.length - 3;
+
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={entries}
-        keyExtractor={(item) => item.id! + item.uid}
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={styles.list}
-        ListHeaderComponent={
-          <View style={styles.connectionHeader}>
-            {isPaired ? (
-              <View style={styles.connectionPill}>
-                <Heart size={14} color={COLORS.partner} weight="fill" />
-                <Text style={styles.connectionText}>{partnerName} と繋がっています</Text>
-              </View>
+      >
+        {isPaired ? (
+          <View style={styles.connectionPill}>
+            <Heart size={14} color={COLORS.partner} weight="fill" />
+            <Text style={styles.connectionText}>{partnerName} と繋がっています</Text>
+          </View>
+        ) : (
+          <View style={styles.connectionPillMuted}>
+            <Text style={styles.connectionMutedText}>設定タブからパートナーと繋がろう</Text>
+          </View>
+        )}
+
+        <View style={styles.inputCard}>
+          <View style={styles.moodRow}>
+            {MOODS.map((m) => (
+              <TouchableOpacity
+                key={m.score}
+                style={[
+                  styles.moodButton,
+                  selectedMood === m.score && { backgroundColor: m.color, borderColor: m.color },
+                ]}
+                onPress={() => setMoodModalOpen(true)}
+              >
+                <Text style={styles.moodEmoji}>{m.emoji}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TextInput
+            style={styles.memoInput}
+            placeholder={`いまの気持ちや${partnerName}に伝えたいこと`}
+            placeholderTextColor={COLORS.textWeak}
+            value={memo}
+            onChangeText={setMemo}
+            multiline
+          />
+
+          <TouchableOpacity
+            style={[styles.submitButton, selectedMood === null && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={selectedMood === null || submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color={COLORS.surface} size="small" />
             ) : (
-              <View style={styles.connectionPillMuted}>
-                <Text style={styles.connectionMutedText}>設定タブからパートナーと繋がろう</Text>
-              </View>
+              <Text style={styles.submitButtonText}>伝える</Text>
             )}
-            <TouchableOpacity
-              style={styles.favoriteShortcut}
-              onPress={() => router.push('/(app)/favorites')}
-              activeOpacity={0.7}
-            >
-              <Star size={14} color={COLORS.primary} weight="fill" />
-              <Text style={styles.favoriteShortcutText}>お気に入り</Text>
-              <ArrowRight size={13} color={COLORS.primary} weight="bold" />
-            </TouchableOpacity>
-          </View>
-        }
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🌿</Text>
-            <Text style={styles.emptyText}>今日の気持ちを記録しよう</Text>
-            <Text style={styles.emptyHint}>
-              毎日の気持ちを残すと{'\n'}パートナーに気持ちが届きます
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyAction}
-              onPress={() => router.push('/(app)/post')}
-            >
-              <Text style={styles.emptyActionText}>最初の記録をする</Text>
-            </TouchableOpacity>
-          </View>
-        }
-        renderItem={({ item }) => {
-          const isOwn = item.uid === user?.uid;
-          const authorName = isOwn ? '自分' : partnerName;
-          const isFavorite = item.id ? favoriteIds.has(favoriteKey(item.uid, item.id)) : false;
-          const cacheKey = item.id ? favoriteKey(item.uid, item.id) : '';
-          const isActionOpen = activeActionKey === actionKey(item);
-          const cachedInterps = !isOwn ? interpretationsCache[cacheKey] : undefined;
-          const isInterpreting = !isOwn && interpretLoadingIds.has(cacheKey);
-          const footer = isOwn && item.sourceConsultationSessionId ? (
-            <SourceConsultationLink onPress={() => openSourceConsultation(item)} />
-          ) : !isOwn && item.memo ? (
-            <View style={styles.interpretArea}>
-              {cachedInterps ? (
-                <>
-                  <View style={styles.interpretResult}>
-                    {cachedInterps.map((interp, i) => (
-                      <View key={i} style={styles.interpretItem}>
-                        <Text style={styles.interpretBullet}>·</Text>
-                        <Text style={styles.interpretText}>{interp}</Text>
-                      </View>
-                    ))}
-                  </View>
-                  <TouchableOpacity
-                    style={styles.reInterpretButton}
-                    onPress={() => handleInterpret(item, true)}
-                    disabled={isInterpreting}
-                  >
-                    {isInterpreting ? (
-                      <ActivityIndicator color={COLORS.ai} size="small" />
-                    ) : (
-                      <Text style={styles.reInterpretButtonText}>もう一度読み解く</Text>
-                    )}
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <TouchableOpacity
-                  style={styles.interpretButton}
-                  onPress={() => handleInterpret(item)}
-                  disabled={isInterpreting}
-                >
-                  {isInterpreting ? (
-                    <ActivityIndicator color={COLORS.ai} size="small" />
-                  ) : (
-                    <>
-                      <Sparkle size={13} color={COLORS.ai} weight="fill" />
-                      <Text style={styles.interpretButtonText}>気持ちを読み解く</Text>
-                    </>
-                  )}
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.sectionTitle}>今日の記録</Text>
+
+        {myTodayEntries.length > 0 ? (
+          <>
+            {myDisplayEntries.map((entry) => (
+              <View key={entry.id} style={styles.myEntryWrapper}>
+                <EntryCard
+                  entry={entry}
+                  authorName="自分"
+                  isOwn
+                  isFavorite={false}
+                  timeLabel="今日"
+                  onPressActions={() => router.push({ pathname: '/(app)/post', params: { entryId: entry.id } })}
+                  onToggleFavorite={() => {}}
+                />
+              </View>
+            ))}
+            {!showAllMy && myHiddenCount > 0 && (
+              <TouchableOpacity style={styles.showMoreButton} onPress={() => setShowAllMy(true)}>
+                <Text style={styles.showMoreText}>他 {myHiddenCount}件を見る</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        ) : (
+          <Text style={styles.emptyText}>まだ今日の記録がありません</Text>
+        )}
+
+        {isPaired && (
+          partnerTodayEntries.length > 0 ? (
+            <>
+              {partnerDisplayEntries.map((entry) => (
+                <View key={entry.id} style={styles.partnerEntryWrapper}>
+                  <EntryCard
+                    entry={entry}
+                    authorName={partnerName}
+                    isOwn={false}
+                    isFavorite={false}
+                    timeLabel="今日"
+                    onToggleFavorite={() => {}}
+                  />
+                </View>
+              ))}
+              {!showAllPartner && partnerHiddenCount > 0 && (
+                <TouchableOpacity style={styles.showMoreButton} onPress={() => setShowAllPartner(true)}>
+                  <Text style={styles.showMoreText}>他 {partnerHiddenCount}件を見る</Text>
                 </TouchableOpacity>
               )}
-            </View>
-          ) : undefined;
-          return (
-            <View>
-              <EntryCard
-                entry={item}
-                authorName={authorName}
-                isOwn={isOwn}
-                isFavorite={isFavorite}
-                timeLabel={formatEntryDate(item.createdAt)}
-                onPressActions={isOwn ? () => showActions(item) : undefined}
-                onToggleFavorite={() => handleToggleFavorite(item)}
-                footer={footer}
+            </>
+          ) : (
+            <Text style={styles.emptyText}>{partnerName} はまだ今日の記録がありません</Text>
+          )
+        )}
+
+        {/* 顔文字タップで開くフルサイズ入力モーダル */}
+        <Modal visible={moodModalOpen} animationType="slide" transparent onRequestClose={() => setMoodModalOpen(false)}>
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMoodModalOpen(false)} />
+            <View style={styles.moodModalSheet}>
+              <View style={styles.moodModalHeader}>
+                <Text style={styles.moodModalTitle}>いまの気持ちを記録する</Text>
+                <TouchableOpacity onPress={() => setMoodModalOpen(false)}><Text style={styles.moodModalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <Text style={styles.moodModalLabel}>そのときの気分は？</Text>
+              <View style={styles.moodRow}>
+                {MOODS.map((m) => (
+                  <TouchableOpacity key={m.score}
+                    style={[styles.moodButton, moodModalMood === m.score && { backgroundColor: m.color, borderColor: m.color }]}
+                    onPress={() => setMoodModalMood(moodModalMood === m.score ? null : m.score)}>
+                    <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.moodModalLabel}>いまの気持ちや{partnerName}に伝えたいこと</Text>
+              <TextInput
+                style={styles.moodModalInput}
+                placeholder={`いまの気持ちや${partnerName}に伝えたいこと`}
+                placeholderTextColor={COLORS.textWeak}
+                value={moodModalMemo}
+                onChangeText={setMoodModalMemo}
+                multiline
+                autoFocus
+                textAlignVertical="top"
               />
-              {isOwn && isActionOpen ? (
-                <EntryActionPanel
-                  entry={item}
-                  onEdit={() => handleEdit(item)}
-                  onToggleVisibility={() => handleToggleVisibility(item)}
-                  onDelete={() => handleDelete(item)}
-                />
-              ) : null}
+              <TouchableOpacity
+                style={[styles.submitButton, moodModalMood === null && styles.submitButtonDisabled]}
+                onPress={async () => {
+                  if (!user || moodModalMood === null) return;
+                  setMoodModalSubmitting(true);
+                  try {
+                    await addEntry(user.uid, moodModalMood, moodModalMemo.trim(), 'shared');
+                    setMoodModalOpen(false);
+                    setMoodModalMood(null);
+                    setMoodModalMemo('');
+                    await load();
+                  } catch { Alert.alert('エラー', '記録できませんでした'); }
+                  finally { setMoodModalSubmitting(false); }
+                }}
+                disabled={moodModalMood === null || moodModalSubmitting}
+              >
+                {moodModalSubmitting ? <ActivityIndicator color={COLORS.surface} size="small" /> : <Text style={styles.submitButtonText}>伝える</Text>}
+              </TouchableOpacity>
             </View>
-          );
-        }}
-      />
+          </KeyboardAvoidingView>
+        </Modal>
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/(app)/post')}
-        accessibilityLabel="新しい記録を追加"
-        accessibilityRole="button"
-      >
-        <Plus size={28} color={COLORS.surface} weight="bold" />
-      </TouchableOpacity>
-
-      <PaywallModal
-        visible={paywallOpen}
-        reason={paywallReason}
-        onClose={() => setPaywallOpen(false)}
-        onPurchased={() => {
-          setPaywallOpen(false);
-          refreshProfile();
-        }}
-      />
-
-      <AiConsentModal
-        visible={consentOpen}
-        onAgree={handleConsentAgree}
-        onCancel={handleConsentCancel}
-      />
-
-      <OnboardingModal visible={showOnboarding} onDone={handleOnboardingDone} />
-    </View>
+        <PaywallModal
+          visible={paywallOpen}
+          onClose={() => setPaywallOpen(false)}
+          onPurchased={() => { setPaywallOpen(false); refreshProfile(); }}
+        />
+        <AiConsentModal
+          visible={consentOpen}
+          onAgree={() => setConsentOpen(false)}
+          onCancel={() => setConsentOpen(false)}
+        />
+        <OnboardingModal visible={showOnboarding} onDone={handleOnboardingDone} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  list: { paddingBottom: 100, paddingTop: 12 },
-  connectionHeader: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  content: { padding: 16, paddingBottom: 40 },
+  streakLabel: { fontSize: 12, color: COLORS.textMuted, fontWeight: '700', marginRight: 12 },
   connectionPill: {
-    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    alignSelf: 'flex-start',
     borderRadius: 16,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.partnerBorder,
     paddingHorizontal: 12,
     paddingVertical: 7,
+    marginBottom: 16,
   },
   connectionText: { fontSize: 12, color: COLORS.partnerText, fontWeight: '700' },
   connectionPillMuted: {
@@ -453,71 +362,88 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     paddingHorizontal: 12,
     paddingVertical: 7,
+    marginBottom: 16,
   },
   connectionMutedText: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
-  favoriteShortcut: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderRadius: 16,
+  inputCard: {
     backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: COLORS.primaryBorder,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    borderColor: COLORS.border,
   },
-  favoriteShortcutText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
-  empty: { alignItems: 'center', paddingTop: 64, paddingHorizontal: 32 },
-  emptyEmoji: { fontSize: 48, marginBottom: 16 },
-  emptyText: { fontSize: 16, color: COLORS.textSubtle, fontWeight: '600', textAlign: 'center' },
-  emptyHint: { fontSize: 13, color: COLORS.textWeak, marginTop: 8, textAlign: 'center', lineHeight: 20 },
-  emptyAction: {
-    marginTop: 24,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 24,
-  },
-  emptyActionText: { color: COLORS.surface, fontSize: 14, fontWeight: '700' },
-  fab: {
-    position: 'absolute',
-    bottom: 16,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.primary,
+  moodRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  moodButton: {
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  fabText: { fontSize: 28, color: COLORS.surface, lineHeight: 32 },
-  interpretArea: {
-    backgroundColor: COLORS.aiBgSoft,
+    paddingVertical: 8,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.aiBorderSoft,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    marginHorizontal: 2,
   },
-  interpretButton: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  interpretButtonText: { fontSize: 12, color: COLORS.ai, fontWeight: '700' },
-  interpretResult: { gap: 6 },
-  interpretItem: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
-  interpretBullet: { fontSize: 13, color: COLORS.ai, lineHeight: 20, fontWeight: '700' },
-  interpretText: { flex: 1, fontSize: 13, color: COLORS.textBody, lineHeight: 20 },
-  reInterpretButton: {
-    alignSelf: 'flex-start',
-    marginTop: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+  moodEmoji: { fontSize: 26 },
+  memoInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    color: COLORS.text,
+    minHeight: 64,
+    textAlignVertical: 'top',
+    marginBottom: 12,
+  },
+  submitButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  submitButtonDisabled: { opacity: 0.4 },
+  submitButtonText: { color: COLORS.surface, fontSize: 15, fontWeight: '700' },
+  sectionTitle: { fontSize: 13, color: COLORS.textMuted, fontWeight: '700', marginBottom: 10 },
+  emptyText: { fontSize: 13, color: COLORS.textWeak, marginBottom: 12, paddingLeft: 4 },
+  myEntryWrapper: {
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.aiBorderSoft,
+    marginBottom: 10,
   },
-  reInterpretButtonText: { fontSize: 11, color: COLORS.ai, fontWeight: '600' },
+  partnerEntryWrapper: {
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.partner,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  showMoreButton: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  showMoreText: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
+  moodModalSheet: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    gap: 12,
+  },
+  moodModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  moodModalTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
+  moodModalClose: { fontSize: 18, color: COLORS.textMuted },
+  moodModalLabel: { fontSize: 13, fontWeight: '600', color: COLORS.textMuted, marginBottom: 6 },
+  moodModalInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: COLORS.text,
+    minHeight: 120,
+    textAlignVertical: 'top',
+  },
 });

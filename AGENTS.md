@@ -30,7 +30,7 @@ UI実装・スタイル決定・新規画面作成・色やサイズの判断を
 
 ---
 
-## 進捗状況（2026-05-06 時点）
+## 進捗状況（2026-05-17 時点）
 
 | Week | 内容 | 状態 |
 |---|---|---|
@@ -43,9 +43,9 @@ UI実装・スタイル決定・新規画面作成・色やサイズの判断を
 | W6.6 | AI月次要約UI・壁打ちUX向上・ホーム意図読み解き | ✅ 実装済み |
 | W6.7 | 通知・日時入力UX改善 | ✅ 実装済み |
 | LP | ランディングページ（futakoto.jp）・Firebase Hosting | ✅ 公開済み |
-| W5 | 課金導線（RevenueCat）・広告（AdMob） | 未着手 |
+| W5 | 課金導線（RevenueCat + PaywallModal + Webhook）・AdMobは採用見送り | ✅ 実装済み |
 | W7 | プライバシーポリシー・利用規約・アカウント削除 | ✅ 完了（privacy.html / support.html / deleteAccount CF） |
-| W8 | TestFlight → App Store審査提出 | TestFlight実機検証待ち |
+| W8 | TestFlight → App Store審査提出 | 🔄 build 18 TestFlight提出済み（2026-05-17）。App Store提出は5/31予定 |
 
 ---
 
@@ -321,8 +321,8 @@ curl -i -X POST https://asia-northeast1-futakoto.cloudfunctions.net/aiRewrite \
 | DB | Firestore（東京リージョン） | 同上 |
 | Functions | Cloud Functions v2（asia-northeast1） | firebase-functions ^6.1.0, Node 20 |
 | AI | Gemini 2.5 Flash | @google/generative-ai ^0.21.0 |
-| 課金（未実装） | RevenueCat | - |
-| 広告（未実装） | AdMob | - |
+| 課金 | RevenueCat | react-native-purchases |
+| 広告 | 採用見送り（体験を阻害するため）| — |
 
 **Firebaseプロジェクト**: `futakoto`（Blazeプラン・予算アラート¥1,000設定済み）
 **Gemini APIキー**: Secret Manager に `GEMINI_API_KEY` として保存済み
@@ -342,7 +342,13 @@ curl -i -X POST https://asia-northeast1-futakoto.cloudfunctions.net/aiRewrite \
 │       ├── consult.tsx           # 相談（AI相談 + 自分専用保存 + 投稿転記）
 │       ├── post.tsx              # 投稿画面（AI読み取り + リライト付き）
 │       ├── calendar.tsx          # 振り返り（カレンダーUI + フィルタ）
-│       └── settings.tsx          # 設定（招待コード・displayName）
+│       ├── settings/             # 設定（招待コード・displayName・通知・AI・アカウント）
+│       │   ├── _layout.tsx
+│       │   ├── index.tsx         # 設定トップ
+│       │   ├── account.tsx       # アカウント削除・データエクスポート
+│       │   ├── ai.tsx            # AI設定（aiPersona・communicationStyle・クォータ）
+│       │   ├── notifications.tsx # 通知設定
+│       │   └── partner.tsx       # ペアリング管理
 ├── lib/
 │   ├── firebase.ts               # Firebase初期化（auth, db, functions）
 │   ├── auth.tsx                  # 認証Context
@@ -352,7 +358,14 @@ curl -i -X POST https://asia-northeast1-futakoto.cloudfunctions.net/aiRewrite \
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── src/
-│       └── index.ts              # 4つのCloud Functions
+│       ├── index.ts              # Cloud Functions エントリ（全関数export）
+│       ├── ai-functions.ts       # AI系（aiRewrite/aiConsult/aiDraft/aiInterpret/aiSummary）
+│       ├── account.ts            # deleteAccount
+│       ├── pairing.ts            # pairWithCode / unpairPartner
+│       ├── triggers.ts           # Firestoreトリガー（通知など）
+│       ├── notifications.ts      # Push通知ヘルパー
+│       ├── revenuecat-webhook.ts # RevenueCat課金Webhook
+│       └── shared.ts             # 定数・型・初期化（AI_FREE_MONTHLY_LIMIT等）
 ├── web/
 │   └── index.html                # ランディングページ（Firebase Hosting で公開中）
 ├── .design/
@@ -377,7 +390,7 @@ curl -i -X POST https://asia-northeast1-futakoto.cloudfunctions.net/aiRewrite \
 | 表示名 | ユーザー入力（設定画面で編集可） |
 | 投稿の削除 | 可（自分の投稿のみ・確認ダイアログ） |
 | 公開範囲の後変更 | 可（カードタップ → アクションシート） |
-| マネタイズ | 無料 + 買い切り¥980（広告非表示）+ 月額¥500（AI無制限） |
+| マネタイズ | 無料（AI月5回）+ 月額¥500 Premium（AI無制限 / 振り返り全期間 / 壁打ち履歴 / PDFエクスポート）。買い切り・広告なし |
 | AIモデル | Gemini 2.5 Flash |
 
 ---
@@ -553,10 +566,9 @@ AI相談の自分専用記録。相手には見せない。
 **現在の残課題は `docs/2026-05-08-review-fix-plan-v2.md` を参照すること。**
 
 優先順位の要約:
-1. P1-2/P1-4/P1-5（Authエラー日本語化・ログアウト確認・COLORSトークン統一）
-2. P0-5（TestFlight実機検証 → App Store提出）
-3. P1-1/P1-3/P1-6/P1-7/P1-9/P1-10/P1-11（品質向上）
-4. W5（RevenueCat課金・AdMob広告）
+1. `docs/reviews/2026-05-17-launch-ready-fixplan.md` の F1-F6（リリース前修正）
+2. `docs/CODEX-TASK.md` の Fix 1-6（セキュリティ・バグ修正）
+3. build 18 実機スモークテスト → Sandbox課金検証 → App Store審査提出（5/31）
 
 ---
 
@@ -626,7 +638,7 @@ firebase logout && firebase login
 
 ## 開発者向けTips
 
-- **このディレクトリはGit repoではない**: 2026-05-06時点で `/Users/okabehiroyuki/futakoto` は `git status` が失敗する。変更履歴は手元ファイルとこの `AGENTS.md` を信じること
+- **このディレクトリはGit repoである**: `git log` で変更履歴を確認できる
 - **新機能追加時**: まず `lib/db.ts` または `lib/ai.ts` に関数を追加し、UI コンポーネントから呼ぶ
 - **画面追加時**: `app/(app)/` 配下にファイル追加。`_layout.tsx` のタブ定義も更新（タブから隠す場合は `href: null`）
 - **Firestore操作時**: 必ず `try/catch` し、ユーザーに `Alert.alert` でエラーを見せる
@@ -636,7 +648,7 @@ firebase logout && firebase login
 - **返信機能**: 2026-05-06に不採用。チャット化・既読プレッシャーを避ける
 - **お気に入り**: 自分だけの印。相手に通知・表示しない
 - **デザイントーン**: 詳細は `.design/system.md` を参照。色・サイズ・トーン判断はすべてこのファイル基準
-- **絵文字スコア対応**: `MOOD_EMOJI = ['', '😣', '😔', '😐', '🙂', '😊']`, `MOOD_COLORS = ['', '#E57373', '#FFB74D', '#FFF176', '#AED581', '#81D4FA']`
+- **絵文字スコア対応**: `MOOD_EMOJI = ['', '😣', '😔', '😐', '🙂', '😊']`, `MOOD_COLORS = ['', '#D4A0A0', '#C8BFA8', '#B8C4B0', '#8EAF98', '#6B9678']`（くすみアースカラー。`lib/mood.ts` が正）
 
 ---
 

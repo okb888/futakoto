@@ -11,13 +11,12 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { ArrowRight, Sparkle, Star, Trash, X } from 'phosphor-react-native';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { ArrowRight, Sparkle, Star, X } from 'phosphor-react-native';
 import { useConsultSession } from '../../hooks/useConsultSession';
-import { formatShortDate } from '../../lib/format';
 import { COLORS } from '../../lib/theme';
 import { useAuth } from '../../lib/auth';
-import { setAiConsentAcknowledged } from '../../lib/db';
+import { setAiConsentAcknowledged, AI_FREE_MONTHLY_LIMIT } from '../../lib/db';
 import { AiQuotaChip } from '../../components/AiQuotaChip';
 import { PaywallModal } from '../../components/PaywallModal';
 import { AiConsentModal } from '../../components/AiConsentModal';
@@ -26,6 +25,7 @@ export default function ConsultScreen() {
   const params = useLocalSearchParams<{ sessionId?: string }>();
   const focusSessionId = typeof params.sessionId === 'string' ? params.sessionId : undefined;
   const navigation = useNavigation();
+  const router = useRouter();
   const { user, profile, refreshProfile } = useAuth();
 
   const [paywallOpen, setPaywallOpen] = useState(false);
@@ -40,8 +40,6 @@ export default function ConsultScreen() {
     sessionId,
     isFavorited,
     loading,
-    recentSessions,
-    expandedSessionId, setExpandedSessionId,
     togglingFavorite,
     optionsModalOpen, setOptionsModalOpen,
     draftOptions,
@@ -56,10 +54,7 @@ export default function ConsultScreen() {
     handleConsult,
     toggleCollapse,
     handleStartNewConversation,
-    handleResumeSession,
     handleToggleFavorite,
-    handleToggleSessionFavorite,
-    handleDeleteSession,
     useAsPost,
     openDraftOptions,
     handleSelectOption,
@@ -94,6 +89,16 @@ export default function ConsultScreen() {
 
   // AI同意がまだなら確認モーダルを挟む
   async function ensureConsentAndConsult() {
+    // AI上限チェック（premiumでない場合のみ）
+    if (profile && !profile.premium) {
+      const used = profile.aiCreditsUsed ?? 0;
+      if (used >= AI_FREE_MONTHLY_LIMIT) {
+        setPaywallReason(undefined);
+        setPaywallOpen(true);
+        return;
+      }
+    }
+
     if (profile && profile.aiConsentAcknowledged !== true) {
       setPendingSend(true);
       setConsentOpen(true);
@@ -122,7 +127,7 @@ export default function ConsultScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>壁打ち</Text>
+        <Text style={styles.title}>AIに話す</Text>
 
         {/* 今の会話 */}
         {conversation.length > 0 && (
@@ -324,7 +329,7 @@ export default function ConsultScreen() {
                 <>
                   <Sparkle size={16} color={COLORS.ai} weight="fill" />
                   <Text style={styles.aiButtonText}>
-                    {conversation.length === 0 ? 'AIと壁打ちする' : 'さらに深める'}
+                    {conversation.length === 0 ? 'AIに話す' : 'さらに深める'}
                   </Text>
                 </>
               )}
@@ -338,107 +343,18 @@ export default function ConsultScreen() {
           </>
         )}
 
-        {/* 過去の記録 */}
-        <Text style={styles.lead}>過去の記録</Text>
-
-        {recentSessions.length === 0 ? (
-          <Text style={styles.empty}>まだ記録がありません</Text>
-        ) : (
-          <View style={styles.sessionList}>
-            {recentSessions.map((session) => {
-              const isExpanded = expandedSessionId === session.id;
-              const firstInput = session.turns[0]?.input ?? '';
-              return (
-                <View key={session.id} style={styles.sessionCard}>
-                  <TouchableOpacity
-                    style={styles.sessionHeader}
-                    onPress={() => setExpandedSessionId(isExpanded ? null : (session.id ?? null))}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.sessionHeaderLeft}>
-                      <Text style={styles.sessionDate}>{formatShortDate(session.createdAt)}</Text>
-                      <Text style={styles.sessionPreview} numberOfLines={1}>{firstInput}</Text>
-                    </View>
-                    <View style={styles.sessionHeaderRight}>
-                      <Text style={styles.sessionTurnsLabel}>{session.turns.length}往復</Text>
-                      <TouchableOpacity
-                        style={styles.resumeButton}
-                        onPress={() => handleResumeSession(session)}
-                        hitSlop={6}
-                      >
-                        <Text style={styles.resumeButtonText}>続きから話す</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleToggleSessionFavorite(session)}
-                        hitSlop={8}
-                      >
-                        <Star
-                          size={16}
-                          color={session.favored ? COLORS.primary : COLORS.disabled}
-                          weight={session.favored ? 'fill' : 'regular'}
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleDeleteSession(session)}
-                        hitSlop={8}
-                      >
-                        <Trash size={15} color={COLORS.textMuted} />
-                      </TouchableOpacity>
-                      <Text style={styles.collapseToggle}>{isExpanded ? '▲' : '▼'}</Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  {isExpanded && (
-                    <View style={styles.sessionBody}>
-                      {session.turns.map((turn, i) => (
-                        <View key={i} style={styles.sessionTurnItem}>
-                          <View style={styles.sessionTurnHeader}>
-                            <View style={styles.turnBadge}>
-                              <Text style={styles.turnBadgeText}>{i + 1}</Text>
-                            </View>
-                            <Text style={styles.sessionTurnInput}>{turn.input}</Text>
-                          </View>
-                          <View style={styles.aiCard}>
-                            <Text style={styles.aiCardLabel}>整理メモ</Text>
-                            <Text style={styles.cardText}>{turn.reflection}</Text>
-                          </View>
-                          {turn.messageDraft ? (
-                            <View style={styles.partnerDraftCard}>
-                              <Text style={styles.partnerDraftLabel}>{partnerName}に伝える文（旧）</Text>
-                              <Text style={styles.cardText}>{turn.messageDraft}</Text>
-                              <TouchableOpacity
-                                style={styles.usePostButton}
-                                onPress={() => useAsPost(turn.messageDraft!, session.id)}
-                              >
-                                <ArrowRight size={13} color={COLORS.primary} weight="bold" />
-                                <Text style={styles.usePostButtonText}>投稿に使う</Text>
-                              </TouchableOpacity>
-                            </View>
-                          ) : null}
-                        </View>
-                      ))}
-                      {session.lastDraft ? (
-                        <View style={styles.sessionLastDraft}>
-                          <Text style={styles.partnerDraftLabel}>
-                            最新の文案（{session.lastDraft.intent}）
-                          </Text>
-                          <Text style={styles.cardText}>{session.lastDraft.messageDraft}</Text>
-                          <TouchableOpacity
-                            style={styles.usePostButton}
-                            onPress={() => useAsPost(session.lastDraft!.messageDraft, session.id)}
-                          >
-                            <ArrowRight size={13} color={COLORS.primary} weight="bold" />
-                            <Text style={styles.usePostButtonText}>投稿に使う</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : null}
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        )}
+        {/* 過去の相談へのリンク */}
+        <TouchableOpacity
+          style={styles.viewPastLink}
+          onPress={() => router.push({
+            pathname: '/(app)/calendar',
+            params: { viewMode: 'log', typeFilter: 'consultation' },
+          })}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.viewPastLinkText}>過去の相談を見る</Text>
+          <ArrowRight size={15} color={COLORS.ai} weight="bold" />
+        </TouchableOpacity>
       </ScrollView>
 
       {/* 伝え方の選択モーダル */}
@@ -749,6 +665,19 @@ const styles = StyleSheet.create({
   usePostButtonText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
 
   empty: { textAlign: 'center', color: COLORS.placeholder, fontSize: 13, paddingVertical: 20 },
+  viewPastLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginTop: 20,
+  },
+  viewPastLinkText: { fontSize: 14, color: COLORS.ai, fontWeight: '600' },
   sessionList: { gap: 10 },
   sessionCard: {
     backgroundColor: COLORS.surface,
