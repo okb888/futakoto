@@ -1,6 +1,6 @@
 # ふたこと リリースステータス
 
-**最終更新**: 2026-05-17（UIロールバック版 build 17 + EAS Update有効化を提出済み）
+**最終更新**: 2026-05-17（UIロールバック版をEAS Updateでproduction配信済み）
 **目標**: 2026年8月31日までに月額¥500の課金が1人発生
 **直近マイルストーン**: TestFlight内部配布 → β検証 → 5/31 App Store審査提出
 
@@ -13,8 +13,8 @@
 
 | 優先 | タスク | 完了条件 |
 |---|---|---|
-| **1** | Apple処理完了後、TestFlight build 17 をインストール | TestFlight上でbuild 17が選択可能 |
-| **2** | build 17インストール → 実機スモークテスト（ログイン・チュートリアル・ホーム・投稿・振り返り） | ログイン/チュートリアル維持、UI復旧 |
+| **1** | TestFlight build 17 を再起動してEAS Updateを反映 | production update適用後にUI復旧 |
+| **2** | 実機スモークテスト（ログイン・チュートリアル・ホーム・投稿・振り返り） | ログイン/チュートリアル維持、UI復旧 |
 | **3** | Apple処理完了次第 → Sandbox 課金フロー検証 | 購入→更新→解約→復元の一連が通る |
 
 ---
@@ -25,7 +25,7 @@
 A. AI精度改善 ───────✅ 完了（archive/done.md 参照）
 B. 認証拡張   ───────🟢 コード実装完了・webClientID投入済み → 実機確認待ち
 C. 課金UI    ───────🟡 SDK統合・EAS設定・Webhook設定完了 → Sandbox検証待ち
-D. リリース準備 ─────🟡 build 17 App Store Connect アップロード完了・Apple処理待ち
+D. リリース準備 ─────🟡 build 17 + production EAS Update 配信済み・実機確認待ち
 E. SNS運用   ───────🔴 未着手（別スレッド予定）
 F. LP修正    ───────🟡 仮ページ公開中・本番版未作成
 G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
@@ -79,11 +79,12 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 | 項目 | 状態 |
 |---|---|
 | TestFlight | build 16提出済み。ただしUI悪化。UIロールバック版 build 17 を提出済み |
-| **次build確認** | build 17でログイン/チュートリアルが残り、UIが戻っているか確認 |
+| **次build確認** | build 17でproduction update適用後、ログイン/チュートリアルが残り、UIが戻っているか確認 |
 | Apple Developer Program | 承認済み |
 | Bundle ID | `com.futakoto.app` 登録済み |
 | EAS iOS build | build 17 成功（Build ID: `d4bcc9cc-d1d3-4453-808e-ce218952e523` / build 17以降はEAS Update対応） |
 | App Store Connect | build 17 アップロード完了・Apple処理待ち |
+| EAS Update | production配信済み（Update group: `5ee34a59-c6d8-43c9-a028-04b23fcc9ed3`） |
 | TestFlight URL | https://appstoreconnect.apple.com/apps/6768653868/testflight/ios |
 | App Privacy Manifest（iOS17+） | app.json に設定済み |
 | AI送信に関する同意UI | 実装済み・実機確認待ち |
@@ -100,6 +101,7 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 - [x] build 16でUI悪化を確認
 - [x] EAS Update設定追加（`expo-updates` / `updates.url` / `runtimeVersion: fingerprint` / channel設定）
 - [x] UIロールバック版を App Store Connect / TestFlight へ提出（build 17）
+- [x] UIロールバック版を EAS Update production に配信
 - [ ] build 17の実機スモークテスト（ログイン・チュートリアル・ホーム・投稿・振り返り）
 - [x] 初回起動オンボーディング実装（`components/OnboardingModal.tsx` + `app/(app)/index.tsx`、AsyncStorage `hasSeenOnboarding` で初回のみ表示）
 - [ ] **オンボーディングUX確認**（初回3枚スライド→設定で招待コード共有→パートナーインストール→ペアリング完了の流れが自然か）← UX分析より

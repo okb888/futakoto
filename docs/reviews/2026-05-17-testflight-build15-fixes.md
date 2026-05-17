@@ -90,6 +90,13 @@ build 16でログインとチュートリアルは動作確認できた一方、
   - Submission ID: `80157b09-22c0-4694-95f6-bd9fb3b66c93`
   - Submission details: https://expo.dev/accounts/h.okb/projects/futakoto/submissions/80157b09-22c0-4694-95f6-bd9fb3b66c93
   - App Store Connect / TestFlight: https://appstoreconnect.apple.com/apps/6768653868/testflight/ios
+- EAS Update 配信
+  - Channel / branch: `production`
+  - Runtime version: `f09ee4c59864a80773dcaf4b0d6ee1fcbaa19986`
+  - Update group ID: `5ee34a59-c6d8-43c9-a028-04b23fcc9ed3`
+  - iOS update ID: `019e3562-6b3e-7fe4-be2e-1a46d17e7a6f`
+  - Message: `Restore UI from build 15 baseline`
+  - EAS Dashboard: https://expo.dev/accounts/h.okb/projects/futakoto/updates/5ee34a59-c6d8-43c9-a028-04b23fcc9ed3
 
 ---
 
