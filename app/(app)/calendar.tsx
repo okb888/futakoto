@@ -115,9 +115,9 @@ export default function CalendarScreen() {
   const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<string | undefined>(undefined);
-  const [calendarKey, setCalendarKey] = useState(0);
 
   const premium = isPremium(authProfile ?? null, partnerProfile);
+  const monthLocked = !premium && isPastMonth(currentMonth);
 
   function actionKey(entry: Entry): string {
     return `${entry.uid}_${entry.id ?? ''}`;
@@ -130,6 +130,13 @@ export default function CalendarScreen() {
 
   async function loadMonthEntries(monthStr: string, cache: Record<string, Entry[]>) {
     if (!user) return;
+    if (!premium && isPastMonth(monthStr)) {
+      setMyEntries([]);
+      setPartnerEntries([]);
+      setConsultations([]);
+      setLoading(false);
+      return;
+    }
     if (cache[monthStr]) {
       setMyEntries(cache[monthStr]);
       return;
@@ -155,6 +162,29 @@ export default function CalendarScreen() {
       if (!isCancelled()) setLoading(false);
       return;
     }
+    let pp: UserProfile | null = null;
+    if (p?.partnerUid) {
+      pp = await getUserProfile(p.partnerUid);
+      if (isCancelled()) return;
+      setPartnerProfile(pp);
+    } else {
+      setPartnerProfile(null);
+      if (summaryTarget === 'partner') {
+        setSummaryTarget('me');
+        setAiSummaryText(aiSummaryCache[`${currentMonth}-me`] ?? null);
+      }
+      if (filter === 'partner') setFilter('all');
+    }
+
+    if (!isPremium(p, pp) && isPastMonth(currentMonth)) {
+      setMyEntries([]);
+      setPartnerEntries([]);
+      setConsultations([]);
+      setFavoriteIds(new Set());
+      setLoading(false);
+      return;
+    }
+
     const { start, end } = getMonthBounds(currentMonth);
     const [my, savedConsultations, favorites] = await Promise.all([
       getEntriesInRange(user.uid, start, end),
@@ -168,9 +198,6 @@ export default function CalendarScreen() {
     setConsultations(savedConsultations);
     setFavoriteIds(favorites);
     if (p?.partnerUid) {
-      const pp = await getUserProfile(p.partnerUid);
-      if (isCancelled()) return;
-      setPartnerProfile(pp);
       const partner = await getPartnerSharedEntries(p.partnerUid, 500);
       if (isCancelled()) return;
       setPartnerEntries(partner);
@@ -191,6 +218,8 @@ export default function CalendarScreen() {
     load(() => cancelled);
     return () => {
       cancelled = true;
+      setFilter('all');
+      setSortOrder('desc');
     };
   }, [user, authProfile, currentMonth]));
 
@@ -205,13 +234,16 @@ export default function CalendarScreen() {
     const newMonth = `${date.year}-${String(date.month).padStart(2, '0')}`;
     if (newMonth === currentMonth) return;
 
-    // 無料ユーザーは過去月を閲覧できない（Premium 特典: 全期間振り返り）
     if (!premium && isPastMonth(newMonth)) {
       setPaywallReason('過去の月を振り返れるのはプレミアム特典です');
       setPaywallOpen(true);
-      // 月表示を当月に戻す（react-native-calendars は内部状態を持つので key で再描画）
-      setCurrentMonth(thisMonthKey());
-      setCalendarKey((k) => k + 1);
+      setCurrentMonth(newMonth);
+      setSelected(`${newMonth}-01`);
+      setMyEntries([]);
+      setPartnerEntries([]);
+      setConsultations([]);
+      setAiSummaryText(null);
+      setSummaryExpanded(false);
       return;
     }
 
@@ -398,9 +430,9 @@ export default function CalendarScreen() {
     const key = day.dateString;
     const selectedDay = key === selected;
     const disabled = state === 'disabled';
-    const myMood = latestMyByDate[key]?.mood;
-    const partnerMood = latestPartnerByDate[key]?.mood;
-    const hasConsultation = !!consultationsByDate[key];
+    const myMood = monthLocked ? undefined : latestMyByDate[key]?.mood;
+    const partnerMood = monthLocked ? undefined : latestPartnerByDate[key]?.mood;
+    const hasConsultation = !monthLocked && !!consultationsByDate[key];
 
     const cellBg = myMood ? MOOD_COLORS[myMood] + '44' : 'transparent';
 
@@ -434,6 +466,12 @@ export default function CalendarScreen() {
     { key: 'favorite', label: 'お気に入り' },
     { key: 'consultation', label: '相談' },
   ];
+  const hasActiveControls = filter !== 'all' || sortOrder !== 'desc';
+
+  function resetControls() {
+    setFilter('all');
+    setSortOrder('desc');
+  }
 
   if (loading) {
     return (
@@ -446,7 +484,6 @@ export default function CalendarScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Calendar
-        key={calendarKey}
         current={`${currentMonth}-01`}
         markedDates={markedDates}
         onDayPress={(d) => setSelected(d.dateString)}
@@ -518,9 +555,9 @@ export default function CalendarScreen() {
           </TouchableOpacity>
         </View>
         <TouchableOpacity
-          style={[styles.summaryButton, aiSummaryLoading && { opacity: 0.6 }]}
+          style={[styles.summaryButton, (aiSummaryLoading || monthLocked) && { opacity: 0.6 }]}
           onPress={handleAiSummary}
-          disabled={aiSummaryLoading}
+          disabled={aiSummaryLoading || monthLocked}
         >
           {aiSummaryLoading ? (
             <ActivityIndicator color={COLORS.ai} size="small" />
@@ -588,15 +625,39 @@ export default function CalendarScreen() {
 
       <View style={styles.sortRow}>
         <Text style={styles.dateTitle}>{selected.replace(/-/g, '/')}</Text>
-        <TouchableOpacity
-          style={styles.sortButton}
-          onPress={() => setSortOrder((current) => current === 'desc' ? 'asc' : 'desc')}
-        >
-          <Text style={styles.sortButtonText}>{sortOrder === 'desc' ? '新しい順' : '古い順'}</Text>
-        </TouchableOpacity>
+        <View style={styles.sortActions}>
+          {hasActiveControls ? (
+            <TouchableOpacity style={styles.resetButton} onPress={resetControls}>
+              <Text style={styles.resetButtonText}>リセット</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity
+            style={styles.sortButton}
+            onPress={() => setSortOrder((current) => current === 'desc' ? 'asc' : 'desc')}
+          >
+            <Text style={styles.sortButtonText}>{sortOrder === 'desc' ? '新しい順' : '古い順'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {!premium ? (
+      {monthLocked ? (
+        <TouchableOpacity
+          style={styles.lockedMonthCard}
+          onPress={() => {
+            setPaywallReason('過去の月を振り返れるのはプレミアム特典です');
+            setPaywallOpen(true);
+          }}
+          activeOpacity={0.75}
+        >
+          <Sparkle size={16} color={COLORS.ai} weight="fill" />
+          <View style={styles.lockedMonthTextBlock}>
+            <Text style={styles.lockedMonthTitle}>過去月の記録はプレミアムで表示</Text>
+            <Text style={styles.lockedMonthText}>
+              カレンダーは確認できます。記録内容と色の振り返りはプレミアムで開けます。
+            </Text>
+          </View>
+        </TouchableOpacity>
+      ) : !premium ? (
         <TouchableOpacity
           style={styles.premiumHint}
           onPress={() => {
@@ -612,7 +673,7 @@ export default function CalendarScreen() {
         </TouchableOpacity>
       ) : null}
 
-      {selectedDayRecords.length === 0 ? (
+      {monthLocked ? null : selectedDayRecords.length === 0 ? (
         <Text style={styles.empty}>この日の記録はありません</Text>
       ) : (
         selectedDayRecords.map((record) => {
@@ -774,6 +835,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   dateTitle: { fontSize: 14, fontWeight: '600', color: COLORS.textSubtle },
+  sortActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  resetButton: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  resetButtonText: { fontSize: 12, color: COLORS.textMuted, fontWeight: '700' },
   sortButton: {
     backgroundColor: COLORS.surface,
     borderWidth: 1,
@@ -860,4 +931,19 @@ const styles = StyleSheet.create({
     borderColor: COLORS.aiBorderSoft,
   },
   premiumHintText: { fontSize: 12, color: COLORS.ai, fontWeight: '600' },
+  lockedMonthCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: COLORS.aiBgSoft,
+    borderWidth: 1,
+    borderColor: COLORS.aiBorderSoft,
+  },
+  lockedMonthTextBlock: { flex: 1 },
+  lockedMonthTitle: { fontSize: 13, color: COLORS.ai, fontWeight: '700', marginBottom: 4 },
+  lockedMonthText: { fontSize: 12, color: COLORS.textMuted, lineHeight: 18 },
 });

@@ -1,23 +1,13 @@
 import { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
   ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-} from 'firebase/auth';
-import { auth } from '../lib/firebase';
-import { firebaseErrorMessage } from '../lib/errors';
 import { COLORS } from '../lib/theme';
 import {
   signInWithApple,
@@ -26,30 +16,9 @@ import {
 } from '../lib/auth-providers';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isRegister, setIsRegister] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'apple' | 'google' | null>(
     null
   );
-
-  async function handleSubmit() {
-    if (!email || !password) return;
-    setLoading(true);
-    try {
-      if (isRegister) {
-        const { user } = await createUserWithEmailAndPassword(auth, email, password);
-        await sendEmailVerification(user).catch(() => {});
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-    } catch (e: any) {
-      Alert.alert('エラー', firebaseErrorMessage(e));
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleApple() {
     if (socialLoading) return;
@@ -73,118 +42,58 @@ export default function LoginScreen() {
 
   const showApple = Platform.OS === 'ios';
   const showGoogle = isGoogleSignInConfigured();
-  const showSocialBlock = showApple || showGoogle;
-  const anyBusy = loading || socialLoading !== null;
+  const anyBusy = socialLoading !== null;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={styles.container}>
       <View style={styles.inner}>
         <Text style={styles.logo}>ふたこと</Text>
         <Text style={styles.tagline}>一言を、ふたりで。</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="メールアドレス"
-          placeholderTextColor="#AAA"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="パスワード（6文字以上）"
-          placeholderTextColor="#AAA"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-
-        <TouchableOpacity
-          style={[styles.button, anyBusy && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={anyBusy}
-        >
-          {loading ? (
-            <ActivityIndicator color={COLORS.surface} />
-          ) : (
-            <Text style={styles.buttonText}>
-              {isRegister ? 'アカウントを作成' : 'ログイン'}
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        {showSocialBlock && (
-          <>
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>または</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {showApple && (
-              <TouchableOpacity
-                style={[styles.appleButton, anyBusy && styles.buttonDisabled]}
+        {showApple ? (
+          <View
+            style={[styles.appleButton, anyBusy && styles.buttonDisabled]}
+            pointerEvents={anyBusy ? 'none' : 'auto'}
+          >
+            {socialLoading === 'apple' ? (
+              <ActivityIndicator color={COLORS.surface} />
+            ) : (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={12}
+                style={styles.appleNativeButton}
                 onPress={handleApple}
-                disabled={anyBusy}
-                activeOpacity={0.8}
-              >
-                {socialLoading === 'apple' ? (
-                  <ActivityIndicator color={COLORS.surface} />
-                ) : (
-                  <View style={styles.socialInner}>
-                    <AppleAuthentication.AppleAuthenticationButton
-                      buttonType={
-                        AppleAuthentication.AppleAuthenticationButtonType
-                          .SIGN_IN
-                      }
-                      buttonStyle={
-                        AppleAuthentication.AppleAuthenticationButtonStyle
-                          .BLACK
-                      }
-                      cornerRadius={12}
-                      style={styles.appleNativeButton}
-                      onPress={handleApple}
-                    />
-                  </View>
-                )}
-              </TouchableOpacity>
+              />
             )}
+          </View>
+        ) : null}
 
-            {showGoogle && (
-              <TouchableOpacity
-                style={[styles.googleButton, anyBusy && styles.buttonDisabled]}
-                onPress={handleGoogle}
-                disabled={anyBusy}
-                activeOpacity={0.8}
-              >
-                {socialLoading === 'google' ? (
-                  <ActivityIndicator color={COLORS.text} />
-                ) : (
-                  <View style={styles.socialInner}>
-                    <Text style={styles.googleLogo}>G</Text>
-                    <Text style={styles.googleButtonText}>
-                      Googleでログイン
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
+        {showGoogle ? (
+          <TouchableOpacity
+            style={[styles.googleButton, anyBusy && styles.buttonDisabled]}
+            onPress={handleGoogle}
+            disabled={anyBusy}
+            activeOpacity={0.8}
+          >
+            {socialLoading === 'google' ? (
+              <ActivityIndicator color={COLORS.text} />
+            ) : (
+              <View style={styles.socialInner}>
+                <Text style={styles.googleLogo}>G</Text>
+                <Text style={styles.googleButtonText}>Googleでログイン</Text>
+              </View>
             )}
-          </>
-        )}
+          </TouchableOpacity>
+        ) : null}
 
-        <TouchableOpacity onPress={() => setIsRegister(!isRegister)} disabled={anyBusy}>
-          <Text style={styles.toggle}>
-            {isRegister
-              ? 'すでにアカウントをお持ちの方はこちら'
-              : 'アカウントをお持ちでない方はこちら'}
+        {!showApple && !showGoogle ? (
+          <Text style={styles.unavailableText}>
+            この端末ではログイン方法を準備できませんでした
           </Text>
-        </TouchableOpacity>
+        ) : null}
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -213,49 +122,9 @@ const styles = StyleSheet.create({
     marginBottom: 48,
     letterSpacing: 1,
   },
-  input: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: COLORS.text,
-    marginBottom: 12,
-  },
-  button: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 8,
-  },
   buttonDisabled: {
     opacity: 0.5,
   },
-  buttonText: {
-    color: COLORS.surface,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.border,
-  },
-  dividerText: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    marginHorizontal: 12,
-  },
-  // Apple HIG準拠: 黒背景・白文字 / ネイティブボタンを内包
   appleButton: {
     borderRadius: 12,
     overflow: 'hidden',
@@ -279,7 +148,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#DADCE0',
-    marginBottom: 24,
+    marginBottom: 10,
     minHeight: 50,
     justifyContent: 'center',
     shadowColor: '#000',
@@ -299,11 +168,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  toggle: {
-    color: COLORS.primary,
+  unavailableText: {
+    color: COLORS.textMuted,
     fontSize: 13,
+    lineHeight: 20,
     textAlign: 'center',
-    textDecorationLine: 'underline',
-    marginTop: 8,
   },
 });
