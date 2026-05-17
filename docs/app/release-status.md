@@ -1,6 +1,6 @@
 # ふたこと リリースステータス
 
-**最終更新**: 2026-05-17（UIロールバック版をEAS Updateでproduction配信済み）
+**最終更新**: 2026-05-17（build 17 runtime一致版のUIロールバックをEAS Updateでproduction配信済み）
 **目標**: 2026年8月31日までに月額¥500の課金が1人発生
 **直近マイルストーン**: TestFlight内部配布 → β検証 → 5/31 App Store審査提出
 
@@ -13,7 +13,7 @@
 
 | 優先 | タスク | 完了条件 |
 |---|---|---|
-| **1** | TestFlight build 17 を再起動してEAS Updateを反映 | production update適用後にUI復旧 |
+| **1** | TestFlight build 17 を完全終了→再起動してEAS Updateを反映 | production update適用後にUI復旧 |
 | **2** | 実機スモークテスト（ログイン・チュートリアル・ホーム・投稿・振り返り） | ログイン/チュートリアル維持、UI復旧 |
 | **3** | Apple処理完了次第 → Sandbox 課金フロー検証 | 購入→更新→解約→復元の一連が通る |
 
@@ -84,7 +84,7 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 | Bundle ID | `com.futakoto.app` 登録済み |
 | EAS iOS build | build 17 成功（Build ID: `d4bcc9cc-d1d3-4453-808e-ce218952e523` / build 17以降はEAS Update対応） |
 | App Store Connect | build 17 アップロード完了・Apple処理待ち |
-| EAS Update | production配信済み（Update group: `5ee34a59-c6d8-43c9-a028-04b23fcc9ed3`） |
+| EAS Update | production配信済み（Build 17 runtime一致版 Update group: `7b83ad3e-7d9f-4d7b-8c72-a0b401bb8e36`） |
 | TestFlight URL | https://appstoreconnect.apple.com/apps/6768653868/testflight/ios |
 | App Privacy Manifest（iOS17+） | app.json に設定済み |
 | AI送信に関する同意UI | 実装済み・実機確認待ち |
@@ -102,6 +102,7 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 - [x] EAS Update設定追加（`expo-updates` / `updates.url` / `runtimeVersion: fingerprint` / channel設定）
 - [x] UIロールバック版を App Store Connect / TestFlight へ提出（build 17）
 - [x] UIロールバック版を EAS Update production に配信
+- [x] build 17 runtimeVersion一致版のEAS Updateをproductionに再配信（Update group: `7b83ad3e-7d9f-4d7b-8c72-a0b401bb8e36`）
 - [ ] build 17の実機スモークテスト（ログイン・チュートリアル・ホーム・投稿・振り返り）
 - [x] 初回起動オンボーディング実装（`components/OnboardingModal.tsx` + `app/(app)/index.tsx`、AsyncStorage `hasSeenOnboarding` で初回のみ表示）
 - [ ] **オンボーディングUX確認**（初回3枚スライド→設定で招待コード共有→パートナーインストール→ペアリング完了の流れが自然か）← UX分析より

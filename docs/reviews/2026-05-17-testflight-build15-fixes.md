@@ -97,6 +97,13 @@ build 16でログインとチュートリアルは動作確認できた一方、
   - iOS update ID: `019e3562-6b3e-7fe4-be2e-1a46d17e7a6f`
   - Message: `Restore UI from build 15 baseline`
   - EAS Dashboard: https://expo.dev/accounts/h.okb/projects/futakoto/updates/5ee34a59-c6d8-43c9-a028-04b23fcc9ed3
+- EAS Update 再配信（build 17 runtimeVersion一致版）
+  - Channel / branch: `production`
+  - Runtime version: `bf2feced9265c7a3b546aa2ae67e74683ba50d16`
+  - Update group ID: `7b83ad3e-7d9f-4d7b-8c72-a0b401bb8e36`
+  - iOS update ID: `019e35a2-ca11-77ed-b566-455d52c1b87f`
+  - Message: `Restore UI for build 17 runtime`
+  - EAS Dashboard: https://expo.dev/accounts/h.okb/projects/futakoto/updates/7b83ad3e-7d9f-4d7b-8c72-a0b401bb8e36
 
 ---
 
