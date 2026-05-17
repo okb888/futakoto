@@ -62,9 +62,29 @@
 
 ---
 
+## 追加対応: UIロールバック（build 17予定）
+
+build 16でログインとチュートリアルは動作確認できた一方、ホーム・投稿・振り返り・カードのUIが意図せず悪化したため、以下の方針で戻す。
+
+- 残す
+  - `app/login.tsx` のGoogle/Appleログイン対応
+  - `components/OnboardingModal.tsx` のチュートリアル対応
+- 戻す
+  - `app/(app)/index.tsx`
+  - `app/(app)/post.tsx`
+  - `app/(app)/calendar.tsx`
+  - `components/EntryCard.tsx`
+- 戻し先
+  - `7b3d812`（オンボーディング追加後・build 16 UI変更前）
+
+この戻しにより、build 16で追加したホーム当日3件表示、振り返りリセット、過去月paywall、投稿入力キーボード回避は一旦外れる。必要なものは、UI復旧後に見た目を壊さない形で再実装する。
+
+---
+
 ## 確認
 
 - `npx expo export --platform ios --output-dir /tmp/futakoto-export-check` 成功
+- `npx expo export --platform ios --output-dir /tmp/futakoto-ui-rollback-check` 成功
 - EAS production build 成功
   - Build ID: `52de6598-a8f5-4e1b-8ef5-91a34d0a1d6c`
   - Build number: `16`

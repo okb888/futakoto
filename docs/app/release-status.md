@@ -1,6 +1,6 @@
 # ふたこと リリースステータス
 
-**最終更新**: 2026-05-17（TestFlight build 15 実機指摘修正版 build 16 を提出済み）
+**最終更新**: 2026-05-17（build 16 UI悪化を受け、UIロールバック版 build 17 を提出準備）
 **目標**: 2026年8月31日までに月額¥500の課金が1人発生
 **直近マイルストーン**: TestFlight内部配布 → β検証 → 5/31 App Store審査提出
 
@@ -13,8 +13,8 @@
 
 | 優先 | タスク | 完了条件 |
 |---|---|---|
-| **1** | Apple処理完了後、TestFlight build 16 をインストール | TestFlight上でbuild 16が選択可能 |
-| **2** | 修正版インストール → 実機スモークテスト（ログイン・投稿入力・ホーム・振り返り） | build 15 指摘が解消している |
+| **1** | UIロールバック版 build 17 をTestFlightへ提出 | `.ipa` 生成・App Store Connectアップロード完了 |
+| **2** | build 17インストール → 実機スモークテスト（ログイン・チュートリアル・ホーム・投稿・振り返り） | ログイン/チュートリアル維持、UI復旧 |
 | **3** | Apple処理完了次第 → Sandbox 課金フロー検証 | 購入→更新→解約→復元の一連が通る |
 
 ---
@@ -25,7 +25,7 @@
 A. AI精度改善 ───────✅ 完了（archive/done.md 参照）
 B. 認証拡張   ───────🟢 コード実装完了・webClientID投入済み → 実機確認待ち
 C. 課金UI    ───────🟡 SDK統合・EAS設定・Webhook設定完了 → Sandbox検証待ち
-D. リリース準備 ─────🟡 build 16 App Store Connect アップロード完了・Apple処理待ち
+D. リリース準備 ─────🟡 build 16 UI悪化 → build 17でUIロールバック予定
 E. SNS運用   ───────🔴 未着手（別スレッド予定）
 F. LP修正    ───────🟡 仮ページ公開中・本番版未作成
 G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
@@ -78,12 +78,12 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 
 | 項目 | 状態 |
 |---|---|
-| TestFlight | build 15 実機確認済み・指摘修正版 build 16 を提出済み |
-| **次build確認** | build 16 が処理完了したらインストールし、ログイン/投稿入力/ホーム/振り返りを再確認 |
+| TestFlight | build 16提出済み。ただしUI悪化のためbuild 17で修正予定 |
+| **次build確認** | build 17でログイン/チュートリアルが残り、UIが戻っているか確認 |
 | Apple Developer Program | 承認済み |
 | Bundle ID | `com.futakoto.app` 登録済み |
-| EAS iOS build | build 16 成功（Build ID: `52de6598-a8f5-4e1b-8ef5-91a34d0a1d6c`） |
-| App Store Connect | build 16 アップロード完了・Apple処理待ち |
+| EAS iOS build | build 17 提出準備中 |
+| App Store Connect | build 16 アップロード完了。build 17で差し替え予定 |
 | TestFlight URL | https://appstoreconnect.apple.com/apps/6768653868/testflight/ios |
 | App Privacy Manifest（iOS17+） | app.json に設定済み |
 | AI送信に関する同意UI | 実装済み・実機確認待ち |
@@ -96,7 +96,10 @@ G. UIデザイン改善 ───✅ 完了（archive/done.md 参照）
 - [x] TestFlight build 15 を実機確認
 - [x] build 15 実機指摘を修正（詳細: [`2026-05-17-testflight-build15-fixes.md`](../reviews/2026-05-17-testflight-build15-fixes.md)）
 - [x] build 15 修正版を App Store Connect / TestFlight へ提出（build 16）
-- [ ] 修正版の実機スモークテスト（ログイン・投稿入力・ホーム・振り返り）
+- [x] build 16でログイン/チュートリアル対応を確認
+- [x] build 16でUI悪化を確認
+- [ ] UIロールバック版を App Store Connect / TestFlight へ提出（build 17）
+- [ ] build 17の実機スモークテスト（ログイン・チュートリアル・ホーム・投稿・振り返り）
 - [x] 初回起動オンボーディング実装（`components/OnboardingModal.tsx` + `app/(app)/index.tsx`、AsyncStorage `hasSeenOnboarding` で初回のみ表示）
 - [ ] **オンボーディングUX確認**（初回3枚スライド→設定で招待コード共有→パートナーインストール→ペアリング完了の流れが自然か）← UX分析より
 - [x] Firebase でプライバシーポリシー・利用規約ページ作成（リンク有効化）

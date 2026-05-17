@@ -38,13 +38,7 @@ export function EntryCard({
   const visibilityLabel = entry.visibility === 'private' ? '自分だけ' : 'ふたりに共有';
 
   return (
-    <View
-      style={[
-        styles.card,
-        isOwn ? styles.ownCard : styles.partnerCard,
-        { borderLeftColor: getMoodColor(entry.mood) },
-      ]}
-    >
+    <View style={[styles.card, { borderLeftColor: getMoodColor(entry.mood) }]}>
       <TouchableOpacity
         activeOpacity={onPressActions ? 0.65 : 1}
         onPress={onPressActions}
@@ -114,7 +108,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderRadius: 14,
     padding: 16,
-    borderWidth: 1,
     borderLeftWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -122,8 +115,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  ownCard: { borderColor: COLORS.primaryBorder },
-  partnerCard: { borderColor: COLORS.partnerBorder },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   cardEmoji: { fontSize: 32 },
   cardMeta: { flex: 1 },

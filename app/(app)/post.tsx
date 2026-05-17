@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -66,7 +66,6 @@ export default function PostScreen() {
   const [pickerMinute, setPickerMinute] = useState(() => new Date().getMinutes());
 
   const [memoFocused, setMemoFocused] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
 
   // AI リライト
   const [aiLoading, setAiLoading] = useState(false);
@@ -254,26 +253,12 @@ export default function PostScreen() {
     setPickerMinute(now.getMinutes());
   }
 
-  function handleMemoFocus() {
-    setMemoFocused(true);
-    setTimeout(() => {
-      scrollRef.current?.scrollTo({ y: 260, animated: true });
-    }, 120);
-  }
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
     >
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
-      >
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         {entryLoading ? (
           <View style={styles.entryLoading}>
             <ActivityIndicator color={COLORS.primary} />
@@ -378,7 +363,7 @@ export default function PostScreen() {
           placeholderTextColor="#999"
           value={memo}
           onChangeText={setMemo}
-          onFocus={handleMemoFocus}
+          onFocus={() => setMemoFocused(true)}
           onBlur={() => setMemoFocused(false)}
           multiline
           numberOfLines={4}

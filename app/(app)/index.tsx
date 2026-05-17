@@ -36,7 +36,7 @@ import {
   UserProfile,
 } from '../../lib/db';
 import { classifyError } from '../../lib/errors';
-import { dateKey, formatEntryDate, sortMillis, todayKey } from '../../lib/format';
+import { formatEntryDate, sortMillis } from '../../lib/format';
 import { getPartnerDisplayName } from '../../lib/profile';
 import { COLORS } from '../../lib/theme';
 
@@ -57,7 +57,6 @@ export default function HomeScreen() {
   const [consentOpen, setConsentOpen] = useState(false);
   const [pendingInterpret, setPendingInterpret] = useState<{ entry: Entry; force: boolean } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showAllToday, setShowAllToday] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem('hasSeenOnboarding').then((val) => {
@@ -120,9 +119,6 @@ export default function HomeScreen() {
       }
 
       setEntries(allEntries);
-      if (allEntries.filter((entry) => dateKey(entry.createdAt) === todayKey()).length <= 3) {
-        setShowAllToday(false);
-      }
     } catch (e: any) {
       console.error('[Home] load全体エラー:', e?.code, e?.message);
     }
@@ -279,14 +275,11 @@ export default function HomeScreen() {
 
   const isPaired = !!profile?.partnerUid;
   const partnerName = getPartnerDisplayName(partnerProfile);
-  const todayEntries = entries.filter((entry) => dateKey(entry.createdAt) === todayKey());
-  const visibleTodayEntries = showAllToday ? todayEntries : todayEntries.slice(0, 3);
-  const hiddenTodayCount = Math.max(todayEntries.length - visibleTodayEntries.length, 0);
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={visibleTodayEntries}
+        data={entries}
         keyExtractor={(item) => item.id! + item.uid}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={styles.list}
@@ -327,27 +320,6 @@ export default function HomeScreen() {
               <Text style={styles.emptyActionText}>最初の記録をする</Text>
             </TouchableOpacity>
           </View>
-        }
-        ListFooterComponent={
-          hiddenTodayCount > 0 ? (
-            <TouchableOpacity
-              style={styles.showMoreTodayButton}
-              onPress={() => setShowAllToday(true)}
-              activeOpacity={0.75}
-            >
-              <Text style={styles.showMoreTodayText}>
-                今日の記録をあと{hiddenTodayCount}件見る
-              </Text>
-            </TouchableOpacity>
-          ) : showAllToday && todayEntries.length > 3 ? (
-            <TouchableOpacity
-              style={styles.showMoreTodayButton}
-              onPress={() => setShowAllToday(false)}
-              activeOpacity={0.75}
-            >
-              <Text style={styles.showMoreTodayText}>最新3件だけ表示する</Text>
-            </TouchableOpacity>
-          ) : null
         }
         renderItem={({ item }) => {
           const isOwn = item.uid === user?.uid;
@@ -402,10 +374,7 @@ export default function HomeScreen() {
             </View>
           ) : undefined;
           return (
-            <View style={styles.entryOwnerBlock}>
-              <Text style={[styles.entryOwnerLabel, isOwn ? styles.ownEntryLabel : styles.partnerEntryLabel]}>
-                {isOwn ? '自分の記録' : `${partnerName}の記録`}
-              </Text>
+            <View>
               <EntryCard
                 entry={item}
                 authorName={authorName}
@@ -510,27 +479,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   emptyActionText: { color: COLORS.surface, fontSize: 14, fontWeight: '700' },
-  showMoreTodayButton: {
-    alignSelf: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.primaryBorder,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    marginTop: 2,
-    marginBottom: 16,
-  },
-  showMoreTodayText: { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
-  entryOwnerBlock: { marginBottom: 2 },
-  entryOwnerLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    marginHorizontal: 20,
-    marginBottom: 6,
-  },
-  ownEntryLabel: { color: COLORS.primaryDeep },
-  partnerEntryLabel: { color: COLORS.partnerText },
   fab: {
     position: 'absolute',
     bottom: 16,
