@@ -5,12 +5,14 @@
   },
   "build": {
     "preview": {
+      "channel": "preview",
       "distribution": "internal",
       "ios": {
         "simulator": false
       }
     },
     "production": {
+      "channel": "production",
       "ios": {
         "autoIncrement": true
       }

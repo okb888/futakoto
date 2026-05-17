@@ -3,6 +3,12 @@
     "name": "ふたこと",
     "slug": "futakoto",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6cf40c14-7b75-471f-9ce5-17d8585326c5"
+    },
     "scheme": "futakoto",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

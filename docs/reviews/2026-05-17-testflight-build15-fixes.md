@@ -79,6 +79,18 @@ build 16でログインとチュートリアルは動作確認できた一方、
 
 この戻しにより、build 16で追加したホーム当日3件表示、振り返りリセット、過去月paywall、投稿入力キーボード回避は一旦外れる。必要なものは、UI復旧後に見た目を壊さない形で再実装する。
 
+### build 17 提出結果
+
+- EAS production build 成功
+  - Build ID: `d4bcc9cc-d1d3-4453-808e-ce218952e523`
+  - Build number: `17`
+  - Build logs: https://expo.dev/accounts/h.okb/projects/futakoto/builds/d4bcc9cc-d1d3-4453-808e-ce218952e523
+  - IPA: https://expo.dev/artifacts/eas/sgDn8wvqMehdZzL4DWymVi.ipa
+- EAS Submit 成功
+  - Submission ID: `80157b09-22c0-4694-95f6-bd9fb3b66c93`
+  - Submission details: https://expo.dev/accounts/h.okb/projects/futakoto/submissions/80157b09-22c0-4694-95f6-bd9fb3b66c93
+  - App Store Connect / TestFlight: https://appstoreconnect.apple.com/apps/6768653868/testflight/ios
+
 ---
 
 ## 確認
