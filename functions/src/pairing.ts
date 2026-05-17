@@ -80,8 +80,14 @@ export const pairWithCode = onCall(PAIR_OPTIONS, async (request) => {
   const { code } = request.data as { code?: string };
   if (!code) throw new HttpsError('invalid-argument', 'コードが必要です');
 
+  // 招待コード形式検証: 6文字、A-Z(I,L,O除く)+2-9
+  const normalizedCode = code.trim().toUpperCase();
+  if (!/^[A-HJ-KM-NP-Z2-9]{6}$/.test(normalizedCode)) {
+    throw new HttpsError('invalid-argument', '招待コードの形式が正しくありません');
+  }
+
   const myUid = request.auth.uid;
-  const codeRef = db.doc(`inviteCodes/${code.toUpperCase()}`);
+  const codeRef = db.doc(`inviteCodes/${normalizedCode}`);
   const myRef = db.doc(`users/${myUid}`);
 
   await db.runTransaction(async (transaction) => {

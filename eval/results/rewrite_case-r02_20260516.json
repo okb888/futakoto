@@ -1,0 +1,125 @@
+[
+  {
+    "caseId": "case-r02",
+    "caseLabel": "相手への不満（直接的）",
+    "sampleId": "r02-s01",
+    "input": "また皿洗いしてない。毎回言わないとやらないし、言ったら言ったで不機嫌になる。もう疲れた。",
+    "mood": 1,
+    "understanding": {
+      "coreFeeling": "夫が家事をしないことへの疲弊と、指摘することへの精神的負担",
+      "importantNuance": "毎回指摘しないと行動せず、指摘すると相手が不機嫌になる状況への疲れ",
+      "messageGoal": "夫に現状の負担を伝え、家事への協力を促す"
+    },
+    "selectedLabels": [
+      "exhausted",
+      "situation",
+      "request"
+    ],
+    "expectedLabels": [
+      "exhausted",
+      "situation",
+      "request"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "exhausted",
+        "label": "疲れ・限界を正直に",
+        "text": "またお皿がそのままになっているのを見ると、毎回お願いして、そのたびにあなたが不機嫌になるのが、もう本当に疲れてしまうよ。"
+      },
+      {
+        "labelKey": "situation",
+        "label": "状況と気持ちをセットで",
+        "text": "お皿洗いを毎回言わないとやらないこと、そして伝えると不機嫌になることが重なって、正直もうしんどいなと感じているんだ。"
+      },
+      {
+        "labelKey": "request",
+        "label": "お願いにする",
+        "text": "お皿洗いについて、言わないとやらない、言ったら不機嫌になるという状況が続くと、私まで気持ちが疲れてしまうから、自主的にやってもらえると助かるな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:15:17.717Z"
+  },
+  {
+    "caseId": "case-r02",
+    "caseLabel": "相手への不満（直接的）",
+    "sampleId": "r02-s02",
+    "input": "仕事の愚痴は毎日聞くのに、私の話は「うん」だけで流される。",
+    "mood": 2,
+    "understanding": {
+      "coreFeeling": "自分の話が真剣に聞いてもらえず寂しい、虚しい",
+      "importantNuance": "相手の話は聞いているのに自分の話は軽く流されるという不公平感",
+      "messageGoal": "自分の話にもっと耳を傾けてほしいと伝える"
+    },
+    "selectedLabels": [
+      "exhausted",
+      "feeling",
+      "conflict"
+    ],
+    "expectedLabels": [
+      "feeling",
+      "situation",
+      "request"
+    ],
+    "labelMatchCount": 1,
+    "rewrites": [
+      {
+        "labelKey": "exhausted",
+        "label": "疲れ・限界を正直に",
+        "text": "いつもあなたの仕事の話は聞いているけれど、私の話になると「うん」で終わってしまうのが続いていて、正直少ししんどくなってきたな。たまには私の話もじっくり聞いてもらえたら嬉しいな。"
+      },
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "あなたが仕事で疲れている時、話を聞くのは当たり前だと思っているけれど、私が話したいことがある時に、軽く流されてしまうと、少し寂しい気持ちになるんだ。"
+      },
+      {
+        "labelKey": "conflict",
+        "label": "葛藤をそのまま",
+        "text": "あなたの愚痴は毎日聞いているのに、僕が話そうとすると「うん」だけで終わってしまうことが、正直、少し不公平に感じてしまって。そんな自分も嫌だけど、やっぱり寂しいんだ。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:15:30.030Z"
+  },
+  {
+    "caseId": "case-r02",
+    "caseLabel": "相手への不満（直接的）",
+    "sampleId": "r02-s03",
+    "input": "急に友達と飲みに行くって言い出して、夕飯どうするとか一切連絡なし。",
+    "mood": 2,
+    "understanding": {
+      "coreFeeling": "夫の急な外出と連絡不足に困惑し、しんどい気持ち",
+      "importantNuance": "夕食の準備など、生活上の配慮が欠けていたことへの不満",
+      "messageGoal": "急な予定変更時の連絡と配慮を夫に求める"
+    },
+    "selectedLabels": [
+      "feeling",
+      "situation",
+      "request"
+    ],
+    "expectedLabels": [
+      "feeling",
+      "simple",
+      "request"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "急に友達と飲みに行くことになって、夕飯の連絡もなかったから、正直しんどい気持ちになったよ。もう少し連絡が欲しかったな。"
+      },
+      {
+        "labelKey": "situation",
+        "label": "状況と気持ちをセットで",
+        "text": "急に飲みに行くのはいいけど、夕飯どうするか連絡がないと、私としてはどうしたらいいか困ってしまうよ。少し寂しい気持ちになったな。"
+      },
+      {
+        "labelKey": "request",
+        "label": "お願いにする",
+        "text": "急に友達と飲みに行くのは全然大丈夫なんだけど、夕飯の連絡だけは事前にくれると助かるな。連絡がないと困ってしまうから、次からは教えてね。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:15:40.012Z"
+  }
+]

@@ -1,0 +1,125 @@
+[
+  {
+    "caseId": "case-r04",
+    "caseLabel": "疲れ・限界",
+    "sampleId": "r04-s01",
+    "input": "仕事も家のことも全部自分でやってる感じ。もう限界かも",
+    "mood": 1,
+    "understanding": {
+      "coreFeeling": "仕事も家事も一人で抱え込み限界を迎えているつらさ",
+      "importantNuance": "仕事も家のこともすべて自分でやっていると感じている",
+      "messageGoal": "自分の心身の限界と現状へのつらい気持ちを夫に伝える"
+    },
+    "selectedLabels": [
+      "exhausted",
+      "situation",
+      "together"
+    ],
+    "expectedLabels": [
+      "exhausted",
+      "request",
+      "together"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "exhausted",
+        "label": "疲れ・限界を正直に",
+        "text": "最近、仕事も家のことも全部一人で抱え込んでいるように感じていて、正直もう限界かもしれない。少しつらい気持ちになっているよ。"
+      },
+      {
+        "labelKey": "situation",
+        "label": "状況と気持ちをセットで",
+        "text": "仕事も家のことも私が全部やっているような状況で、心身ともに疲れが溜まってきてしまったよ。このままだとつらいと感じているの。"
+      },
+      {
+        "labelKey": "together",
+        "label": "一緒に解決したい",
+        "text": "仕事も家のことも、全部自分でやらなきゃと思っているような状態なの。正直もう限界を感じているから、この状況を二人でどうにかできないかな？"
+      }
+    ],
+    "timestamp": "2026-05-16T12:17:48.016Z"
+  },
+  {
+    "caseId": "case-r04",
+    "caseLabel": "疲れ・限界",
+    "sampleId": "r04-s02",
+    "input": "もう頑張れない。毎日毎日同じことの繰り返しで、心が折れそう",
+    "mood": 1,
+    "understanding": {
+      "coreFeeling": "毎日同じことの繰り返しで心が折れそうで、もう頑張れないという疲弊感と限界。",
+      "importantNuance": "「毎日同じことの繰り返し」という状況が原因で、精神的に限界が近いこと。",
+      "messageGoal": "妻に自分の限界と疲弊している現状を理解してもらう。"
+    },
+    "selectedLabels": [
+      "feeling",
+      "exhausted",
+      "situation"
+    ],
+    "expectedLabels": [
+      "exhausted",
+      "feeling",
+      "request"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "毎日同じことの繰り返しで、正直もう頑張れない気持ちだよ。心が折れそうで、今はとてもつらいんだ。"
+      },
+      {
+        "labelKey": "exhausted",
+        "label": "疲れ・限界を正直に",
+        "text": "毎日が同じことの繰り返しで、もう心が折れそうなくらい疲れてしまった。正直、これ以上頑張るのが難しいと限界を感じているよ。"
+      },
+      {
+        "labelKey": "situation",
+        "label": "状況と気持ちをセットで",
+        "text": "毎日毎日同じことの繰り返しで、正直、心が折れそうだと感じているんだ。今の状況がとてもつらくて、もう頑張る気力が残っていないよ。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:17:58.768Z"
+  },
+  {
+    "caseId": "case-r04",
+    "caseLabel": "疲れ・限界",
+    "sampleId": "r04-s03",
+    "input": "子どもの夜泣きで全然眠れてない。正直もう限界で、助けてほしい",
+    "mood": 1,
+    "understanding": {
+      "coreFeeling": "子どもの夜泣きによる極度の睡眠不足と心身の限界",
+      "importantNuance": "「正直もう限界」という疲弊感と「助けてほしい」というSOS",
+      "messageGoal": "自身の限界を夫に伝え、具体的な助けを求めること"
+    },
+    "selectedLabels": [
+      "exhausted",
+      "request",
+      "feeling"
+    ],
+    "expectedLabels": [
+      "exhausted",
+      "request",
+      "simple"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "exhausted",
+        "label": "疲れ・限界を正直に",
+        "text": "子どもの夜泣きで全く眠れておらず、正直、心身ともに限界だと感じています。このつらさを理解し、何か助けてもらえると本当に嬉しいです。"
+      },
+      {
+        "labelKey": "request",
+        "label": "お願いにする",
+        "text": "夜泣きで眠れない日々が続き、正直もう限界です。どうか、何か手伝ってもらえると本当に助かります。具体的なお願いも相談できますか？"
+      },
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "子どもの夜泣きで全然眠れておらず、正直とてもつらい気持ちでいっぱいです。もうこれ以上は頑張れないと感じていて、助けを求めています。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:18:07.337Z"
+  }
+]

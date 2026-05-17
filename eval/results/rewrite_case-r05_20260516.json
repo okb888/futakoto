@@ -1,0 +1,125 @@
+[
+  {
+    "caseId": "case-r05",
+    "caseLabel": "日常・整えるだけ",
+    "sampleId": "r05-s01",
+    "input": "今日は早めに帰れそう",
+    "mood": 3,
+    "understanding": {
+      "coreFeeling": "今日の帰宅が早まる可能性を伝えたい気持ち",
+      "importantNuance": "なし",
+      "messageGoal": "妻に今日の帰宅予定を共有し、状況を知らせること"
+    },
+    "selectedLabels": [
+      "simple",
+      "polish",
+      "forward"
+    ],
+    "expectedLabels": [
+      "polish",
+      "simple",
+      "forward"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "simple",
+        "label": "シンプルに伝える",
+        "text": "今日は仕事が早く終わりそうなので、いつもより早く帰宅できそうです。"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "今日の仕事は早めに片付きそうなので、定時よりも早く帰宅できる見込みです。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "今日は早く帰れそうだよ。帰ったら今日の出来事でも話そうか。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:18:18.837Z"
+  },
+  {
+    "caseId": "case-r05",
+    "caseLabel": "日常・整えるだけ",
+    "sampleId": "r05-s02",
+    "input": "週末どこか行きたいな",
+    "mood": 4,
+    "understanding": {
+      "coreFeeling": "週末にどこかへ出かけたいという、穏やかな希望。",
+      "importantNuance": "なし",
+      "messageGoal": "週末の予定について夫と話すきっかけを作る。"
+    },
+    "selectedLabels": [
+      "polish",
+      "forward",
+      "request"
+    ],
+    "expectedLabels": [
+      "polish",
+      "forward",
+      "together"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "週末に、もしよかったらどこかへお出かけしたいなと思っています。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "次の週末、もし一緒に出かけられるなら嬉しいな。どこか行けたら楽しいだろうね。"
+      },
+      {
+        "labelKey": "request",
+        "label": "お願いにする",
+        "text": "週末にどこかへお出かけしたい気持ちがあるんだけど、もしよかったら一緒に考えてくれると嬉しいな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:18:29.790Z"
+  },
+  {
+    "caseId": "case-r05",
+    "caseLabel": "日常・整えるだけ",
+    "sampleId": "r05-s03",
+    "input": "最近話せてないね",
+    "mood": 3,
+    "understanding": {
+      "coreFeeling": "妻との会話が減っていることへの気づきと寂しさ",
+      "importantNuance": "なし",
+      "messageGoal": "最近の会話不足を伝え、関係性を見つめ直すきっかけにする"
+    },
+    "selectedLabels": [
+      "simple",
+      "feeling",
+      "forward"
+    ],
+    "expectedLabels": [
+      "polish",
+      "feeling",
+      "together"
+    ],
+    "labelMatchCount": 1,
+    "rewrites": [
+      {
+        "labelKey": "simple",
+        "label": "シンプルに伝える",
+        "text": "最近、ゆっくり話せてないね。"
+      },
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "最近、ゆっくり話せていないのが少し寂しいな。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "最近話す機会が減っているね。また近いうちに、ゆっくり話せる時間を作りたいな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:18:37.065Z"
+  }
+]

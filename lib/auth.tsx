@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import * as Sentry from '@sentry/react-native';
 import { auth } from './firebase';
 import { ensureUserProfile } from './ai';
 import { UserProfile } from './db';
@@ -41,9 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!u) {
         setUser(null);
         setProfile(null);
+        Sentry.setUser(null);
         if (active) setLoading(false);
         return;
       }
+
+      Sentry.setUser({ id: u.uid });
 
       try {
         const nextProfile = await ensureUserProfile();

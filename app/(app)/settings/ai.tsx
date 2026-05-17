@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Sparkle } from 'phosphor-react-native';
 import { useAuth } from '../../../lib/auth';
@@ -52,6 +54,10 @@ export default function AiScreen() {
   const ratio = Math.min(100, (used / limit) * 100);
 
   return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
       {/* AI利用量 */}
@@ -99,8 +105,8 @@ export default function AiScreen() {
       </View>
 
       {/* 話し方スタイル */}
-      <Text style={styles.sectionLabel}>壁打ちAIの話し方</Text>
-      <Text style={styles.hint}>壁打ち中のAIがどんなスタイルで話すかを選べます</Text>
+      <Text style={styles.sectionLabel}>AIの話し方</Text>
+      <Text style={styles.hint}>AIがどんなスタイルで話すかを選べます</Text>
       <View style={styles.personaList}>
         {PERSONAS.map(({ key, label, desc }) => {
           const selected = (profile?.aiPersona ?? 'soft') === key;
@@ -152,6 +158,7 @@ export default function AiScreen() {
       />
 
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

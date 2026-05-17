@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,11 @@ import { Heart } from 'phosphor-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useAuth } from '../../../lib/auth';
 import { pairWithCode, unpairPartner, regenerateInviteCode } from '../../../lib/ai';
+import { updatePartnerCallName } from '../../../lib/db';
 import { firebaseErrorMessage } from '../../../lib/errors';
 import { useSettingsProfile } from '../../../hooks/useSettingsProfile';
 import { COLORS } from '../../../lib/theme';
+import { trackPairCompleted } from '../../../lib/analytics';
 
 export default function PartnerScreen() {
   const { user } = useAuth();
@@ -26,6 +28,26 @@ export default function PartnerScreen() {
   const [loadingPair, setLoadingPair] = useState(false);
   const [loadingRegenerate, setLoadingRegenerate] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [callName, setCallName] = useState('');
+  const [callNameSaved, setCallNameSaved] = useState(false);
+
+  useEffect(() => {
+    if (profile?.partnerCallName !== undefined) {
+      setCallName(profile.partnerCallName);
+    }
+  }, [profile?.partnerCallName]);
+
+  async function handleSaveCallName() {
+    if (!user) return;
+    try {
+      await updatePartnerCallName(user.uid, callName.trim());
+      await load();
+      setCallNameSaved(true);
+      setTimeout(() => setCallNameSaved(false), 2000);
+    } catch (e: any) {
+      Alert.alert('保存できませんでした', firebaseErrorMessage(e));
+    }
+  }
 
   async function handleCopy() {
     if (!profile?.inviteCode) return;
@@ -75,6 +97,7 @@ export default function PartnerScreen() {
     setLoadingPair(true);
     try {
       await pairWithCode(inputCode.trim().toUpperCase());
+      trackPairCompleted();
       await load();
       setInputCode('');
       Alert.alert('ペアリング完了', 'パートナーと繋がりました');
@@ -187,6 +210,26 @@ export default function PartnerScreen() {
         </View>
       )}
 
+      {/* パートナーの呼び方 */}
+      <Text style={styles.sectionLabel}>パートナーの呼び方</Text>
+      <Text style={styles.callNameHint}>AIが文章を作るときの呼び方（例: 妻・夫・ちゃん付けなど）</Text>
+      <View style={styles.section}>
+        <View style={styles.callNameRow}>
+          <TextInput
+            style={styles.callNameInput}
+            value={callName}
+            onChangeText={setCallName}
+            placeholder="パートナー（未設定）"
+            placeholderTextColor="#999"
+            maxLength={10}
+            autoCorrect={false}
+          />
+          <TouchableOpacity style={styles.callNameSaveButton} onPress={handleSaveCallName}>
+            <Text style={styles.callNameSaveText}>{callNameSaved ? '✓' : '保存'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
     </ScrollView>
   );
 }
@@ -286,4 +329,29 @@ const styles = StyleSheet.create({
   },
   pairButtonDisabled: { backgroundColor: COLORS.primaryDim },
   pairButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  callNameHint: { fontSize: 12, color: COLORS.placeholder, marginBottom: 10, paddingHorizontal: 20 },
+  callNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 10,
+  },
+  callNameInput: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 15,
+    color: COLORS.text,
+  },
+  callNameSaveButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 10,
+  },
+  callNameSaveText: { color: '#fff', fontSize: 13, fontWeight: '600' },
 });

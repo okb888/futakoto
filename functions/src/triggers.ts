@@ -32,7 +32,14 @@ export const invalidateInterpretationCacheOnEntryUpdate = onDocumentUpdated(
     const after = event.data?.after?.data();
     if (!before || !after) return;
 
-    if (before.memo === after.memo && before.mood === after.mood) return;
+    // memo/mood/visibility のいずれかが変われば、相手側に残っている解釈キャッシュを無効化する
+    if (
+      before.memo === after.memo &&
+      before.mood === after.mood &&
+      before.visibility === after.visibility
+    ) {
+      return;
+    }
 
     const uid = event.params.uid;
     const entryId = event.params.entryId;

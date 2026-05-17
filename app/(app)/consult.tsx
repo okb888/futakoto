@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  Alert,
   View,
   Text,
   TextInput,
@@ -17,6 +18,7 @@ import { useConsultSession } from '../../hooks/useConsultSession';
 import { COLORS } from '../../lib/theme';
 import { useAuth } from '../../lib/auth';
 import { AI_FREE_MONTHLY_LIMIT, setAiConsentAcknowledged } from '../../lib/db';
+import { classifyError } from '../../lib/errors';
 import { AiQuotaChip } from '../../components/AiQuotaChip';
 import { PaywallModal } from '../../components/PaywallModal';
 import { AiConsentModal } from '../../components/AiConsentModal';
@@ -110,12 +112,16 @@ export default function ConsultScreen() {
     try {
       await setAiConsentAcknowledged(user.uid);
       await refreshProfile();
-    } finally {
       setConsentOpen(false);
       if (pendingSend) {
         setPendingSend(false);
         await handleConsult();
       }
+    } catch (e: any) {
+      const c = classifyError(e);
+      Alert.alert(c.title, c.message);
+      setConsentOpen(false);
+      setPendingSend(false);
     }
   }
 

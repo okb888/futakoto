@@ -117,6 +117,7 @@ export interface UserProfile {
   aiConsentAcknowledged?: boolean;
   aiConsentAcknowledgedAt?: Timestamp;
   lastVisibility?: Visibility;
+  partnerCallName?: string;
 }
 
 export interface NotificationSettings {
@@ -153,6 +154,10 @@ export async function updateLastVisibility(uid: string, visibility: Visibility):
   await updateDoc(doc(db, 'users', uid), { lastVisibility: visibility });
 }
 
+export async function updatePartnerCallName(uid: string, name: string): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), { partnerCallName: name });
+}
+
 export async function setAiConsentAcknowledged(uid: string): Promise<void> {
   await updateDoc(doc(db, 'users', uid), {
     aiConsentAcknowledged: true,
@@ -180,11 +185,6 @@ export async function savePushToken(
     platform,
     updatedAt: serverTimestamp(),
   });
-}
-
-export async function findUidByCode(code: string): Promise<string | null> {
-  const snap = await getDoc(doc(db, 'inviteCodes', code.toUpperCase()));
-  return snap.exists() ? (snap.data().uid as string) : null;
 }
 
 // ---- Entries ----

@@ -5,7 +5,14 @@
   "type": "module",
   "scripts": {
     "run-a": "tsx run.ts A",
-    "run-b": "tsx run.ts B"
+    "run-b": "tsx run.ts B",
+    "rewrite": "tsx run-rewrite.ts",
+    "rewrite:r01": "tsx run-rewrite.ts case-r01",
+    "rewrite:r02": "tsx run-rewrite.ts case-r02",
+    "rewrite:r03": "tsx run-rewrite.ts case-r03",
+    "rewrite:r04": "tsx run-rewrite.ts case-r04",
+    "rewrite:r05": "tsx run-rewrite.ts case-r05",
+    "rewrite:r06": "tsx run-rewrite.ts case-r06"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

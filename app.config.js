@@ -4,6 +4,14 @@ module.exports = ({ config }) => ({
     "expo-router",
     "expo-notifications",
     "expo-apple-authentication",
+    [
+      "@sentry/react-native/expo",
+      {
+        // Sentry DSN は https://sentry.io でプロジェクト作成後に取得し
+        // EAS Secret に SENTRY_DSN を設定する
+        url: "https://sentry.io/",
+      }
+    ],
     ["@react-native-google-signin/google-signin", {
       iosUrlScheme: process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME ?? "com.googleusercontent.apps.316368993378-3hvql0htr6gusjd5vrbof0truso97g8i",
     }]
@@ -24,6 +32,9 @@ module.exports = ({ config }) => ({
       storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "futakoto.firebasestorage.app",
       messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "316368993378",
       appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID ?? "1:316368993378:web:3318076ce781f2c568253b",
+      // Firebase Analytics の measurementId（G-XXXXXXXXXX）
+      // Firebase コンソール → プロジェクト設定 → マイアプリ → ウェブアプリ から取得
+      measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID ?? "",
     },
     revenuecat: {
       iosKey: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? "",

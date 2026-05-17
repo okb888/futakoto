@@ -38,6 +38,7 @@ import { classifyError } from '../../lib/errors';
 import { dateKey, formatEntryDate, todayKey } from '../../lib/format';
 import { getPartnerDisplayName } from '../../lib/profile';
 import { COLORS } from '../../lib/theme';
+import { trackAiFeatureUsed, trackAiQuotaExceeded, trackPaywallShown } from '../../lib/analytics';
 
 export default function HomeScreen() {
   const { user, profile: authProfile, refreshProfile } = useAuth();
@@ -196,9 +197,12 @@ export default function HomeScreen() {
     try {
       const res = await aiInterpret(entry.memo, entry.mood, partnerName, entry.id, entry.uid, force);
       setInterpretationsCache((prev) => ({ ...prev, [cacheKey]: res.interpretations }));
+      trackAiFeatureUsed('interpret');
     } catch (e: any) {
       const classified = classifyError(e);
       if (classified.kind === 'quota') {
+        trackAiQuotaExceeded('interpret');
+        trackPaywallShown('quota_interpret');
         setPaywallReason(classified.message);
         setPaywallOpen(true);
       } else if (classified.kind === 'network') {
@@ -468,7 +472,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  interpretButton: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  interpretButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   interpretButtonText: { fontSize: 12, color: COLORS.ai, fontWeight: '700' },
   interpretResult: { gap: 6 },
   interpretItem: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
@@ -477,11 +488,13 @@ const styles = StyleSheet.create({
   reInterpretButton: {
     alignSelf: 'flex-start',
     marginTop: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    minHeight: 44,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.aiBorderSoft,
+    justifyContent: 'center',
   },
   reInterpretButtonText: { fontSize: 11, color: COLORS.ai, fontWeight: '600' },
 });

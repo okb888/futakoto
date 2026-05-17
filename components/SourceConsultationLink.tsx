@@ -10,7 +10,7 @@ export function SourceConsultationLink({ onPress }: Props) {
   return (
     <TouchableOpacity style={styles.link} onPress={onPress} activeOpacity={0.7}>
       <Sparkle size={13} color={COLORS.ai} weight="fill" />
-      <Text style={styles.text}>この壁打ちを見る</Text>
+      <Text style={styles.text}>この相談を見る</Text>
       <ArrowRight size={13} color={COLORS.ai} weight="bold" />
     </TouchableOpacity>
   );

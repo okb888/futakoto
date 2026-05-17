@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   LayoutAnimation,
   Platform,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { addEntry, updateLastVisibility, UserProfile } from '../lib/db';
+import { firebaseErrorMessage } from '../lib/errors';
 import { MOODS } from '../lib/mood';
 import { COLORS } from '../lib/theme';
 
@@ -52,7 +54,7 @@ export function HomeMoodInput({ uid, profile, onSubmit }: Props) {
       setMemo('');
       onSubmit();
     } catch (e: any) {
-      console.error('[HomeMoodInput] 送信エラー:', e?.code, e?.message);
+      Alert.alert('投稿できませんでした', firebaseErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -94,12 +96,16 @@ export function HomeMoodInput({ uid, profile, onSubmit }: Props) {
             onChangeText={setMemo}
             multiline
             maxLength={200}
+            autoCorrect={false}
+            spellCheck={false}
+            textAlignVertical="top"
           />
           <TouchableOpacity
             style={[styles.submitButton, loading && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={loading}
             accessibilityRole="button"
+            accessibilityLabel="今日の気持ちを伝える"
           >
             {loading ? (
               <ActivityIndicator color={COLORS.surface} size="small" />
@@ -131,9 +137,11 @@ const styles = StyleSheet.create({
   },
   emojiButton: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 8,
     minWidth: 44,
+    minHeight: 44,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emoji: { fontSize: 28 },
   emojiDimmed: { opacity: 0.35 },
@@ -154,7 +162,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     color: COLORS.text,
-    textAlignVertical: 'top',
     backgroundColor: COLORS.surface,
   },
   submitButton: {

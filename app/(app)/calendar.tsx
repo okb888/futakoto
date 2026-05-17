@@ -17,6 +17,7 @@ import { EntryCard } from '../../components/EntryCard';
 import { EntryActionPanel } from '../../components/EntryActionPanel';
 import { SourceConsultationLink } from '../../components/SourceConsultationLink';
 import { PaywallModal } from '../../components/PaywallModal';
+import { AiConsentModal } from '../../components/AiConsentModal';
 import { useAuth } from '../../lib/auth';
 import { aiSummary } from '../../lib/ai';
 import { MOOD_COLORS, MOOD_EMOJI } from '../../lib/mood';
@@ -30,6 +31,7 @@ import {
   getFavoriteEntryIds,
   getLatestAiSummary,
   saveAiSummary,
+  setAiConsentAcknowledged,
   deleteEntry,
   favoriteKey,
   toggleFavoriteEntry,
@@ -42,6 +44,7 @@ import { classifyError, firebaseErrorMessage } from '../../lib/errors';
 import { dateKey, formatTime, sortMillis, todayKey } from '../../lib/format';
 import { getPartnerDisplayName } from '../../lib/profile';
 import { COLORS } from '../../lib/theme';
+import { trackAiFeatureUsed, trackAiQuotaExceeded, trackPaywallShown } from '../../lib/analytics';
 
 LocaleConfig.locales['ja'] = {
   monthNames: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
@@ -172,6 +175,8 @@ export default function CalendarScreen() {
   const [softPremiumHint, setSoftPremiumHint] = useState<string | null>(null);
   const softPremiumOpacity = useRef(new Animated.Value(0)).current;
   const [calendarKey, setCalendarKey] = useState(0);
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [pendingSummary, setPendingSummary] = useState(false);
 
   const premium = isPremium(authProfile ?? null, partnerProfile);
   const isQuotaExceeded =
@@ -209,53 +214,57 @@ export default function CalendarScreen() {
   async function load(isCancelled: () => boolean = () => false) {
     if (!user) return;
     setLoading(true);
-    const p = authProfile ?? await refreshProfile();
-    if (isCancelled() || !p) {
-      if (!isCancelled()) setLoading(false);
-      return;
-    }
-    const { start, end } = getMonthBounds(currentMonth);
-    const [my, savedConsultations, favorites] = await Promise.all([
-      getEntriesInRange(user.uid, start, end),
-      getRecentConsultationSessions(user.uid, 100),
-      getFavoriteEntryIds(user.uid),
-    ]);
-    if (isCancelled()) return;
-    const newCache = trimCache({ [currentMonth]: my });
-    setMyEntries(my);
-    setMyEntriesCache(newCache);
-    setConsultations(savedConsultations);
-    setFavoriteIds(favorites);
-    if (p?.partnerUid) {
-      const pp = await getUserProfile(p.partnerUid);
+    try {
+      const p = authProfile ?? await refreshProfile();
+      if (isCancelled() || !p) return;
+      const { start, end } = getMonthBounds(currentMonth);
+      const [my, savedConsultations, favorites] = await Promise.all([
+        getEntriesInRange(user.uid, start, end),
+        getRecentConsultationSessions(user.uid, 100),
+        getFavoriteEntryIds(user.uid),
+      ]);
       if (isCancelled()) return;
-      setPartnerProfile(pp);
-      const partnerCacheKey = `${currentMonth}:${p.partnerUid}`;
-      const cachedPartnerEntries = partnerEntriesCacheRef.current[partnerCacheKey];
-      if (cachedPartnerEntries) {
-        setPartnerEntries(cachedPartnerEntries);
-      } else {
-        const partner = await getPartnerSharedEntries(p.partnerUid, 500);
+      const newCache = trimCache({ [currentMonth]: my });
+      setMyEntries(my);
+      setMyEntriesCache(newCache);
+      setConsultations(savedConsultations);
+      setFavoriteIds(favorites);
+      if (p?.partnerUid) {
+        const pp = await getUserProfile(p.partnerUid);
         if (isCancelled()) return;
-        const newPartnerCache = trimCache({ ...partnerEntriesCacheRef.current, [partnerCacheKey]: partner });
-        partnerEntriesCacheRef.current = newPartnerCache;
-        setPartnerEntries(partner);
-        setPartnerEntriesCache(newPartnerCache);
+        setPartnerProfile(pp);
+        const partnerCacheKey = `${currentMonth}:${p.partnerUid}`;
+        const cachedPartnerEntries = partnerEntriesCacheRef.current[partnerCacheKey];
+        if (cachedPartnerEntries) {
+          setPartnerEntries(cachedPartnerEntries);
+        } else {
+          const partner = await getPartnerSharedEntries(p.partnerUid, 500);
+          if (isCancelled()) return;
+          const newPartnerCache = trimCache({ ...partnerEntriesCacheRef.current, [partnerCacheKey]: partner });
+          partnerEntriesCacheRef.current = newPartnerCache;
+          setPartnerEntries(partner);
+          setPartnerEntriesCache(newPartnerCache);
+        }
+      } else {
+        setPartnerEntries([]);
+        if (Object.keys(partnerEntriesCacheRef.current).length > 0) {
+          partnerEntriesCacheRef.current = {};
+          setPartnerEntriesCache({});
+        }
+        setPartnerProfile(null);
+        if (summaryTarget === 'partner') {
+          setSummaryTarget('me');
+          setAiSummaryText(aiSummaryCache[`${currentMonth}-me`] ?? null);
+        }
+        setLogTarget((current) => current === 'partner' ? 'both' : current);
       }
-    } else {
-      setPartnerEntries([]);
-      if (Object.keys(partnerEntriesCacheRef.current).length > 0) {
-        partnerEntriesCacheRef.current = {};
-        setPartnerEntriesCache({});
+    } catch (e: any) {
+      if (!isCancelled()) {
+        Alert.alert('読み込みに失敗しました', firebaseErrorMessage(e));
       }
-      setPartnerProfile(null);
-      if (summaryTarget === 'partner') {
-        setSummaryTarget('me');
-        setAiSummaryText(aiSummaryCache[`${currentMonth}-me`] ?? null);
-      }
-      setLogTarget((current) => current === 'partner' ? 'both' : current);
+    } finally {
+      if (!isCancelled()) setLoading(false);
     }
-    if (!isCancelled()) setLoading(false);
   }
 
   useFocusEffect(useCallback(() => {
@@ -375,7 +384,6 @@ export default function CalendarScreen() {
       return;
     }
 
-    const cacheKey = `${currentMonth}-${summaryTarget}`;
     const targetEntries = summaryTarget === 'me'
       ? myEntries.filter((e) => dateKey(e.createdAt).startsWith(currentMonth))
       : partnerEntries.filter((e) => dateKey(e.createdAt).startsWith(currentMonth));
@@ -388,6 +396,19 @@ export default function CalendarScreen() {
       return;
     }
 
+    // AI同意未取得なら同意モーダルを表示し、同意後に実行する
+    if (authProfile?.aiConsentAcknowledged !== true) {
+      setPendingSummary(true);
+      setConsentOpen(true);
+      return;
+    }
+
+    await runAiSummary(targetEntries);
+  }
+
+  async function runAiSummary(targetEntries: Entry[]) {
+    if (!user) return;
+    const cacheKey = `${currentMonth}-${summaryTarget}`;
     setAiSummaryLoading(true);
     try {
       const res = await aiSummary(
@@ -399,9 +420,12 @@ export default function CalendarScreen() {
       setAiSummaryText(res.summary);
       setAiSummaryCache((prev) => ({ ...prev, [cacheKey]: res.summary }));
       setSummaryExpanded(true);
+      trackAiFeatureUsed('summary');
     } catch (e: any) {
       const classified = classifyError(e);
       if (classified.kind === 'quota') {
+        trackAiQuotaExceeded('summary');
+        trackPaywallShown('quota_summary');
         openPaywall(classified.message);
       } else {
         Alert.alert(classified.title, classified.message);
@@ -409,6 +433,34 @@ export default function CalendarScreen() {
     } finally {
       setAiSummaryLoading(false);
     }
+  }
+
+  async function handleAgreeAiConsent() {
+    if (!user) return;
+    try {
+      await setAiConsentAcknowledged(user.uid);
+      await refreshProfile();
+      setConsentOpen(false);
+      if (pendingSummary) {
+        setPendingSummary(false);
+        const targetEntries = summaryTarget === 'me'
+          ? myEntries.filter((e) => dateKey(e.createdAt).startsWith(currentMonth))
+          : partnerEntries.filter((e) => dateKey(e.createdAt).startsWith(currentMonth));
+        if (targetEntries.length > 0) {
+          await runAiSummary(targetEntries);
+        }
+      }
+    } catch (e: any) {
+      const classified = classifyError(e);
+      Alert.alert(classified.title, classified.message);
+      setConsentOpen(false);
+      setPendingSummary(false);
+    }
+  }
+
+  function handleCancelAiConsent() {
+    setConsentOpen(false);
+    setPendingSummary(false);
   }
 
   const groupByDate = (entries: Entry[]) => {
@@ -1195,6 +1247,12 @@ export default function CalendarScreen() {
           refreshProfile();
           load();
         }}
+      />
+
+      <AiConsentModal
+        visible={consentOpen}
+        onAgree={handleAgreeAiConsent}
+        onCancel={handleCancelAiConsent}
       />
     </ScrollView>
   );

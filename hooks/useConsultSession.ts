@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../lib/auth';
 import { aiConsult, aiDraft, aiDraftOptions, DraftOption } from '../lib/ai';
+import { trackAiFeatureUsed } from '../lib/analytics';
 import {
   createConsultationSession,
   addTurnToSession,
@@ -122,7 +123,7 @@ export function useConsultSession(
     if (profile.partnerUid) {
       const partner = await getUserProfile(profile.partnerUid);
       if (isCancelled()) return;
-      if (partner) setPartnerName(getPartnerDisplayName(partner));
+      if (partner) setPartnerName(profile.partnerCallName || getPartnerDisplayName(partner));
     }
     let sessions = await getRecentConsultationSessions(user.uid, 10);
     if (focusSessionId && !sessions.some((session) => session.id === focusSessionId)) {
@@ -178,6 +179,7 @@ export function useConsultSession(
         return;
       }
 
+      trackAiFeatureUsed('consult');
       setConversation((prev) => [
         ...prev.map((t) => ({ ...t, collapsed: true })),
         {

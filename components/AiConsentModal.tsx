@@ -12,7 +12,7 @@ export function AiConsentModal({ visible, onAgree, onCancel }: Props) {
   return (
     <Modal visible={visible} animationType="fade" transparent>
       <View style={styles.backdrop}>
-        <View style={styles.card}>
+        <View style={styles.card} accessibilityViewIsModal>
           <View style={styles.iconWrap}>
             <Sparkle size={28} color={COLORS.ai} weight="fill" />
           </View>
@@ -21,7 +21,7 @@ export function AiConsentModal({ visible, onAgree, onCancel }: Props) {
 
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
             <Text style={styles.body}>
-              ふたことのAI機能（壁打ち・伝え方リライト・気持ちを読み解く・月次サマリー）は、
+              ふたことのAI機能（AI相談・伝え方リライト・気持ちを読み解く・月次サマリー）は、
               入力されたテキストを <Text style={styles.bold}>Google Gemini API</Text> に送信して処理します。
             </Text>
 
@@ -34,19 +34,29 @@ export function AiConsentModal({ visible, onAgree, onCancel }: Props) {
 
             <Text style={styles.body}>
               詳細は
-              <Text style={styles.link} onPress={() => Linking.openURL('https://futakoto.app/privacy.html')}>
+              <Text style={styles.link} onPress={() => Linking.openURL('https://futakoto.web.app/privacy.html')}>
                 プライバシーポリシー
               </Text>
               をご確認ください。
             </Text>
           </ScrollView>
 
-          <TouchableOpacity style={styles.primary} onPress={onAgree}>
+          <TouchableOpacity
+            style={styles.primary}
+            onPress={onAgree}
+            accessibilityRole="button"
+            accessibilityLabel="同意してAI機能を使う"
+          >
             <Text style={styles.primaryText}>同意してAI機能を使う</Text>
           </TouchableOpacity>
 
           {onCancel ? (
-            <TouchableOpacity onPress={onCancel} style={styles.secondary}>
+            <TouchableOpacity
+              onPress={onCancel}
+              style={styles.secondary}
+              accessibilityRole="button"
+              accessibilityLabel="あとで判断する"
+            >
               <Text style={styles.secondaryText}>あとで</Text>
             </TouchableOpacity>
           ) : null}

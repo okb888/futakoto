@@ -1,0 +1,699 @@
+[
+  {
+    "caseId": "case-r01",
+    "caseLabel": "ポジティブ・感謝",
+    "sampleId": "r01-s01",
+    "input": "今日ありがとうって言えてよかった",
+    "mood": 5,
+    "understanding": {
+      "coreFeeling": "感謝を伝えられたことへの満足感と安堵",
+      "importantNuance": "感謝を口に出せたこと自体が嬉しかったという気持ち",
+      "messageGoal": "感謝を伝えたことへの自分のポジティブな気持ちを共有する"
+    },
+    "selectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "expectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "positive",
+        "label": "喜びを届ける",
+        "text": "今日はあなたに「ありがとう」を直接伝えられて、すごく嬉しかったし、気持ちが満たされたよ。素直に言えてよかった！"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "今日、ちゃんとあなたに感謝の気持ちを伝えることができて、私自身もとても心が穏やかになったよ。ありがとう。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "今日、あなたに「ありがとう」って言えてすごく良かったよ。これからも感謝の気持ちを大切に伝えていきたいな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:23:52.128Z"
+  },
+  {
+    "caseId": "case-r01",
+    "caseLabel": "ポジティブ・感謝",
+    "sampleId": "r01-s02",
+    "input": "久しぶりにゆっくり話せた。よかった",
+    "mood": 4,
+    "understanding": {
+      "coreFeeling": "久しぶりにゆっくり話せたことへの喜びと満足感",
+      "importantNuance": "長らく機会がなかった中での貴重な時間であったこと",
+      "messageGoal": "久しぶりに話せたことの喜びと感謝を妻に伝える"
+    },
+    "selectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "expectedLabels": [
+      "positive",
+      "forward",
+      "polish"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "positive",
+        "label": "喜びを届ける",
+        "text": "久しぶりにゆっくり話せて、本当に嬉しかったよ。こういう時間が持ててよかったと心から思ってる。"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "久しぶりに二人でじっくり話す時間が持てて、とても充実した気分だよ。こういう時間があるって、やっぱり大切だね。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "久しぶりにゆっくり話せてよかったよ。またこういう時間が持てると嬉しいな。これからも二人で話す時間を大切にしたいね。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:23:59.793Z"
+  },
+  {
+    "caseId": "case-r01",
+    "caseLabel": "ポジティブ・感謝",
+    "sampleId": "r01-s03",
+    "input": "先週の件、フォローしてくれてありがとう。本当に助かった",
+    "mood": 4,
+    "understanding": {
+      "coreFeeling": "感謝と安堵の気持ちを伝えたい",
+      "importantNuance": "なし",
+      "messageGoal": "夫への感謝と助けてくれたことへの承認を伝える"
+    },
+    "selectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "expectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "positive",
+        "label": "喜びを届ける",
+        "text": "先週の件、本当にありがとう！フォローしてくれたおかげで、すごく助かったよ。あなたがいてくれて心強かったし、感謝の気持ちでいっぱいです。"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "先週は、あの件でフォローしてくれてありがとう。本当に助かったよ。おかげでスムーズに進められたし、とても心強かったです。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "先週の件、フォローしてくれてありがとう。本当に助かったよ。いつも助けてくれるあなたに感謝しています。これからも協力し合って、色々なことを乗り越えていきたいね。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:24:07.559Z"
+  },
+  {
+    "caseId": "case-r02",
+    "caseLabel": "相手への不満（直接的）",
+    "sampleId": "r02-s01",
+    "input": "また皿洗いしてない。毎回言わないとやらないし、言ったら言ったで不機嫌になる。もう疲れた。",
+    "mood": 1,
+    "understanding": {
+      "coreFeeling": "毎回同じことで夫に気を使い、疲れ果てている気持ち",
+      "importantNuance": "言わないとやらない上に、言えば不機嫌になる夫の態度に疲弊している",
+      "messageGoal": "夫に状況と自分の限界を知ってもらい、行動を変えてほしい"
+    },
+    "selectedLabels": [
+      "exhausted",
+      "feeling",
+      "situation"
+    ],
+    "expectedLabels": [
+      "exhausted",
+      "situation",
+      "request"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "exhausted",
+        "label": "疲れ・限界を正直に",
+        "text": "お皿洗いのこと、毎回言わないとやらないし、言ったら不機嫌になるのが続いて、もう心が折れそうなくらい疲れてしまってるんだ。"
+      },
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "お皿洗いについて、毎回私が言うことになって、そのたびに不機嫌になられるのが、とてもつらくて悲しい気持ちになるよ。"
+      },
+      {
+        "labelKey": "situation",
+        "label": "状況と気持ちをセットで",
+        "text": "お皿洗いのことなんだけど、私が言わないとやらないし、言うと不機嫌になるっていうのが毎回繰り返されて、この状況にすごく疲れてしまうんだ。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:24:18.657Z"
+  },
+  {
+    "caseId": "case-r02",
+    "caseLabel": "相手への不満（直接的）",
+    "sampleId": "r02-s02",
+    "input": "仕事の愚痴は毎日聞くのに、私の話は「うん」だけで流される。",
+    "mood": 2,
+    "understanding": {
+      "coreFeeling": "自分の話が軽んじられていると感じ、心が満たされない寂しさ",
+      "importantNuance": "相手の愚痴は受け入れているのに、自分の話は流される不公平感と不満。",
+      "messageGoal": "自分の話にも耳を傾け、大切に聞いてもらいたい"
+    },
+    "selectedLabels": [
+      "feeling",
+      "situation",
+      "request"
+    ],
+    "expectedLabels": [
+      "feeling",
+      "situation",
+      "request"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "あなたが仕事の愚痴を話す時は聞いているけれど、私の話は上の空だと感じて寂しい。もっと話を聞いてもらえたら嬉しいな。"
+      },
+      {
+        "labelKey": "situation",
+        "label": "状況と気持ちをセットで",
+        "text": "いつもあなたの仕事の話は聞いているつもりだけど、私の話は「うん」だけで終わってしまうことが多くて、少し寂しい気持ちになるよ。"
+      },
+      {
+        "labelKey": "request",
+        "label": "お願いにする",
+        "text": "あなたの話は聞きたいと思っているんだけど、私の話も、もう少ししっかり聞いてくれたら嬉しいな。そうしてもらえたら、私ももっと満たされると思うんだ。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:24:26.492Z"
+  },
+  {
+    "caseId": "case-r02",
+    "caseLabel": "相手への不満（直接的）",
+    "sampleId": "r02-s03",
+    "input": "急に友達と飲みに行くって言い出して、夕飯どうするとか一切連絡なし。",
+    "mood": 2,
+    "understanding": {
+      "coreFeeling": "夫の連絡不足により、夕食準備や自身の予定が立たないことへの困惑と寂しさ",
+      "importantNuance": "夫からの急な外出連絡がなく、自分の予定や配慮が無視されたように感じたこと",
+      "messageGoal": "夫に自身の気持ちを理解してもらい、今後のコミュニケーションを改善したい"
+    },
+    "selectedLabels": [
+      "feeling",
+      "situation",
+      "request"
+    ],
+    "expectedLabels": [
+      "feeling",
+      "polish",
+      "request"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "急に友達と飲みに行くって聞いて、夕飯どうしようか分からなくて、少し寂しい気持ちになったよ。突然のことで困惑しちゃったな。"
+      },
+      {
+        "labelKey": "situation",
+        "label": "状況と気持ちをセットで",
+        "text": "急に飲みに行くことになって、夕飯どうするかの連絡が全くなかったから、自分の予定も立てられなくてしんどかったよ。事前に教えてくれると助かるな。"
+      },
+      {
+        "labelKey": "request",
+        "label": "お願いにする",
+        "text": "急な飲み会でも、夕飯の連絡を事前にくれると、私が困らずに済むから助かるな。今後、出かける前に一言もらえると嬉しいな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:24:36.360Z"
+  },
+  {
+    "caseId": "case-r03",
+    "caseLabel": "自己反省・葛藤",
+    "sampleId": "r03-s01",
+    "input": "自分も言い方が悪かったと思う。でも傷ついた。どう言えばよかったか分からない",
+    "mood": 2,
+    "understanding": {
+      "coreFeeling": "自分の言い方への反省と、それでも傷ついた複雑な気持ち",
+      "importantNuance": "自分の言い方が悪かったという自己認識がありながらも、相手の言葉に傷ついたという葛藤と、どう伝えれば良かったか分からない困惑",
+      "messageGoal": "傷ついた気持ちを夫に理解してもらい、今後の伝え方を考えるきっかけにしたい"
+    },
+    "selectedLabels": [
+      "conflict",
+      "feeling",
+      "polish"
+    ],
+    "expectedLabels": [
+      "conflict",
+      "apologize",
+      "feeling"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "conflict",
+        "label": "葛藤をそのまま",
+        "text": "自分も言い方、きつかったかもしれない。でも、言われたことでやっぱり傷ついてしまったよ。どうすればよかったのか、まだうまく言葉にできないな。"
+      },
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "あの時、すごく傷ついてしまったんだ。自分の伝え方も良くなかったかもしれないけど、言われたことが心に残っていて、今も少ししんどい気持ちだよ。"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "うまく伝えられなくてごめんね。でも、あの時のあなたの言葉で、私はとても傷ついてしまった。どうすればお互い気持ちよく話せるのか、少し考えてみたい。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:24:44.348Z"
+  },
+  {
+    "caseId": "case-r03",
+    "caseLabel": "自己反省・葛藤",
+    "sampleId": "r03-s02",
+    "input": "私が細かすぎるのかもしれない。でもやっぱり気になってしまう。",
+    "mood": 3,
+    "understanding": {
+      "coreFeeling": "細かいことが気になり、心に引っかかっている",
+      "importantNuance": "自分の性格かもしれないと自覚しつつも、現状が気になってしまう葛藤",
+      "messageGoal": "細かい点が気になる自分の気持ちを妻に伝え理解を求める"
+    },
+    "selectedLabels": [
+      "conflict",
+      "feeling",
+      "together"
+    ],
+    "expectedLabels": [
+      "conflict",
+      "feeling",
+      "polish"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "conflict",
+        "label": "葛藤をそのまま",
+        "text": "もしかしたら、私が細かすぎるだけかもしれないんだけど、どうしても頭から離れなくて。この気持ち、どうしたらいいか自分でも少し困ってるんだ。"
+      },
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "正直なところ、ちょっと気になることがあるんだ。私の気にしすぎかもしれないけど、やっぱり心に引っかかってしまって。"
+      },
+      {
+        "labelKey": "together",
+        "label": "一緒に解決したい",
+        "text": "些細なことかもしれないけど、気になってしまうことがあるんだ。もしかしたら私の捉え方かもしれないけど、もしよかったら少し話を聞いてもらえないかな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:24:53.764Z"
+  },
+  {
+    "caseId": "case-r03",
+    "caseLabel": "自己反省・葛藤",
+    "sampleId": "r03-s03",
+    "input": "自分が求めすぎなのかなとも思う。でも寂しいのは本当で、それを伝えてもいいのか分からない。",
+    "mood": 2,
+    "understanding": {
+      "coreFeeling": "寂しさと、それを伝えて良いか分からないしんどさ",
+      "importantNuance": "自分が求めすぎなのではないかという自己認識と、本音を伝えることへの葛藤",
+      "messageGoal": "寂しいという気持ちと、その伝えにくさを夫に知ってもらう"
+    },
+    "selectedLabels": [
+      "feeling",
+      "conflict",
+      "polish"
+    ],
+    "expectedLabels": [
+      "conflict",
+      "feeling",
+      "polish"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "もしかしたら求めすぎなのかもしれないけど、本当は寂しい気持ちがあって、うまく言えずにしんどいなと感じています。"
+      },
+      {
+        "labelKey": "conflict",
+        "label": "葛藤をそのまま",
+        "text": "私が求めすぎなのかなと自分でも思うんです。でも、やっぱり寂しいと感じているのは本当で、その気持ちを伝えていいのか迷っています。"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "自分が無理を言っているのかな、と考えることもあります。ですが、心の中では寂しさを感じていて、どう伝えたらいいのか、少し戸惑っています。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:25:02.688Z"
+  },
+  {
+    "caseId": "case-r04",
+    "caseLabel": "疲れ・限界",
+    "sampleId": "r04-s01",
+    "input": "仕事も家のことも全部自分でやってる感じ。もう限界かも",
+    "mood": 1,
+    "understanding": {
+      "coreFeeling": "すべてを一人で抱え込み限界を感じている",
+      "importantNuance": "自分が全部やっているという感覚と、精神的な限界が近いこと",
+      "messageGoal": "夫に現状のつらさと限界感を共有し理解を得る"
+    },
+    "selectedLabels": [
+      "feeling",
+      "exhausted",
+      "together"
+    ],
+    "expectedLabels": [
+      "exhausted",
+      "request",
+      "together"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "仕事も家のことも、全部私一人でやってるみたいで、正直すごくつらい気持ちになってるんだ。"
+      },
+      {
+        "labelKey": "exhausted",
+        "label": "疲れ・限界を正直に",
+        "text": "仕事も家のことも全部一人で抱え込んでいる感覚で、もう正直、心が限界にきているかもしれない。"
+      },
+      {
+        "labelKey": "together",
+        "label": "一緒に解決したい",
+        "text": "仕事も家のことも、なんだか私一人で全部やっているように感じて、少し限界かもしれない。これからどうしたらいいか、一緒に考えられたら嬉しいな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:25:11.911Z"
+  },
+  {
+    "caseId": "case-r04",
+    "caseLabel": "疲れ・限界",
+    "sampleId": "r04-s02",
+    "input": "もう頑張れない。毎日毎日同じことの繰り返しで、心が折れそう",
+    "mood": 1,
+    "understanding": {
+      "coreFeeling": "日々の繰り返しに疲弊し、心が折れそうなほどつらい気持ち",
+      "importantNuance": "毎日同じことの繰り返しで、精神的に限界が来ていること",
+      "messageGoal": "日々の疲弊と精神的な限界を妻に理解してもらう"
+    },
+    "selectedLabels": [
+      "exhausted",
+      "feeling",
+      "situation"
+    ],
+    "expectedLabels": [
+      "exhausted",
+      "feeling",
+      "request"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "exhausted",
+        "label": "疲れ・限界を正直に",
+        "text": "いつもありがとう。最近、毎日同じことの繰り返しで、正直もう頑張れないくらい疲れてしまって、心が折れそうだよ。今の自分の限界を伝えたいです。"
+      },
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "ねぇ、最近毎日同じことの繰り返しで、本当に心が折れそうなくらいつらい気持ちなんだ。もう頑張れないと感じてしまっていることを知ってほしい。"
+      },
+      {
+        "labelKey": "situation",
+        "label": "状況と気持ちをセットで",
+        "text": "毎日同じことの繰り返しで、最近は本当に心が折れそうなくらいつらさを感じています。この状況の中で、もうこれ以上頑張り続けるのが難しいと感じているんだ。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:25:21.521Z"
+  },
+  {
+    "caseId": "case-r04",
+    "caseLabel": "疲れ・限界",
+    "sampleId": "r04-s03",
+    "input": "子どもの夜泣きで全然眠れてない。正直もう限界で、助けてほしい",
+    "mood": 1,
+    "understanding": {
+      "coreFeeling": "子どもの夜泣きで眠れず、心身ともに疲れ切っている",
+      "importantNuance": "「正直もう限界」という、これ以上は無理だという切迫感と助けを求める気持ち",
+      "messageGoal": "夫に現状のつらさを理解してもらい、具体的に助けを求める"
+    },
+    "selectedLabels": [
+      "exhausted",
+      "request",
+      "feeling"
+    ],
+    "expectedLabels": [
+      "exhausted",
+      "request",
+      "feeling"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "exhausted",
+        "label": "疲れ・限界を正直に",
+        "text": "毎晩の夜泣きで、本当に眠れなくてつらい。正直もう体力の限界まできているから、少しでも助けてもらえると嬉しいな。"
+      },
+      {
+        "labelKey": "request",
+        "label": "お願いにする",
+        "text": "子どもの夜泣きが続いていて、体がしんどくて限界なんだ。もしよかったら、少しの間でもいいから夜泣きの対応を交代してもらえると本当に助かるな。"
+      },
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "最近、子どもの夜泣きで全然眠れてなくて、心身ともにすごくしんどい気持ちだよ。正直、もう限界がきてしまっているのを感じる。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:25:28.894Z"
+  },
+  {
+    "caseId": "case-r05",
+    "caseLabel": "日常・整えるだけ",
+    "sampleId": "r05-s01",
+    "input": "今日は早めに帰れそう",
+    "mood": 3,
+    "understanding": {
+      "coreFeeling": "早めに帰宅できる見込みであること",
+      "importantNuance": "なし",
+      "messageGoal": "妻に早めの帰宅を伝え、共有すること"
+    },
+    "selectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "expectedLabels": [
+      "polish",
+      "forward",
+      "positive"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "positive",
+        "label": "喜びを届ける",
+        "text": "今日は早めに帰れそうだよ！少しでも早く家に帰れると嬉しいな。"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "今日は思ったより仕事が早く終わりそうだから、早めに帰れそうだよ。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "今日は早めに帰れそうだよ。せっかくだから、何か一緒にできると嬉しいな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:25:39.589Z"
+  },
+  {
+    "caseId": "case-r05",
+    "caseLabel": "日常・整えるだけ",
+    "sampleId": "r05-s02",
+    "input": "週末どこか行きたいな",
+    "mood": 4,
+    "understanding": {
+      "coreFeeling": "週末にどこかへ出かけたいという軽い願望",
+      "importantNuance": "なし",
+      "messageGoal": "週末の予定について夫と相談を始めるきっかけを作る"
+    },
+    "selectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "expectedLabels": [
+      "polish",
+      "forward",
+      "request"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "positive",
+        "label": "喜びを届ける",
+        "text": "週末、もし予定が合うならどこかお出かけしたいな。一緒に行けたら嬉しいな！"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "週末、もし時間があったらどこか一緒に出かけられたら嬉しいな。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "ねぇ、週末何か予定立ててみない？どこか行けたら気分転換になるかな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:25:47.210Z"
+  },
+  {
+    "caseId": "case-r05",
+    "caseLabel": "日常・整えるだけ",
+    "sampleId": "r05-s03",
+    "input": "最近話せてないね",
+    "mood": 3,
+    "understanding": {
+      "coreFeeling": "最近夫婦でゆっくり話す時間が減っていることへの気づき",
+      "importantNuance": "なし",
+      "messageGoal": "夫婦の会話が減っている現状を共有し、話すきっかけを作る"
+    },
+    "selectedLabels": [
+      "feeling",
+      "polish",
+      "forward"
+    ],
+    "expectedLabels": [
+      "polish",
+      "feeling",
+      "together"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "最近、ゆっくり話す時間が減っている気がして、少し寂しいなと感じています。もしよかったら、また二人で話せる時間を作りたいな。"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "最近、なんだかお互いに忙しくて、ゆっくり話す機会が少なくなってしまったね。気づけばあっという間に時間が過ぎていたなと感じるよ。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "最近、二人でゆっくり話せてないけれど、近いうちにまた、お互いのことを話せる時間を作れたら嬉しいな。何か話したいこととかある？"
+      }
+    ],
+    "timestamp": "2026-05-16T12:25:55.881Z"
+  },
+  {
+    "caseId": "case-r06",
+    "caseLabel": "長文・複雑な感情",
+    "sampleId": "r06-s01",
+    "input": "子どものことで意見が合わなくて、自分の方が正しいとは思うけど、押し付けたくもないし、でも流されるのも違う気がして。どう話し合えばいいか分からない。",
+    "mood": 2,
+    "understanding": {
+      "coreFeeling": "意見の食い違いでどうすべきか分からず困惑している",
+      "importantNuance": "自分の意見が正しいという自負と、それを押し付けたくない・流されたくないという葛藤",
+      "messageGoal": "子どものことでの意見の相違について、夫と建設的に話し合うきっかけを作りたい"
+    },
+    "selectedLabels": [
+      "feeling",
+      "conflict",
+      "together"
+    ],
+    "expectedLabels": [
+      "conflict",
+      "together",
+      "feeling"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "子どものことで意見が合わないのが、どうしたらいいか分からなくてしんどいな。自分の意見も譲れないし、かといって流されるのも違う気がして、少し困惑している。"
+      },
+      {
+        "labelKey": "conflict",
+        "label": "葛藤をそのまま",
+        "text": "子どものことなんだけど、正直、自分の意見が正しいと感じている部分もあるんだ。でもそれを押し付けるのは違うし、かといってあなたの意見に流されるのも納得できない。どうしたらいいか分からなくて、すごく葛藤しているよ。"
+      },
+      {
+        "labelKey": "together",
+        "label": "一緒に解決したい",
+        "text": "子どものことで意見が違うのは、お互いにとって大切なことだからこそだと思う。私自身どう話し合えばいいか分からず困っているから、二人で一緒に、納得できる良い方法を見つけられたら嬉しいな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:26:09.882Z"
+  },
+  {
+    "caseId": "case-r06",
+    "caseLabel": "長文・複雑な感情",
+    "sampleId": "r06-s02",
+    "input": "最近お互い忙しくて全然ゆっくり話せてない。寂しいというか、なんかすれ違ってる感じがする。あなたのこと嫌いとかじゃなくて、ただ一緒にいたい。",
+    "mood": 2,
+    "understanding": {
+      "coreFeeling": "忙しさによる寂しさとすれ違いを感じ、もっと一緒にいたい気持ち",
+      "importantNuance": "妻を嫌いになったわけではないことの明確化",
+      "messageGoal": "妻に今の寂しさやすれ違いの気持ちを伝え、関係性の改善につなげたい"
+    },
+    "selectedLabels": [
+      "feeling",
+      "situation",
+      "together"
+    ],
+    "expectedLabels": [
+      "feeling",
+      "together",
+      "forward"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "最近、お互い忙しくてゆっくり話せないのが少し寂しいな。嫌いになったわけじゃなくて、ただもっと一緒にいたい気持ちだよ。"
+      },
+      {
+        "labelKey": "situation",
+        "label": "状況と気持ちをセットで",
+        "text": "お互い忙しくて最近ゆっくり話せてないね。それが原因か、なんだかすれ違っている感じがして寂しいよ。あなたのことは嫌いじゃないんだ。"
+      },
+      {
+        "labelKey": "together",
+        "label": "一緒に解決したい",
+        "text": "最近忙しくて話す時間が取れず、少し寂しさやすれ違いを感じてる。嫌いになったわけじゃないから、この状況を一緒にどうにかしていきたいな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:26:17.375Z"
+  }
+]

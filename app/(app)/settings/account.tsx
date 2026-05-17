@@ -342,7 +342,7 @@ export default function AccountScreen() {
           <View style={styles.deleteSheet}>
             <Text style={styles.deleteSheetTitle}>アカウントを削除</Text>
             <Text style={styles.deleteSheetBody}>
-              すべての記録・壁打ち・お気に入りが完全に削除されます。この操作は取り消せません。
+              すべての記録・相談・お気に入りが完全に削除されます。この操作は取り消せません。
             </Text>
             {providerId === 'password' ? (
               <>

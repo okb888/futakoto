@@ -24,6 +24,7 @@ import { classifyError, firebaseErrorMessage } from '../../lib/errors';
 import { COLORS } from '../../lib/theme';
 import { PaywallModal } from '../../components/PaywallModal';
 import { AiConsentModal } from '../../components/AiConsentModal';
+import { trackEntryCreated, trackAiFeatureUsed, trackAiQuotaExceeded, trackPaywallShown } from '../../lib/analytics';
 
 function formatDateInput(date: Date): string {
   return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
@@ -48,7 +49,7 @@ export default function PostScreen() {
   const { user, profile, refreshProfile } = useAuth();
   const router = useRouter();
   const navigation = useNavigation();
-  const params = useLocalSearchParams<{ memo?: string; entryId?: string; sourceConsultationSessionId?: string }>();
+  const params = useLocalSearchParams<{ memo?: string; entryId?: string; sourceConsultationSessionId?: string; mood?: string }>();
   const entryId = typeof params.entryId === 'string' ? params.entryId : undefined;
   const sourceConsultationSessionId =
     typeof params.sourceConsultationSessionId === 'string' ? params.sourceConsultationSessionId : undefined;
@@ -84,6 +85,12 @@ export default function PostScreen() {
       setMemo(params.memo);
     }
   }, [isEditing, params.memo]);
+
+  useEffect(() => {
+    if (!isEditing && params.mood) {
+      setMood(Number(params.mood));
+    }
+  }, [isEditing, params.mood]);
 
   useEffect(() => {
     if (!user || !entryId) return;
@@ -127,7 +134,7 @@ export default function PostScreen() {
       }
       if (p?.partnerUid) {
         const pp = await getUserProfile(p.partnerUid);
-        if (pp) setPartnerName(getPartnerDisplayName(pp));
+        if (pp) setPartnerName(p.partnerCallName || getPartnerDisplayName(pp));
       }
     })();
   }, [user, isEditing]);
@@ -147,6 +154,7 @@ export default function PostScreen() {
         await updateEntry(user.uid, entryId, mood, memo, visibility, recordDate);
       } else {
         await addEntry(user.uid, mood, memo, visibility, recordDate, sourceConsultationSessionId);
+        trackEntryCreated({ mood, visibility });
         // 新規投稿時のみ、選んだ共有範囲を「次回のデフォルト」として保存
         updateLastVisibility(user.uid, visibility).catch(() => {});
       }
@@ -161,11 +169,14 @@ export default function PostScreen() {
   async function runAiRewrite() {
     setAiLoading(true);
     try {
-      const result = await aiRewrite(memo, partnerName);
+      const result = await aiRewrite(memo, partnerName, mood ?? undefined);
       setAiResult(result);
+      trackAiFeatureUsed('rewrite');
     } catch (e: any) {
       const c = classifyError(e);
       if (c.kind === 'quota') {
+        trackAiQuotaExceeded('rewrite');
+        trackPaywallShown('quota_rewrite');
         setPaywallReason(c.message);
         setPaywallOpen(true);
       } else {
@@ -193,9 +204,12 @@ export default function PostScreen() {
     try {
       await setAiConsentAcknowledged(user.uid);
       await refreshProfile();
-    } finally {
       setConsentOpen(false);
       await runAiRewrite();
+    } catch (e: any) {
+      const c = classifyError(e);
+      Alert.alert(c.title, c.message);
+      setConsentOpen(false);
     }
   }
 
@@ -368,6 +382,8 @@ export default function PostScreen() {
           multiline
           numberOfLines={4}
           textAlignVertical="top"
+          autoCorrect={false}
+          spellCheck={false}
         />
 
         {previousMemo ? (

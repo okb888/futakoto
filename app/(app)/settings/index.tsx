@@ -181,19 +181,19 @@ export default function SettingsIndexScreen() {
         <SettingRow
           icon={<EnvelopeSimple size={20} color={iconColor} weight="regular" />}
           label="お問い合わせ"
-          onPress={() => Linking.openURL('https://futakoto.jp/support')}
+          onPress={() => Linking.openURL('https://futakoto.web.app/support.html')}
         />
         <SectionDivider />
         <SettingRow
           icon={<FileText size={20} color={iconColor} weight="regular" />}
           label="利用規約"
-          onPress={() => Linking.openURL('https://futakoto.jp/terms')}
+          onPress={() => Linking.openURL('https://futakoto.web.app/terms.html')}
         />
         <SectionDivider />
         <SettingRow
           icon={<Lock size={20} color={iconColor} weight="regular" />}
           label="プライバシーポリシー"
-          onPress={() => Linking.openURL('https://futakoto.jp/privacy')}
+          onPress={() => Linking.openURL('https://futakoto.web.app/privacy.html')}
         />
         <SectionDivider />
         <SettingRow

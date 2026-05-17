@@ -18,6 +18,13 @@ import {
   restorePurchases,
   type PaywallOffering,
 } from '../lib/purchases';
+import {
+  trackPaywallShown,
+  trackPurchaseStarted,
+  trackPurchaseCompleted,
+  trackPurchaseFailed,
+  trackRestoreCompleted,
+} from '../lib/analytics';
 
 type Props = {
   visible: boolean;
@@ -29,10 +36,10 @@ type Props = {
 };
 
 const FEATURES = [
-  'AI壁打ち・伝え方リライト 無制限',
+  'AI相談・伝え方リライト 無制限',
   '相手の投稿の「気持ちを読み解く」 無制限',
   '月次振り返りサマリーがいつでも見られる',
-  '過去の壁打ち履歴をすべて参照可能',
+  '過去の相談履歴をすべて参照可能',
 ];
 
 export function PaywallModal({ visible, onClose, reason, onPurchased }: Props) {
@@ -42,16 +49,20 @@ export function PaywallModal({ visible, onClose, reason, onPurchased }: Props) {
   useEffect(() => {
     if (!visible) return;
     getCurrentOffering().then(setOffering);
+    trackPaywallShown(reason ?? 'unknown');
   }, [visible]);
 
   async function handlePurchase() {
     setLoading(true);
+    trackPurchaseStarted();
     try {
       const res = await purchasePremium();
       if (res.success) {
+        trackPurchaseCompleted();
         onPurchased?.();
         onClose();
       } else if (res.error) {
+        trackPurchaseFailed(res.error);
         Alert.alert('購入できませんでした', res.error);
       }
     } finally {
@@ -64,9 +75,11 @@ export function PaywallModal({ visible, onClose, reason, onPurchased }: Props) {
     try {
       const res = await restorePurchases();
       if (res.success) {
+        trackRestoreCompleted(true);
         onPurchased?.();
         onClose();
       } else if (res.error) {
+        trackRestoreCompleted(false);
         Alert.alert('復元できませんでした', res.error);
       }
     } finally {
@@ -77,8 +90,14 @@ export function PaywallModal({ visible, onClose, reason, onPurchased }: Props) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet}>
-          <TouchableOpacity style={styles.close} onPress={onClose} hitSlop={12}>
+        <View style={styles.sheet} accessibilityViewIsModal>
+          <TouchableOpacity
+            style={styles.close}
+            onPress={onClose}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="プレミアム案内を閉じる"
+          >
             <X size={22} color={COLORS.textMuted} weight="regular" />
           </TouchableOpacity>
 
@@ -104,7 +123,8 @@ export function PaywallModal({ visible, onClose, reason, onPurchased }: Props) {
             </Text>
             <Text style={styles.price}>{offering?.priceString ?? '¥500'} <Text style={styles.pricePer}>/ 月</Text></Text>
             <Text style={styles.priceNote}>
-              いつでも解約可能。ペアの片方が契約すれば、ふたりとも無制限になります。
+              いつでも解約可能。解約は端末の「設定 → Apple ID → サブスクリプション」から行えます。
+              ペアの片方が契約すれば、ふたりとも無制限になります。
             </Text>
           </View>
 
@@ -112,6 +132,8 @@ export function PaywallModal({ visible, onClose, reason, onPurchased }: Props) {
             style={[styles.cta, loading && styles.ctaDisabled]}
             onPress={handlePurchase}
             disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel="プレミアムを始める"
           >
             {loading ? (
               <ActivityIndicator color={COLORS.surface} />
@@ -120,16 +142,21 @@ export function PaywallModal({ visible, onClose, reason, onPurchased }: Props) {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleRestore} disabled={loading}>
+          <TouchableOpacity
+            onPress={handleRestore}
+            disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel="購入を復元"
+          >
             <Text style={styles.restoreText}>購入を復元</Text>
           </TouchableOpacity>
 
           <Text style={styles.legalText}>
             購入後、App Store アカウントに課金されます。自動更新は購入終了の24時間前までに解約しない場合、同じ条件で更新されます。
             {' '}
-            <Text style={styles.link} onPress={() => Linking.openURL('https://futakoto.app/terms.html')}>利用規約</Text>
+            <Text style={styles.link} onPress={() => Linking.openURL('https://futakoto.web.app/terms.html')}>利用規約</Text>
             {' '}/{' '}
-            <Text style={styles.link} onPress={() => Linking.openURL('https://futakoto.app/privacy.html')}>プライバシーポリシー</Text>
+            <Text style={styles.link} onPress={() => Linking.openURL('https://futakoto.web.app/privacy.html')}>プライバシーポリシー</Text>
           </Text>
 
           {!isPurchasesConfigured() ? (

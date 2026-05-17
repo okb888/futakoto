@@ -8,7 +8,8 @@ export interface RewriteResult {
     importantNuance: string;
     messageGoal: string;
   };
-  rewrites: { label: string; text: string }[];
+  selectedLabels?: string[];
+  rewrites: { labelKey?: string; label: string; text: string }[];
 }
 
 export interface InterpretResult {
@@ -76,8 +77,8 @@ export async function ensureUserProfile(): Promise<UserProfile> {
   return result.profile;
 }
 
-export async function aiRewrite(text: string, partnerName?: string): Promise<RewriteResult> {
-  return call<RewriteResult>('aiRewrite', { text, partnerName });
+export async function aiRewrite(text: string, partnerName?: string, mood?: number): Promise<RewriteResult> {
+  return call<RewriteResult>('aiRewrite', { text, partnerName, mood });
 }
 
 export async function aiConsult(

@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import * as logger from 'firebase-functions/logger';
 import {
   admin,
   db,
@@ -9,6 +10,8 @@ import {
   AI_SUMMARY_MAX_TOTAL_CHARS,
   AI_SUMMARY_MAX_MEMO_CHARS,
   DATA_HANDLING_INSTRUCTION,
+  REWRITE_LABELS,
+  buildRewriteLabelPrompt,
   detectCrisis,
   isBlank,
   wrapUserData,
@@ -42,7 +45,7 @@ export const aiRewrite = onCall(
   AI_FUNCTION_OPTIONS,
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
-    const { text, partnerName } = request.data as { text?: string; partnerName?: string };
+    const { text, partnerName, mood } = request.data as { text?: string; partnerName?: string; mood?: number };
     if (!text || isBlank(text)) {
       throw new HttpsError('invalid-argument', 'テキストが必要です');
     }
@@ -52,49 +55,15 @@ export const aiRewrite = onCall(
     await consumeAiQuota(request.auth.uid, 'aiRewrite');
 
     const partner = partnerName || 'パートナー';
-    const prompt = `あなたは夫婦のコミュニケーション支援AIです。
-以下のテキストは、ユーザーが${partner}に伝えたい気持ち・状況・お願いです。
-単なる要約や言い換えではなく、まず言葉の裏にある意図・葛藤・自分なりの反省・相手に伝えたい目的を読み取ってください。
-そのうえで、相手が受け取りやすく、でも本音や大事なニュアンスが薄まりすぎない文章に整えてください。
-
-${DATA_HANDLING_INSTRUCTION}
-
-特に重要:
-- 「本当はよくないと分かっている」「自分にも原因がある」「申し訳なさがある」「でもしんどい」のような自己認識・葛藤は削らない
-- 事実、気持ち、自己認識、相手へのお願いを混ぜすぎず、自然な順番で伝える
-- 相手を責める表現にはしないが、ユーザーの困りごとも消さない
-- 元の文章にない謝罪・反省・お願いを勝手に強く足さない
-
-このテキストを、以下の3パターンに書き直してください:
-1. **気持ちを残す**: 元の葛藤や自己認識を残しながら、相手に伝わりやすくする
-2. **具体的に**: 何があってどう感じたか、何を分かっているかが伝わる表現
-3. **お願いにする**: 自己認識を残したうえで、「こうしてくれると助かる」に着地する表現
-
-各案は120文字以内、自然な日本語で。説教・断定・過剰な謝罪にしないこと。
-
-元のテキスト:
-${wrapUserData(text)}
-
-出力形式（JSON）:
-{
-  "understanding": {
-    "coreFeeling": "ユーザーの中心にある気持ちを40文字以内で",
-    "importantNuance": "削ってはいけない自己認識・葛藤・背景を60文字以内で",
-    "messageGoal": "相手に伝える目的を40文字以内で"
-  },
-  "rewrites": [
-    { "label": "気持ちを残す", "text": "..." },
-    { "label": "具体的に", "text": "..." },
-    { "label": "お願いにする", "text": "..." }
-  ]
-}`;
+    const prompt = buildRewriteLabelPrompt(text, partner, mood);
 
     try {
       const result = await getModel('rewrite').generateContent(prompt);
       const json = JSON.parse(result.response.text());
       return json;
     } catch (e: any) {
-      throw new HttpsError('internal', `AI処理に失敗しました: ${e.message}`);
+      logger.error('AI error', { fn: 'aiRewrite', message: e?.message });
+      throw new HttpsError('internal', 'AI処理に失敗しました');
     }
   }
 );
@@ -312,10 +281,14 @@ export const aiConsult = onCall(
 
     try {
       const result = await getModel('consult').generateContent(prompt);
-      const json = JSON.parse(result.response.text());
-      return { reply: json.reply };
+      const raw = result.response.text().trim();
+      const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+      const json = JSON.parse(cleaned);
+      if (!json.reply) throw new Error('reply フィールドが空です');
+      return { reply: json.reply as string };
     } catch (e: any) {
-      throw new HttpsError('internal', `AI処理に失敗しました: ${e.message}`);
+      logger.error('AI error', { fn: 'aiConsult', message: e?.message });
+      throw new HttpsError('internal', 'AI処理に失敗しました');
     }
   }
 );
@@ -343,6 +316,10 @@ export const aiDraftOptions = onCall(
       .map((t, i) => `[turn${i + 1}] ${wrapUserData(t.input ?? '')}`)
       .join('\n');
 
+    const labelListText = REWRITE_LABELS
+      .map((l, i) => `${i + 1}. **${l.label}** (key: ${l.key}): ${l.desc}`)
+      .join('\n');
+
     const prompt = `あなたは夫婦のコミュニケーション支援AIです。
 以下はユーザーが${partner}に関して気持ちを整理した発話の記録です。
 
@@ -356,12 +333,14 @@ ${userInputs}
 1. summary: ユーザーが${partner}に伝えたいことを60文字以内で1〜2文にまとめる。
    - ユーザーの本音・葛藤を薄めすぎない
    - 相手を責める表現にしない
-   - 「〜ということを伝えたい」という形に集約
 
-2. options: 伝え方の選択肢を3つ。それぞれ:
-   - label: 短いラベル（8文字以内）
-   - description: その伝え方の概要（30文字以内）
-   - 方向性が異なるよう重複させない（例: 気持ちを伝える・お願いを共有する・事実だけ共有）
+2. options: 以下の10ラベルから、この会話内容と最も整合する3つを選んで伝え方の選択肢にする:
+
+${labelListText}
+
+   選択基準:
+   - 3つが互いに方向性・トーンが異なるよう選ぶ
+   - 各選択肢に description（30文字以内）でその伝え方の概要を添える
 
 出力形式（JSON）:
 {
@@ -378,7 +357,8 @@ ${userInputs}
       const json = JSON.parse(result.response.text());
       return json;
     } catch (e: any) {
-      throw new HttpsError('internal', `AI処理に失敗しました: ${e.message}`);
+      logger.error('AI error', { fn: 'aiDraftOptions', message: e?.message });
+      throw new HttpsError('internal', 'AI処理に失敗しました');
     }
   }
 );
@@ -454,7 +434,8 @@ ${wrapUserData(intent)}
 
       return json;
     } catch (e: any) {
-      throw new HttpsError('internal', `AI処理に失敗しました: ${e.message}`);
+      logger.error('AI error', { fn: 'aiDraft', message: e?.message });
+      throw new HttpsError('internal', 'AI処理に失敗しました');
     }
   }
 );
@@ -481,13 +462,8 @@ export const aiInterpret = onCall(
     const viewerUid = request.auth.uid;
     const cacheKey = entryId && entryOwnerId ? `${entryOwnerId}_${entryId}` : null;
 
-    if (cacheKey && !force) {
-      const cacheSnap = await db.doc(`users/${viewerUid}/interpretationCache/${cacheKey}`).get();
-      if (cacheSnap.exists) {
-        return { interpretations: cacheSnap.data()!.interpretations };
-      }
-    }
-
+    // 権限確認はキャッシュ参照より先に行う。
+    // sharedからprivateへ戻された投稿の古いキャッシュを相手が読めてしまう問題を防ぐ。
     if (entryId && entryOwnerId) {
       if (entryOwnerId !== viewerUid) {
         const viewerSnap = await db.doc(`users/${viewerUid}`).get();
@@ -502,6 +478,13 @@ export const aiInterpret = onCall(
       }
       if (entryOwnerId !== viewerUid && entrySnap.data()?.visibility !== 'shared') {
         throw new HttpsError('permission-denied', 'この投稿は共有されていません');
+      }
+    }
+
+    if (cacheKey && !force) {
+      const cacheSnap = await db.doc(`users/${viewerUid}/interpretationCache/${cacheKey}`).get();
+      if (cacheSnap.exists) {
+        return { interpretations: cacheSnap.data()!.interpretations };
       }
     }
 
@@ -545,7 +528,8 @@ ${wrapUserData(text)}
 
       return json;
     } catch (e: any) {
-      throw new HttpsError('internal', `AI処理に失敗しました: ${e.message}`);
+      logger.error('AI error', { fn: 'aiInterpret', message: e?.message });
+      throw new HttpsError('internal', 'AI処理に失敗しました');
     }
   }
 );
@@ -635,7 +619,8 @@ ${wrapUserData(summary)}
       const json = JSON.parse(result.response.text());
       return json;
     } catch (e: any) {
-      throw new HttpsError('internal', `AI処理に失敗しました: ${e.message}`);
+      logger.error('AI error', { fn: 'aiSummary', message: e?.message });
+      throw new HttpsError('internal', 'AI処理に失敗しました');
     }
   }
 );

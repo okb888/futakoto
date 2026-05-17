@@ -1,0 +1,125 @@
+[
+  {
+    "caseId": "case-r01",
+    "caseLabel": "ポジティブ・感謝",
+    "sampleId": "r01-s01",
+    "input": "今日ありがとうって言えてよかった",
+    "mood": 5,
+    "understanding": {
+      "coreFeeling": "夫に感謝を伝えられたことへの喜びと満足感",
+      "importantNuance": "感謝を伝えたこと自体が良い体験だったという自己肯定感",
+      "messageGoal": "夫にポジティブな気持ちと感謝を伝える"
+    },
+    "selectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "expectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "positive",
+        "label": "喜びを届ける",
+        "text": "今日「ありがとう」って言えて、私もすごく嬉しかったよ。あなたに感謝を伝えられて、本当に良かった。"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "今日、あなたに「ありがとう」と伝えられたことが、私にとってとても心地よいことでした。伝えてよかったと心から思っています。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "今日、「ありがとう」を直接伝えられて、私まで嬉しい気持ちになったよ。こんな風に気持ちを伝え合えるの、これからも大事にしたいね。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:14:48.918Z"
+  },
+  {
+    "caseId": "case-r01",
+    "caseLabel": "ポジティブ・感謝",
+    "sampleId": "r01-s02",
+    "input": "久しぶりにゆっくり話せた。よかった",
+    "mood": 4,
+    "understanding": {
+      "coreFeeling": "久しぶりにゆっくり話せたことへの喜びと安堵",
+      "importantNuance": "なし",
+      "messageGoal": "妻に、ゆっくり話せたことへの感謝と喜びを伝える"
+    },
+    "selectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "expectedLabels": [
+      "positive",
+      "forward",
+      "polish"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "positive",
+        "label": "喜びを届ける",
+        "text": "今日は久しぶりにゆっくり話せて、本当に嬉しかったよ。この時間を持ててよかったと感じています。"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "久しぶりに二人で腰を落ち着けて話すことができ、とても有意義な時間だったね。こういう機会は大切にしたいと感じました。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "久しぶりにゆっくり話す時間が持ててよかったね。これからも時々、こんな風に二人で話す時間を作れたら嬉しいな。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:14:55.718Z"
+  },
+  {
+    "caseId": "case-r01",
+    "caseLabel": "ポジティブ・感謝",
+    "sampleId": "r01-s03",
+    "input": "先週の件、フォローしてくれてありがとう。本当に助かった",
+    "mood": 4,
+    "understanding": {
+      "coreFeeling": "夫のフォローに感謝し、助けられたことへの安堵感",
+      "importantNuance": "なし",
+      "messageGoal": "夫への感謝と、助けられたことを明確に伝える"
+    },
+    "selectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "expectedLabels": [
+      "positive",
+      "polish",
+      "forward"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "positive",
+        "label": "喜びを届ける",
+        "text": "先週の件、さりげなくフォローしてくれて本当にありがとう。あなたがいてくれて、すごく心強く感じたし、とっても助かりました。"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "この前の件、色々とフォローしてくれて本当に助かったよ。いつもありがとう。おかげでとても安心できたし、無事に乗り越えられたよ。"
+      },
+      {
+        "labelKey": "forward",
+        "label": "次につなげる",
+        "text": "先週の件、フォローしてくれて本当に助かりました。ありがとうね。あなたのサポートがあったからこそ、私も安心して進められたよ。これからも頼りにしています。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:15:04.033Z"
+  }
+]

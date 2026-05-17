@@ -1,0 +1,125 @@
+[
+  {
+    "caseId": "case-r03",
+    "caseLabel": "自己反省・葛藤",
+    "sampleId": "r03-s01",
+    "input": "自分も言い方が悪かったと思う。でも傷ついた。どう言えばよかったか分からない",
+    "mood": 2,
+    "understanding": {
+      "coreFeeling": "自分の非を認めつつ相手の言葉に傷つき、伝える方法に悩むしんどさ",
+      "importantNuance": "自分の言い方も悪かったという反省と、どう伝えたら良かったか分からない葛藤",
+      "messageGoal": "自分の落ち度も認めつつ、傷ついた気持ちと悩みを理解してもらう"
+    },
+    "selectedLabels": [
+      "apologize",
+      "conflict",
+      "feeling"
+    ],
+    "expectedLabels": [
+      "conflict",
+      "apologize",
+      "feeling"
+    ],
+    "labelMatchCount": 3,
+    "rewrites": [
+      {
+        "labelKey": "apologize",
+        "label": "謝りながら伝える",
+        "text": "言い方が悪かったのはごめんなさい。でも、あなたの言葉に傷ついてしまって、どう伝えたらよかったか分からず苦しい気持ちです。"
+      },
+      {
+        "labelKey": "conflict",
+        "label": "葛藤をそのまま",
+        "text": "私の方こそ言い方が良くなかったと反省しています。ただ、そのせいで私自身も傷ついてしまって、どうすれば良かったのか考えています。"
+      },
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "自分の言い方も良くなかったと反省していますが、正直、あなたの言葉でとても傷ついてしまいました。どう伝えたらこの気持ちが伝わるのか分からず、少ししんどいです。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:17:02.683Z"
+  },
+  {
+    "caseId": "case-r03",
+    "caseLabel": "自己反省・葛藤",
+    "sampleId": "r03-s02",
+    "input": "私が細かすぎるのかもしれない。でもやっぱり気になってしまう。",
+    "mood": 3,
+    "understanding": {
+      "coreFeeling": "何かが気になってしまう気持ち",
+      "importantNuance": "自分が細かすぎると自覚しつつも、どうしても気になってしまう葛藤がある",
+      "messageGoal": "自分の感じている「気になる」という気持ちを穏やかに共有したい"
+    },
+    "selectedLabels": [
+      "conflict",
+      "feeling",
+      "polish"
+    ],
+    "expectedLabels": [
+      "conflict",
+      "feeling",
+      "simple"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "conflict",
+        "label": "葛藤をそのまま",
+        "text": "「私が気にしすぎなのかな」とも思うんだけど、どうしても心に引っかかってしまうことがあるんだ。伝えたくて。"
+      },
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "もしかしたら細かいことかもしれないけれど、少し気になっていることがあるんだ。"
+      },
+      {
+        "labelKey": "polish",
+        "label": "言葉を整える",
+        "text": "少し考えすぎかなと思いつつも、どうしても心に留まってしまうことがあるんです。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:17:11.693Z"
+  },
+  {
+    "caseId": "case-r03",
+    "caseLabel": "自己反省・葛藤",
+    "sampleId": "r03-s03",
+    "input": "自分が求めすぎなのかなとも思う。でも寂しいのは本当で、それを伝えてもいいのか分からない。",
+    "mood": 2,
+    "understanding": {
+      "coreFeeling": "寂しさと、それを伝えて良いか分からない葛藤",
+      "importantNuance": "求めすぎかと自分を責める気持ちと、本音を伝えて良いか分からない迷い",
+      "messageGoal": "寂しい気持ちと、それを伝えることへの戸惑いを共有する"
+    },
+    "selectedLabels": [
+      "conflict",
+      "feeling",
+      "simple"
+    ],
+    "expectedLabels": [
+      "conflict",
+      "feeling",
+      "together"
+    ],
+    "labelMatchCount": 2,
+    "rewrites": [
+      {
+        "labelKey": "conflict",
+        "label": "葛藤をそのまま",
+        "text": "自分が求めすぎなのかなと考える一方で、やっぱり寂しい気持ちもあって、どう伝えたらいいのか葛藤しています。"
+      },
+      {
+        "labelKey": "feeling",
+        "label": "気持ちを届ける",
+        "text": "少し寂しいなと感じることがあって、それをあなたに伝えてもいいのか、今は迷う気持ちがあります。"
+      },
+      {
+        "labelKey": "simple",
+        "label": "シンプルに伝える",
+        "text": "少し寂しいと感じることがあり、それをあなたに話すことに少し戸惑いがあります。"
+      }
+    ],
+    "timestamp": "2026-05-16T12:17:21.924Z"
+  }
+]

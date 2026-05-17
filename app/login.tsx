@@ -10,7 +10,6 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -24,6 +23,7 @@ import {
   signInWithGoogle,
   isGoogleSignInConfigured,
 } from '../lib/auth-providers';
+import { trackLogin, trackSignUp } from '../lib/analytics';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -42,8 +42,10 @@ export default function LoginScreen() {
       if (isRegister) {
         const { user } = await createUserWithEmailAndPassword(auth, email, password);
         await sendEmailVerification(user).catch(() => {});
+        trackSignUp('email');
       } else {
         await signInWithEmailAndPassword(auth, email, password);
+        trackLogin('email');
       }
     } catch (e: any) {
       Alert.alert('エラー', firebaseErrorMessage(e));
@@ -58,6 +60,7 @@ export default function LoginScreen() {
     setSocialLoading('apple');
     try {
       await signInWithApple();
+      trackLogin('apple');
     } finally {
       socialInFlightRef.current = false;
       setSocialLoading(null);
@@ -70,6 +73,7 @@ export default function LoginScreen() {
     setSocialLoading('google');
     try {
       await signInWithGoogle();
+      trackLogin('google');
     } finally {
       socialInFlightRef.current = false;
       setSocialLoading(null);
@@ -98,6 +102,9 @@ export default function LoginScreen() {
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
+          accessibilityLabel="メールアドレス"
+          textContentType="emailAddress"
+          autoComplete="email"
         />
         <TextInput
           style={styles.input}
@@ -106,6 +113,9 @@ export default function LoginScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          accessibilityLabel="パスワード"
+          textContentType="password"
+          autoComplete="password"
         />
 
         <TouchableOpacity
@@ -131,32 +141,21 @@ export default function LoginScreen() {
             </View>
 
             {showApple && (
-              <View
-                style={[
-                  anyBusy && socialLoading !== 'apple' && styles.buttonDisabled,
-                ]}
-                pointerEvents={anyBusy ? 'none' : 'auto'}
+              <TouchableOpacity
+                style={[styles.appleButton, anyBusy && styles.buttonDisabled]}
+                onPress={handleApple}
+                disabled={anyBusy}
+                activeOpacity={0.8}
               >
                 {socialLoading === 'apple' ? (
-                  <View style={styles.appleLoadingButton}>
-                    <ActivityIndicator color={COLORS.surface} />
-                  </View>
+                  <ActivityIndicator color={COLORS.surface} />
                 ) : (
-                  <AppleAuthentication.AppleAuthenticationButton
-                    buttonType={
-                      AppleAuthentication.AppleAuthenticationButtonType
-                        .SIGN_IN
-                    }
-                    buttonStyle={
-                      AppleAuthentication.AppleAuthenticationButtonStyle
-                        .BLACK
-                    }
-                    cornerRadius={12}
-                    style={styles.appleNativeButton}
-                    onPress={handleApple}
-                  />
+                  <View style={styles.socialInner}>
+                    <Text style={styles.appleLogo}></Text>
+                    <Text style={styles.appleButtonText}>Appleではじめる</Text>
+                  </View>
                 )}
-              </View>
+              </TouchableOpacity>
             )}
 
             {showGoogle && (
@@ -172,7 +171,7 @@ export default function LoginScreen() {
                   <View style={styles.socialInner}>
                     <Text style={styles.googleLogo}>G</Text>
                     <Text style={styles.googleButtonText}>
-                      Googleでログイン
+                      Googleではじめる
                     </Text>
                   </View>
                 )}
@@ -260,18 +259,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginHorizontal: 12,
   },
-  appleLoadingButton: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 10,
-    height: 50,
-    justifyContent: 'center',
+  appleButton: {
     backgroundColor: '#000',
-  },
-  appleNativeButton: {
-    width: '100%',
-    height: 50,
+    borderRadius: 12,
     marginBottom: 10,
+    minHeight: 50,
+    justifyContent: 'center',
+  },
+  appleLogo: {
+    fontSize: 20,
+    color: '#fff',
+    marginRight: 8,
+    lineHeight: 24,
+  },
+  appleButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   socialInner: {
     flexDirection: 'row',

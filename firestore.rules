@@ -2,10 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 招待コード: 認証済みなら読める（findUidByCode で使用）。書き込みはCloud Functionsのみ
+    // 招待コード: クライアントから直接読まれない（pairWithCode のCloud Functionsのみ参照）
     match /inviteCodes/{code} {
-      allow read: if request.auth != null;
-      allow create, update, delete: if false;
+      allow read, create, update, delete: if false;
     }
 
     match /users/{uid} {
@@ -31,7 +30,7 @@ service cloud.firestore {
              .hasOnly([
                'displayName', 'communicationStyle', 'lastVisibility',
                'notificationSettings', 'aiPersona', 'aiConsentAcknowledged',
-               'aiConsentAcknowledgedAt'
+               'aiConsentAcknowledgedAt', 'partnerCallName'
              ]);
 
       allow delete: if false;
