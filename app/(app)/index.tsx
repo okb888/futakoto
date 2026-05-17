@@ -9,7 +9,6 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
-  Modal,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -47,11 +46,7 @@ export default function HomeScreen() {
   const [consentOpen, setConsentOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // 顔文字モーダル
-  const [moodModalOpen, setMoodModalOpen] = useState(false);
-  const [moodModalMood, setMoodModalMood] = useState<number | null>(null);
-  const [moodModalMemo, setMoodModalMemo] = useState('');
-  const [moodModalSubmitting, setMoodModalSubmitting] = useState(false);
+  const [visibility, setVisibility] = useState<'shared' | 'private'>('shared');
 
   useEffect(() => {
     AsyncStorage.getItem('hasSeenOnboarding').then((val) => {
@@ -137,9 +132,10 @@ export default function HomeScreen() {
     if (!user || selectedMood === null) return;
     setSubmitting(true);
     try {
-      await addEntry(user.uid, selectedMood, memo.trim(), 'shared');
+      await addEntry(user.uid, selectedMood, memo.trim(), visibility);
       setSelectedMood(null);
       setMemo('');
+      setVisibility('shared');
       await load();
     } catch (e: any) {
       Alert.alert('エラー', '記録できませんでした');
@@ -186,33 +182,54 @@ export default function HomeScreen() {
                   styles.moodButton,
                   selectedMood === m.score && { backgroundColor: m.color, borderColor: m.color },
                 ]}
-                onPress={() => setMoodModalOpen(true)}
+                onPress={() => setSelectedMood(selectedMood === m.score ? null : m.score)}
               >
                 <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                <Text style={[styles.moodLabel, selectedMood === m.score && styles.moodLabelActive]}>{m.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <TextInput
-            style={styles.memoInput}
-            placeholder={`いまの気持ちや${partnerName}に伝えたいこと`}
-            placeholderTextColor={COLORS.textWeak}
-            value={memo}
-            onChangeText={setMemo}
-            multiline
-          />
+          {selectedMood !== null && (
+            <>
+              <TextInput
+                style={styles.memoInput}
+                placeholder={`いまの気持ちや${partnerName}に伝えたいこと`}
+                placeholderTextColor={COLORS.textWeak}
+                value={memo}
+                onChangeText={setMemo}
+                multiline
+                textAlignVertical="top"
+              />
 
-          <TouchableOpacity
-            style={[styles.submitButton, selectedMood === null && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={selectedMood === null || submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color={COLORS.surface} size="small" />
-            ) : (
-              <Text style={styles.submitButtonText}>伝える</Text>
-            )}
-          </TouchableOpacity>
+              <View style={styles.visibilityRow}>
+                <TouchableOpacity
+                  style={[styles.visBtn, visibility === 'shared' && styles.visBtnActive]}
+                  onPress={() => setVisibility('shared')}
+                >
+                  <Text style={[styles.visBtnText, visibility === 'shared' && styles.visBtnTextActive]}>ふたりに共有</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.visBtn, visibility === 'private' && styles.visBtnPrivateActive]}
+                  onPress={() => setVisibility('private')}
+                >
+                  <Text style={[styles.visBtnText, visibility === 'private' && styles.visBtnTextPrivateActive]}>自分だけ</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator color={COLORS.surface} size="small" />
+                ) : (
+                  <Text style={styles.submitButtonText}>伝える</Text>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         <Text style={styles.sectionTitle}>今日の記録</Text>
@@ -267,58 +284,6 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>{partnerName} はまだ今日の記録がありません</Text>
           )
         )}
-
-        {/* 顔文字タップで開くフルサイズ入力モーダル */}
-        <Modal visible={moodModalOpen} animationType="slide" transparent onRequestClose={() => setMoodModalOpen(false)}>
-          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMoodModalOpen(false)} />
-            <View style={styles.moodModalSheet}>
-              <View style={styles.moodModalHeader}>
-                <Text style={styles.moodModalTitle}>いまの気持ちを記録する</Text>
-                <TouchableOpacity onPress={() => setMoodModalOpen(false)}><Text style={styles.moodModalClose}>✕</Text></TouchableOpacity>
-              </View>
-              <Text style={styles.moodModalLabel}>そのときの気分は？</Text>
-              <View style={styles.moodRow}>
-                {MOODS.map((m) => (
-                  <TouchableOpacity key={m.score}
-                    style={[styles.moodButton, moodModalMood === m.score && { backgroundColor: m.color, borderColor: m.color }]}
-                    onPress={() => setMoodModalMood(moodModalMood === m.score ? null : m.score)}>
-                    <Text style={styles.moodEmoji}>{m.emoji}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={styles.moodModalLabel}>いまの気持ちや{partnerName}に伝えたいこと</Text>
-              <TextInput
-                style={styles.moodModalInput}
-                placeholder={`いまの気持ちや${partnerName}に伝えたいこと`}
-                placeholderTextColor={COLORS.textWeak}
-                value={moodModalMemo}
-                onChangeText={setMoodModalMemo}
-                multiline
-                autoFocus
-                textAlignVertical="top"
-              />
-              <TouchableOpacity
-                style={[styles.submitButton, moodModalMood === null && styles.submitButtonDisabled]}
-                onPress={async () => {
-                  if (!user || moodModalMood === null) return;
-                  setMoodModalSubmitting(true);
-                  try {
-                    await addEntry(user.uid, moodModalMood, moodModalMemo.trim(), 'shared');
-                    setMoodModalOpen(false);
-                    setMoodModalMood(null);
-                    setMoodModalMemo('');
-                    await load();
-                  } catch { Alert.alert('エラー', '記録できませんでした'); }
-                  finally { setMoodModalSubmitting(false); }
-                }}
-                disabled={moodModalMood === null || moodModalSubmitting}
-              >
-                {moodModalSubmitting ? <ActivityIndicator color={COLORS.surface} size="small" /> : <Text style={styles.submitButtonText}>伝える</Text>}
-              </TouchableOpacity>
-            </View>
-          </KeyboardAvoidingView>
-        </Modal>
 
         <PaywallModal
           visible={paywallOpen}
@@ -384,6 +349,23 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   moodEmoji: { fontSize: 26 },
+  moodLabel: { fontSize: 10, color: COLORS.textWeak, marginTop: 3, textAlign: 'center' },
+  moodLabelActive: { color: COLORS.surface, fontWeight: '700' },
+  visibilityRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  visBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
+  },
+  visBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primarySoft },
+  visBtnPrivateActive: { borderColor: COLORS.border, backgroundColor: COLORS.surface },
+  visBtnText: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
+  visBtnTextActive: { color: COLORS.primaryDeep },
+  visBtnTextPrivateActive: { color: COLORS.text },
   memoInput: {
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -405,45 +387,12 @@ const styles = StyleSheet.create({
   submitButtonText: { color: COLORS.surface, fontSize: 15, fontWeight: '700' },
   sectionTitle: { fontSize: 13, color: COLORS.textMuted, fontWeight: '700', marginBottom: 10 },
   emptyText: { fontSize: 13, color: COLORS.textWeak, marginBottom: 12, paddingLeft: 4 },
-  myEntryWrapper: {
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  partnerEntryWrapper: {
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.partner,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
+  myEntryWrapper: {},
+  partnerEntryWrapper: {},
   showMoreButton: {
     alignItems: 'center',
     paddingVertical: 10,
     marginBottom: 10,
   },
   showMoreText: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
-  moodModalSheet: {
-    backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-    gap: 12,
-  },
-  moodModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  moodModalTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-  moodModalClose: { fontSize: 18, color: COLORS.textMuted },
-  moodModalLabel: { fontSize: 13, fontWeight: '600', color: COLORS.textMuted, marginBottom: 6 },
-  moodModalInput: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-    color: COLORS.text,
-    minHeight: 120,
-    textAlignVertical: 'top',
-  },
 });

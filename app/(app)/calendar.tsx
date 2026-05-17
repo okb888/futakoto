@@ -47,7 +47,7 @@ LocaleConfig.locales['ja'] = {
 LocaleConfig.defaultLocale = 'ja';
 
 type ViewMode = 'calendar' | 'log';
-type FilterType = 'all' | 'me' | 'partner' | 'favorite' | 'consultation';
+type FilterType = 'all' | 'favorite';
 type SortOrder = 'desc' | 'asc';
 type PeriodFilter = 'thisMonth' | 'lastMonth' | 'past3Months' | 'all';
 type VisibilityFilter = 'all' | 'shared' | 'private';
@@ -125,6 +125,7 @@ export default function CalendarScreen() {
   const [partnerProfile, setPartnerProfile] = useState<UserProfile | null>(null);
   const [selected, setSelected] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
+  const [calendarTypeFilter, setCalendarTypeFilter] = useState<'all' | 'entry' | 'consultation'>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState<string>(() => {
@@ -205,7 +206,6 @@ export default function CalendarScreen() {
         setSummaryTarget('me');
         setAiSummaryText(aiSummaryCache[`${currentMonth}-me`] ?? null);
       }
-      if (filter === 'partner') setFilter('all');
     }
     if (!isCancelled()) setLoading(false);
   }
@@ -221,6 +221,10 @@ export default function CalendarScreen() {
     } else if (params.viewMode === undefined) {
       setLogTypeFilter('all');
     }
+    return () => {
+      setViewMode('calendar');
+      setLogTypeFilter('all');
+    };
   }, [params.viewMode, params.typeFilter]));
 
   // ナビゲーションヘッダーにタブ切り替えボタン
@@ -504,15 +508,16 @@ export default function CalendarScreen() {
     })),
   ]
     .filter((record) => {
-      if (filter === 'all') return true;
-      if (filter === 'consultation') return record.kind === 'consultation';
-      if (record.kind !== 'entry') return false;
-      if (filter === 'me') return record.authorType === 'me';
-      if (filter === 'partner') return record.authorType === 'partner';
-      if (filter === 'favorite') return record.isFavorite;
+      if (calendarTypeFilter === 'entry' && record.kind !== 'entry') return false;
+      if (calendarTypeFilter === 'consultation' && record.kind !== 'consultation') return false;
+      if (filter === 'favorite') {
+        if (record.kind !== 'entry') return false;
+        return record.isFavorite;
+      }
       return true;
     })
     .sort((a, b) => sortOrder === 'desc' ? b.sortMs - a.sortMs : a.sortMs - b.sortMs), [
+    calendarTypeFilter,
     consultationsByDate,
     favoriteIds,
     filter,
@@ -616,9 +621,12 @@ export default function CalendarScreen() {
 
   const filters: { key: FilterType; label: string }[] = [
     { key: 'all', label: 'すべて' },
-    { key: 'me', label: '自分' },
-    { key: 'partner', label: '相手' },
     { key: 'favorite', label: 'お気に入り' },
+  ];
+
+  const typeFilters: { key: 'all' | 'entry' | 'consultation'; label: string }[] = [
+    { key: 'all', label: 'すべて' },
+    { key: 'entry', label: '投稿' },
     { key: 'consultation', label: '相談' },
   ];
 
@@ -837,7 +845,7 @@ export default function CalendarScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={{ position: 'relative' }}>
+      <View>
         <Calendar
           key={calendarKey}
           current={`${currentMonth}-01`}
@@ -856,20 +864,16 @@ export default function CalendarScreen() {
             textDayHeaderFontSize: 12,
           }}
         />
-        {isPastMonthLocked && (
-          <View style={styles.calendarOverlay}>
-            <Sparkle size={28} color={COLORS.ai} weight="fill" />
-            <Text style={styles.calendarOverlayText}>過去月の振り返りはプレミアム機能です</Text>
-            <TouchableOpacity
-              style={styles.calendarOverlayBtn}
-              onPress={() => {
-                setPaywallReason('過去の月を振り返れるのはプレミアム特典です');
-                setPaywallOpen(true);
-              }}
-            >
-              <Text style={styles.calendarOverlayBtnText}>プレミアムを見る</Text>
-            </TouchableOpacity>
-          </View>
+        {isPastMonth(currentMonth) && (
+          <TouchableOpacity
+            style={styles.todayButton}
+            onPress={() => {
+              setCurrentMonth(thisMonthKey());
+              setCalendarKey((k) => k + 1);
+            }}
+          >
+            <Text style={styles.todayButtonText}>今月</Text>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -968,8 +972,8 @@ export default function CalendarScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.calendarFilterRow}
       >
-        {filters.map((item) => {
-          const active = filter === item.key;
+        {typeFilters.map((item) => {
+          const active = calendarTypeFilter === item.key;
           const isConsultation = item.key === 'consultation';
           return (
             <TouchableOpacity
@@ -979,7 +983,7 @@ export default function CalendarScreen() {
                 active && styles.filterButtonActive,
                 active && isConsultation && styles.filterButtonAiActive,
               ]}
-              onPress={() => setFilter(item.key)}
+              onPress={() => setCalendarTypeFilter(item.key)}
             >
               <Text
                 style={[
@@ -988,6 +992,21 @@ export default function CalendarScreen() {
                   active && isConsultation && styles.filterTextAiActive,
                 ]}
               >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+        <View style={styles.filterDivider} />
+        {filters.map((item) => {
+          const active = filter === item.key;
+          return (
+            <TouchableOpacity
+              key={item.key}
+              style={[styles.filterButton, active && styles.filterButtonActive]}
+              onPress={() => setFilter(item.key)}
+            >
+              <Text style={[styles.filterText, active && styles.filterTextActive]}>
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -1009,23 +1028,22 @@ export default function CalendarScreen() {
         )}
       </View>
 
-      {!premium ? (
+      {isPastMonthLocked ? (
         <TouchableOpacity
-          style={styles.premiumHint}
+          style={styles.pastMonthBlock}
           onPress={() => {
             setPaywallReason('過去の月を振り返れるのはプレミアム特典です');
             setPaywallOpen(true);
           }}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <Sparkle size={13} color={COLORS.ai} weight="fill" />
-          <Text style={styles.premiumHintText}>
-            過去月の振り返りはプレミアム
-          </Text>
+          <Sparkle size={20} color={COLORS.ai} weight="fill" />
+          <Text style={styles.pastMonthBlockText}>過去月の振り返りはプレミアム機能です</Text>
+          <View style={styles.pastMonthBtn}>
+            <Text style={styles.pastMonthBtnText}>プレミアムを見る</Text>
+          </View>
         </TouchableOpacity>
-      ) : null}
-
-      {selected === '' ? null : selectedDayRecords.length === 0 ? (
+      ) : selected === '' ? null : selectedDayRecords.length === 0 ? (
         <Text style={styles.empty}>この日の記録はありません</Text>
       ) : (
         selectedDayRecords.map((record) => {
@@ -1137,8 +1155,8 @@ const styles = StyleSheet.create({
   filterToggleText: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
   filterPanel: { backgroundColor: COLORS.surface, margin: 16, marginTop: 0, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: COLORS.border, gap: 8 },
   filterGroupLabel: { fontSize: 11, color: COLORS.textWeak, fontWeight: '700', marginTop: 6 },
-  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  filterChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.background },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
+  filterChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' },
   filterChipActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '18' },
   filterChipPremium: { borderColor: COLORS.aiBorder, backgroundColor: COLORS.aiBgSoft },
   filterChipPremiumActive: { borderColor: COLORS.ai, backgroundColor: COLORS.aiBg },
@@ -1288,31 +1306,32 @@ const styles = StyleSheet.create({
   summaryCardTitle: { flex: 1, fontSize: 13, color: COLORS.ai, fontWeight: '700' },
   summaryToggle: { fontSize: 11, color: COLORS.ai },
   summaryText: { fontSize: 14, color: COLORS.text, lineHeight: 21, paddingHorizontal: 14, paddingBottom: 14 },
-  premiumHint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginHorizontal: 16,
-    marginVertical: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    backgroundColor: COLORS.aiBgSoft,
-    borderWidth: 1,
-    borderColor: COLORS.aiBorderSoft,
-  },
-  premiumHintText: { fontSize: 12, color: COLORS.ai, fontWeight: '600' },
-  calendarOverlay: {
+  filterDivider: { width: 1, backgroundColor: COLORS.border, marginHorizontal: 4, alignSelf: 'stretch' },
+  todayButton: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.88)',
+    top: 14,
+    right: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: COLORS.primarySoft,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  todayButtonText: { fontSize: 11, color: COLORS.primaryDeep, fontWeight: '700' },
+  pastMonthBlock: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    zIndex: 10,
+    gap: 10,
+    marginHorizontal: 16,
+    marginVertical: 16,
+    paddingVertical: 28,
+    borderRadius: 16,
+    backgroundColor: COLORS.aiBg,
+    borderWidth: 1,
+    borderColor: COLORS.aiBorder,
   },
-  calendarOverlayText: { fontSize: 14, color: COLORS.ai, fontWeight: '600', textAlign: 'center', paddingHorizontal: 24 },
-  calendarOverlayBtn: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.ai },
-  calendarOverlayBtnText: { fontSize: 13, color: '#fff', fontWeight: '700' },
+  pastMonthBlockText: { fontSize: 14, color: COLORS.ai, fontWeight: '600', textAlign: 'center' },
+  pastMonthBtn: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.ai },
+  pastMonthBtnText: { fontSize: 13, color: '#fff', fontWeight: '700' },
 });
