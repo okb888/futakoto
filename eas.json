@@ -24,7 +24,11 @@
     },
     "production": {
       "channel": "production",
+      "env": {
+        "GYM_WORKSPACE": "./app.xcworkspace"
+      },
       "ios": {
+        "scheme": "app",
         "autoIncrement": true
       }
     }

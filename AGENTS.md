@@ -577,7 +577,7 @@ AI相談の自分専用記録。相手には見せない。
 すべて Obsidian Vault 内（プロジェクト管理層）:
 
 ```
-/Users/okabehiroyuki/Library/Mobile Documents/iCloud~md~obsidian/Documents/
+/Users/okabehiroyuki/G-Vault/
 ├── 4.Life/夫婦アプリ開発/
 │   ├── README.md                # プロジェクトメインドキュメント
 │   ├── 03_要件定義.md             # 仕様確定事項・AI統合設計

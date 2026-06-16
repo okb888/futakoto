@@ -9,7 +9,7 @@
     <key>EXUpdatesLaunchWaitMs</key>
     <integer>0</integer>
     <key>EXUpdatesRuntimeVersion</key>
-    <string>file:fingerprint</string>
+    <string>3de229bb3f8e83c5eb3d179a71312c2bef621b02</string>
     <key>EXUpdatesURL</key>
     <string>https://u.expo.dev/6cf40c14-7b75-471f-9ce5-17d8585326c5</string>
   </dict>
