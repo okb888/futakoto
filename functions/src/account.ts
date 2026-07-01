@@ -2,7 +2,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { admin, db, REGION } from './shared';
 
 export const deleteAccount = onCall(
-  { region: REGION },
+  { region: REGION, invoker: 'public' },
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'ログインが必要です');
     const uid = request.auth.uid;

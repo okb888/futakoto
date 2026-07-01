@@ -37,6 +37,14 @@ const PERSONA_LABEL: Record<string, string> = {
   logical: 'ロジカル',
 };
 
+function isPremiumActive(profile?: { premium?: boolean; premiumExpiresAt?: any } | null): boolean {
+  if (!profile?.premium) return false;
+  const expiresAt = profile.premiumExpiresAt;
+  if (!expiresAt) return true;
+  const ms = typeof expiresAt?.toMillis === 'function' ? expiresAt.toMillis() : 0;
+  return ms === 0 || ms > Date.now();
+}
+
 type SettingRowProps = {
   icon?: React.ReactNode;
   label: string;
@@ -100,10 +108,11 @@ export default function SettingsIndexScreen() {
   const persona = PERSONA_LABEL[profile?.aiPersona ?? 'soft'] ?? 'ソフト';
 
   // AI残り回数の計算
-  const aiLimit = profile?.aiCreditsLimit ?? AI_FREE_MONTHLY_LIMIT;
+  const aiLimit = AI_FREE_MONTHLY_LIMIT;
   const aiUsed = profile?.aiCreditsUsed ?? 0;
   const aiRemaining = Math.max(0, aiLimit - aiUsed);
-  const aiUsageValue = profile ? `AI残り ${aiRemaining}/${aiLimit}回` : 'AI残り —';
+  const premiumActive = isPremiumActive(profile) || isPremiumActive(partnerProfile);
+  const aiUsageValue = profile ? (premiumActive ? 'AI無制限' : `AI残り ${aiRemaining}/${aiLimit}回`) : 'AI残り —';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -144,7 +153,7 @@ export default function SettingsIndexScreen() {
           label="プレミアム"
           subtitle="AI機能を無制限で使う"
           value={aiUsageValue}
-          onPress={() => router.push('/(app)/settings/ai')}
+          onPress={() => router.push('/(app)/settings/premium')}
         />
       </View>
 
@@ -165,8 +174,8 @@ export default function SettingsIndexScreen() {
       <View style={styles.section}>
         <SettingRow
           icon={<Sparkle size={18} color={COLORS.ai} />}
-          label="AI口調・送信範囲"
-          subtitle="話し方スタイルとAI利用量"
+          label="AI口調"
+          subtitle="話し方スタイルと伝え方"
           value={persona}
           onPress={() => router.push('/(app)/settings/ai')}
         />

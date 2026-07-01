@@ -102,6 +102,15 @@ describe('consumeAiQuota', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    admin.__mockDb.doc.mockImplementation((path: string) => ({
+      get: jest.fn().mockResolvedValue(
+        path === `users/${uid}`
+          ? { exists: true, data: () => ({}) }
+          : { exists: false, data: () => ({}) }
+      ),
+      set: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue(undefined),
+    }));
   });
 
   it('制限内ならトランザクションを実行する', async () => {
@@ -111,12 +120,6 @@ describe('consumeAiQuota', () => {
     admin.__mockTransaction.get
       .mockResolvedValueOnce({ exists: true, data: () => usageData })
       .mockResolvedValueOnce({ exists: true, data: () => monthlyData });
-
-    admin.__mockDb.doc.mockReturnValue({
-      get: jest.fn(),
-      set: jest.fn(),
-      update: jest.fn(),
-    });
 
     admin.__mockDb.runTransaction.mockImplementation(
       async (fn: (t: typeof admin.__mockTransaction) => Promise<unknown>) => fn(admin.__mockTransaction)

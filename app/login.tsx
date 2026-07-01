@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import {
   ActivityIndicator,
   Image,
@@ -52,21 +53,21 @@ export default function LoginScreen() {
         <Text style={styles.tagline}>一言を、ふたりで。</Text>
 
         {showApple ? (
-          <TouchableOpacity
-            style={[styles.appleButton, anyBusy && styles.buttonDisabled]}
-            onPress={handleApple}
-            disabled={anyBusy}
-            activeOpacity={0.8}
-          >
-            {socialLoading === 'apple' ? (
+          socialLoading === 'apple' ? (
+            <View style={styles.appleLoadingButton}>
               <ActivityIndicator color={COLORS.text} />
-            ) : (
-              <View style={styles.socialInner}>
-                <Text style={styles.appleLogo}></Text>
-                <Text style={styles.appleButtonText}>Appleではじめる</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={[styles.nativeAppleWrap, anyBusy && styles.buttonDisabled]} pointerEvents={anyBusy ? 'none' : 'auto'}>
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
+                cornerRadius={12}
+                style={styles.nativeAppleButton}
+                onPress={handleApple}
+              />
+            </View>
+          )
         ) : null}
 
         {showGoogle ? (
@@ -132,7 +133,14 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.5,
   },
-  appleButton: {
+  nativeAppleWrap: {
+    marginBottom: 10,
+  },
+  nativeAppleButton: {
+    width: '100%',
+    height: 50,
+  },
+  appleLoadingButton: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
@@ -145,16 +153,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 3,
     elevation: 2,
-  },
-  appleLogo: {
-    fontSize: 18,
-    color: '#000',
-    marginRight: 10,
-  },
-  appleButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600',
   },
   socialInner: {
     flexDirection: 'row',

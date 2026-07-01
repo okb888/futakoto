@@ -381,26 +381,3 @@ export async function getEntriesInRange(uid: string, start: Date, end: Date): Pr
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry));
 }
-
-// ---- Data Export ----
-
-export async function getUserExportData(uid: string): Promise<{
-  profile: UserProfile | null;
-  entries: Entry[];
-  consultationSessions: ConsultationSession[];
-  favorites: FavoriteEntry[];
-}> {
-  const [profile, entriesSnap, sessionsSnap, favoritesSnap] = await Promise.all([
-    getUserProfile(uid),
-    getDocs(query(collection(db, 'users', uid, 'entries'), orderBy('createdAt', 'desc'), limit(1000))),
-    getDocs(query(collection(db, 'users', uid, 'consultationSessions'), orderBy('createdAt', 'desc'), limit(200))),
-    getDocs(query(collection(db, 'users', uid, 'favorites'), orderBy('createdAt', 'desc'), limit(500))),
-  ]);
-
-  return {
-    profile,
-    entries: entriesSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Entry)),
-    consultationSessions: sessionsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as ConsultationSession)),
-    favorites: favoritesSnap.docs.map((d) => ({ id: d.id, ...d.data() } as FavoriteEntry)),
-  };
-}

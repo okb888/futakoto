@@ -3,7 +3,10 @@ import { jest } from '@jest/globals';
 const increment = jest.fn((n: number) => ({ type: 'increment', n }));
 const serverTimestamp = jest.fn(() => ({ type: 'serverTimestamp' }));
 const FieldValue = { increment, serverTimestamp, delete: jest.fn(() => ({ type: 'delete' })) };
-const Timestamp = { now: jest.fn(() => ({ type: 'timestamp' })) };
+const Timestamp = {
+  now: jest.fn(() => ({ type: 'timestamp', toMillis: () => Date.now() })),
+  fromMillis: jest.fn((ms: number) => ({ type: 'timestamp', toMillis: () => ms })),
+};
 
 const mockTransaction = {
   get: jest.fn(),

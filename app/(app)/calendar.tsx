@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -100,6 +100,7 @@ export default function CalendarScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const params = useLocalSearchParams<{ viewMode?: string; typeFilter?: string }>();
+  const consumedExternalLogParamRef = useRef(false);
 
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
 
@@ -128,6 +129,7 @@ export default function CalendarScreen() {
   const [calendarTypeFilter, setCalendarTypeFilter] = useState<'all' | 'entry' | 'consultation'>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [loading, setLoading] = useState(true);
+  const [monthLoading, setMonthLoading] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<string>(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -159,7 +161,7 @@ export default function CalendarScreen() {
       setMyEntries(cache[monthStr]);
       return;
     }
-    setLoading(true);
+    setMonthLoading(true);
     try {
       const { start, end } = getMonthBounds(monthStr);
       const entries = await getEntriesInRange(user.uid, start, end);
@@ -168,7 +170,7 @@ export default function CalendarScreen() {
     } catch (e: any) {
       Alert.alert('エラー', firebaseErrorMessage(e));
     } finally {
-      setLoading(false);
+      setMonthLoading(false);
     }
   }
 
@@ -213,18 +215,21 @@ export default function CalendarScreen() {
   // URLパラメータでviewModeとtypeFilterを受け取る
   useFocusEffect(useCallback(() => {
     if (params.viewMode === 'log') {
+      consumedExternalLogParamRef.current = true;
       setViewMode('log');
       if (params.typeFilter === 'consultation') {
         setLogTypeFilter('consultation');
         setFilterPanelOpen(false);
       }
+      router.setParams({ viewMode: undefined, typeFilter: undefined } as any);
     } else if (params.viewMode === undefined) {
-      setLogTypeFilter('all');
-    }
-    return () => {
+      if (consumedExternalLogParamRef.current) {
+        consumedExternalLogParamRef.current = false;
+        return;
+      }
       setViewMode('calendar');
       setLogTypeFilter('all');
-    };
+    }
   }, [params.viewMode, params.typeFilter]));
 
   // ナビゲーションヘッダーにタブ切り替えボタン
@@ -295,13 +300,14 @@ export default function CalendarScreen() {
     return () => {
       cancelled = true;
     };
-  }, [user, authProfile, currentMonth]));
+  }, [user, authProfile]));
 
-  useFocusEffect(useCallback(() => {
+  useEffect(() => {
+    if (viewMode !== 'log') return;
     let cancelled = false;
     loadLog(() => cancelled);
     return () => { cancelled = true; };
-  }, [user, authProfile]));
+  }, [viewMode, user, authProfile]);
 
   function filterByPeriod(entries: Entry[]): Entry[] {
     const now = new Date();
@@ -404,7 +410,10 @@ export default function CalendarScreen() {
     setSummaryExpanded(false);
 
     // 無料ユーザーは過去月のデータを取得しない（オーバーレイで隠す）
-    if (!premium && isPastMonth(newMonth)) return;
+    if (!premium && isPastMonth(newMonth)) {
+      setMyEntries([]);
+      return;
+    }
     loadMonthEntries(newMonth, myEntriesCache);
   }
 
@@ -864,16 +873,25 @@ export default function CalendarScreen() {
             textDayHeaderFontSize: 12,
           }}
         />
+        {monthLoading ? (
+          <View style={styles.monthLoading}>
+            <ActivityIndicator color={COLORS.primary} size="small" />
+          </View>
+        ) : null}
         {isPastMonth(currentMonth) && (
+          <View style={styles.monthActions}>
           <TouchableOpacity
             style={styles.todayButton}
             onPress={() => {
-              setCurrentMonth(thisMonthKey());
+              const month = thisMonthKey();
+              setCurrentMonth(month);
               setCalendarKey((k) => k + 1);
+              loadMonthEntries(month, myEntriesCache);
             }}
           >
             <Text style={styles.todayButtonText}>今月</Text>
           </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -1278,6 +1296,7 @@ const styles = StyleSheet.create({
   summaryTargetTextActive: { color: COLORS.ai },
   summaryTargetTextDisabled: { color: COLORS.disabled },
   summaryButton: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -1307,10 +1326,26 @@ const styles = StyleSheet.create({
   summaryToggle: { fontSize: 11, color: COLORS.ai },
   summaryText: { fontSize: 14, color: COLORS.text, lineHeight: 21, paddingHorizontal: 14, paddingBottom: 14 },
   filterDivider: { width: 1, backgroundColor: COLORS.border, marginHorizontal: 4, alignSelf: 'stretch' },
-  todayButton: {
+  monthLoading: {
     position: 'absolute',
-    top: 14,
     right: 16,
+    bottom: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.borderSoft,
+  },
+  monthActions: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    marginTop: -4,
+    marginBottom: 4,
+  },
+  todayButton: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,

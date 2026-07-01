@@ -7,15 +7,12 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { Sparkle } from 'phosphor-react-native';
 import { useAuth } from '../../../lib/auth';
 import {
   updateCommunicationStyle,
   updateAiPersona,
-  AI_FREE_MONTHLY_LIMIT,
   type AiPersona,
 } from '../../../lib/db';
-import { PaywallModal } from '../../../components/PaywallModal';
 import { useSettingsProfile } from '../../../hooks/useSettingsProfile';
 import { COLORS } from '../../../lib/theme';
 
@@ -27,11 +24,10 @@ const PERSONAS: { key: AiPersona; label: string; desc: string }[] = [
 
 export default function AiScreen() {
   const { user } = useAuth();
-  const { profile, setProfile, load } = useSettingsProfile();
+  const { profile, setProfile } = useSettingsProfile();
 
   const [styleInput, setStyleInput] = useState(profile?.communicationStyle ?? '');
   const [styleSaved, setStyleSaved] = useState(false);
-  const [paywallOpen, setPaywallOpen] = useState(false);
 
   async function handleSelectPersona(persona: AiPersona) {
     if (!user) return;
@@ -46,57 +42,8 @@ export default function AiScreen() {
     setTimeout(() => setStyleSaved(false), 2000);
   }
 
-  const used = profile?.aiCreditsUsed ?? 0;
-  const limit = AI_FREE_MONTHLY_LIMIT;
-  const remaining = Math.max(0, limit - used);
-  const ratio = Math.min(100, (used / limit) * 100);
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-
-      {/* AI利用量 */}
-      <Text style={styles.sectionLabel}>AI利用量</Text>
-      <View style={styles.section}>
-        {profile?.premium ? (
-          <View style={styles.usageRow}>
-            <View style={styles.iconBox}>
-              <Sparkle size={20} color={COLORS.ai} weight="fill" />
-            </View>
-            <View style={styles.usageContent}>
-              <Text style={styles.usageTitle}>プレミアム加入中</Text>
-              <Text style={styles.usageSub}>AI機能は無制限でお使いいただけます</Text>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.usageRow}>
-            <View style={styles.iconBox}>
-              <Sparkle size={20} color={COLORS.ai} weight="fill" />
-            </View>
-            <View style={styles.usageContent}>
-              <View style={styles.usageHeader}>
-                <Text style={styles.usageTitle}>今月の無料分</Text>
-                <Text style={styles.usageCount}>残り {remaining}/{limit}</Text>
-              </View>
-              <View style={styles.usageTrack}>
-                <View style={[styles.usageFill, { width: `${ratio}%` as any }]} />
-              </View>
-              <Text style={styles.usageSub}>
-                {remaining === 0
-                  ? '無料分を使い切りました。プレミアムで無制限に使えます'
-                  : '初回利用から30日でリセットされます'}
-              </Text>
-              <TouchableOpacity
-                style={styles.premiumCta}
-                onPress={() => setPaywallOpen(true)}
-                activeOpacity={0.85}
-              >
-                <Sparkle size={14} color="#fff" weight="fill" />
-                <Text style={styles.premiumCtaText}>プレミアムを試す</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </View>
 
       {/* 話し方スタイル */}
       <Text style={styles.sectionLabel}>壁打ちAIの話し方</Text>
@@ -145,12 +92,6 @@ export default function AiScreen() {
         ) : null}
       </View>
 
-      <PaywallModal
-        visible={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
-        onPurchased={() => load()}
-      />
-
     </ScrollView>
   );
 }
@@ -180,46 +121,6 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
-  usageRow: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-    alignItems: 'flex-start',
-  },
-  iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.aiBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  usageContent: { flex: 1 },
-  usageHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  usageTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text },
-  usageCount: { fontSize: 13, color: COLORS.ai, fontWeight: '700' },
-  usageTrack: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.aiBg,
-    overflow: 'hidden',
-    marginTop: 9,
-  },
-  usageFill: { height: 8, borderRadius: 4, backgroundColor: COLORS.ai },
-  usageSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 8, lineHeight: 16 },
-  premiumCta: {
-    marginTop: 12,
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: COLORS.ai,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  premiumCtaText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   personaList: { marginHorizontal: 16, gap: 8 },
   personaOption: {
     flexDirection: 'row',

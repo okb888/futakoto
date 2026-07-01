@@ -16,6 +16,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="account" options={{ title: 'アカウント' }} />
       <Stack.Screen name="partner" options={{ title: 'パートナー連携' }} />
       <Stack.Screen name="notifications" options={{ title: '通知' }} />
+      <Stack.Screen name="premium" options={{ title: 'プレミアム' }} />
       <Stack.Screen name="ai" options={{ title: 'AIアシスタント' }} />
     </Stack>
   );

@@ -11,7 +11,7 @@ import {
   Modal,
   Platform,
 } from 'react-native';
-import { DownloadSimple, EnvelopeSimple } from 'phosphor-react-native';
+import { AppleLogo, EnvelopeSimple } from 'phosphor-react-native';
 import {
   signOut,
   EmailAuthProvider,
@@ -20,10 +20,9 @@ import {
   sendEmailVerification,
   reload,
 } from 'firebase/auth';
-import { Share } from 'react-native';
 import { auth } from '../../../lib/firebase';
 import { useAuth } from '../../../lib/auth';
-import { updateDisplayName, getUserExportData } from '../../../lib/db';
+import { updateDisplayName } from '../../../lib/db';
 import { deleteAccount } from '../../../lib/ai';
 import { firebaseErrorMessage } from '../../../lib/errors';
 import {
@@ -34,18 +33,6 @@ import {
 import { useSettingsProfile } from '../../../hooks/useSettingsProfile';
 import { COLORS } from '../../../lib/theme';
 
-function normalizeForExport(value: any): any {
-  if (!value) return value;
-  if (value.toDate) return value.toDate().toISOString();
-  if (Array.isArray(value)) return value.map(normalizeForExport);
-  if (typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, normalizeForExport(v)])
-    );
-  }
-  return value;
-}
-
 export default function AccountScreen() {
   const { user } = useAuth();
   const { profile, load } = useSettingsProfile();
@@ -54,7 +41,6 @@ export default function AccountScreen() {
   const [nameInput, setNameInput] = useState('');
   const [emailVerified, setEmailVerified] = useState(user?.emailVerified ?? true);
   const [deleteModal, setDeleteModal] = useState({ open: false, password: '' });
-  const [loadingExport, setLoadingExport] = useState(false);
   const [loadingVerification, setLoadingVerification] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
   const [linkingProvider, setLinkingProvider] = useState<'google' | 'apple' | null>(null);
@@ -123,24 +109,6 @@ export default function AccountScreen() {
       if (ok) Alert.alert('連携完了', 'Apple IDと連携しました。次回からApple IDでもログインできます。');
     } finally {
       setLinkingProvider(null);
-    }
-  }
-
-  async function handleExportData() {
-    if (!user || loadingExport) return;
-    setLoadingExport(true);
-    try {
-      const data = await getUserExportData(user.uid);
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        app: 'futakoto',
-        data: normalizeForExport(data),
-      };
-      await Share.share({ message: JSON.stringify(payload, null, 2) });
-    } catch (e: any) {
-      Alert.alert('エクスポートに失敗しました', firebaseErrorMessage(e));
-    } finally {
-      setLoadingExport(false);
     }
   }
 
@@ -254,7 +222,7 @@ export default function AccountScreen() {
             <View style={styles.divider} />
             {linkedProviderIds.includes('apple.com') ? (
               <View style={styles.row}>
-                <Text style={styles.appleIcon}></Text>
+                <AppleLogo size={17} color={COLORS.text} weight="fill" style={styles.providerIcon} />
                 <Text style={styles.rowLabel}>Apple ID</Text>
                 <View style={styles.linkedBadge}><Text style={styles.linkedBadgeText}>連携中</Text></View>
               </View>
@@ -267,7 +235,7 @@ export default function AccountScreen() {
                 {linkingProvider === 'apple' ? (
                   <ActivityIndicator size="small" color={COLORS.text} />
                 ) : (
-                  <Text style={styles.appleIcon}></Text>
+                  <AppleLogo size={17} color={COLORS.text} weight="fill" style={styles.providerIcon} />
                 )}
                 <Text style={[styles.rowLabel, styles.rowLabelAction]}>Apple IDで連携する</Text>
               </TouchableOpacity>
@@ -293,30 +261,17 @@ export default function AccountScreen() {
         </View>
       )}
 
-      <Text style={styles.sectionLabel}>セキュリティ・データ</Text>
-      <View style={styles.section}>
-        {providerId === 'password' ? (
-          <>
+      {providerId === 'password' ? (
+        <>
+          <Text style={styles.sectionLabel}>セキュリティ</Text>
+          <View style={styles.section}>
             <TouchableOpacity style={styles.row} onPress={handleSendPasswordReset}>
               <EnvelopeSimple size={17} color={COLORS.primary} weight="bold" />
               <Text style={[styles.rowLabel, styles.rowLabelAction]}>パスワード再設定メールを送る</Text>
             </TouchableOpacity>
-            <View style={styles.divider} />
-          </>
-        ) : null}
-        <TouchableOpacity
-          style={[styles.row, loadingExport && { opacity: 0.6 }]}
-          onPress={handleExportData}
-          disabled={loadingExport}
-        >
-          {loadingExport ? (
-            <ActivityIndicator color={COLORS.primary} size="small" />
-          ) : (
-            <DownloadSimple size={17} color={COLORS.primary} weight="bold" />
-          )}
-          <Text style={[styles.rowLabel, styles.rowLabelAction]}>データを書き出す</Text>
-        </TouchableOpacity>
-      </View>
+          </View>
+        </>
+      ) : null}
 
       <View style={styles.dangerZone}>
         <TouchableOpacity
@@ -531,5 +486,5 @@ const styles = StyleSheet.create({
   },
   linkedBadgeText: { fontSize: 11, color: COLORS.primaryDeep, fontWeight: '600' },
   googleG: { fontSize: 15, fontWeight: '700', color: '#4285F4', width: 20, textAlign: 'center' },
-  appleIcon: { fontSize: 15, color: COLORS.text, width: 20, textAlign: 'center' },
+  providerIcon: { width: 20 },
 });

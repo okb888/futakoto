@@ -153,6 +153,7 @@ export async function signInWithGoogle(): Promise<boolean> {
 
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    await GoogleSignin.signOut().catch(() => {});
     const result: any = await GoogleSignin.signIn();
 
     // v15+ では { type: 'success', data: { idToken, ... } }、旧版では直接 idToken。
@@ -167,6 +168,7 @@ export async function signInWithGoogle(): Promise<boolean> {
     await signInWithCredential(auth, credential);
     return true;
   } catch (e: any) {
+    if (auth.currentUser) return true;
     if (isUserCancelled(e)) return false;
     showError(e, 'Google Sign-inエラー');
     return false;
@@ -201,6 +203,7 @@ export async function linkGoogleToCurrentUser(): Promise<boolean> {
 
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    await GoogleSignin.signOut().catch(() => {});
     const result: any = await GoogleSignin.signIn();
     const idToken: string | undefined = result?.data?.idToken ?? result?.idToken;
     if (!idToken) throw new Error('Google Sign-in: idToken が取得できませんでした。');

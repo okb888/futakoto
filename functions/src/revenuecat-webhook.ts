@@ -20,6 +20,7 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { logger } from 'firebase-functions';
+import { timingSafeEqual } from 'crypto';
 import { admin, db, REGION } from './shared';
 
 export const REVENUECAT_WEBHOOK_AUTH = defineSecret('REVENUECAT_WEBHOOK_AUTH');
@@ -76,6 +77,13 @@ const PREMIUM_DEACTIVATING_EVENTS: RevenueCatEventType[] = [
   'SUBSCRIPTION_PAUSED',
 ];
 
+function safeStringEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
 export const revenuecatWebhook = onRequest(
   {
     region: REGION,
@@ -96,7 +104,7 @@ export const revenuecatWebhook = onRequest(
       return;
     }
     const provided = req.get('Authorization') ?? '';
-    if (provided !== expected) {
+    if (!safeStringEqual(provided, expected)) {
       logger.warn('Unauthorized RevenueCat webhook request', {
         hasHeader: !!provided,
       });

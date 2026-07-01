@@ -4,7 +4,8 @@ service cloud.firestore {
 
     // 招待コード: 認証済みなら読める（findUidByCode で使用）。書き込みはCloud Functionsのみ
     match /inviteCodes/{code} {
-      allow read: if request.auth != null;
+      allow get: if request.auth != null;
+      allow list: if false;
       allow create, update, delete: if false;
     }
 

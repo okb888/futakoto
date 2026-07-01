@@ -33,7 +33,6 @@ const FEATURES = [
   '相手の投稿の「気持ちを読み解く」 無制限',
   '月次振り返りサマリーがいつでも見られる',
   '過去の壁打ち履歴をすべて参照可能',
-  '月次レポートをPDF/画像でエクスポート',
 ];
 
 export function PaywallModal({ visible, onClose, reason, onPurchased }: Props) {
@@ -128,9 +127,9 @@ export function PaywallModal({ visible, onClose, reason, onPurchased }: Props) {
           <Text style={styles.legalText}>
             購入後、App Store アカウントに課金されます。自動更新は購入終了の24時間前までに解約しない場合、同じ条件で更新されます。
             {' '}
-            <Text style={styles.link} onPress={() => Linking.openURL('https://futakoto.app/terms.html')}>利用規約</Text>
+            <Text style={styles.link} onPress={() => Linking.openURL('https://futakoto.jp/terms')}>利用規約</Text>
             {' '}/{' '}
-            <Text style={styles.link} onPress={() => Linking.openURL('https://futakoto.app/privacy.html')}>プライバシーポリシー</Text>
+            <Text style={styles.link} onPress={() => Linking.openURL('https://futakoto.jp/privacy')}>プライバシーポリシー</Text>
           </Text>
 
           {!isPurchasesConfigured() ? (
